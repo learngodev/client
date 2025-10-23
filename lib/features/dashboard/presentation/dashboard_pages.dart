@@ -223,8 +223,9 @@ class TeacherDashboardPage extends HookConsumerWidget {
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: insights[index].progress,
-                        backgroundColor: theme.colorScheme.surfaceVariant
-                            .withOpacity(0.5),
+                        backgroundColor: theme
+                            .colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                         valueColor: AlwaysStoppedAnimation(
                           insights[index].barColor(theme),
                         ),
@@ -519,7 +520,8 @@ class _DashboardStatCard extends StatelessWidget {
         width: 240,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+          color: theme.colorScheme.surfaceContainerHighest
+              .withValues(alpha: 0.4),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(

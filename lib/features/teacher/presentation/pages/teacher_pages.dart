@@ -101,8 +101,9 @@ class TeacherOverviewPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: insights[index].progress,
-                        backgroundColor: theme.colorScheme.surfaceVariant
-                            .withOpacity(0.5),
+                        backgroundColor: theme
+                            .colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.5),
                         valueColor: AlwaysStoppedAnimation(
                           insights[index].barColor(theme),
                         ),
@@ -173,7 +174,8 @@ class TeacherOverviewPage extends StatelessWidget {
                       const SizedBox(height: 4),
                       Chip(
                         label: Text(tasks[index].statusLabel),
-                        backgroundColor: theme.colorScheme.surfaceVariant,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         side: BorderSide.none,
                       ),
                     ],
@@ -428,8 +430,8 @@ class TeacherSchedulePage extends HookWidget {
                                 padding: const EdgeInsets.only(top: 4),
                                 child: Chip(
                                   label: const Text('线上'),
-                                  backgroundColor:
-                                      theme.colorScheme.surfaceVariant,
+                                  backgroundColor: theme
+                                      .colorScheme.surfaceContainerHighest,
                                   side: BorderSide.none,
                                 ),
                               ),
@@ -552,7 +554,8 @@ class TeacherAssignmentsPage extends HookWidget {
                   children: [
                     Chip(
                       label: Text(task.statusLabel),
-                      backgroundColor: theme.colorScheme.surfaceVariant,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       side: BorderSide.none,
                     ),
                     if (task.route != null)
@@ -644,7 +647,8 @@ class TeacherConversationsPage extends HookWidget {
                       const SizedBox(height: 4),
                       Chip(
                         label: Text(message.tag!),
-                        backgroundColor: theme.colorScheme.surfaceVariant,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         side: BorderSide.none,
                       ),
                     ],
@@ -766,7 +770,7 @@ class TeacherNotesPage extends HookWidget {
                       children: [
                         Chip(
                           label: Text(note.visibility),
-                          backgroundColor: theme.colorScheme.surfaceVariant,
+                           backgroundColor: theme.colorScheme.surfaceContainerHighest,
                           side: BorderSide.none,
                         ),
                         const SizedBox(width: 8),
@@ -866,7 +870,8 @@ class _OverviewStatCard extends StatelessWidget {
         width: 220,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.surfaceVariant.withOpacity(0.45),
+          color: theme.colorScheme.surfaceContainerHighest
+              .withValues(alpha: 0.45),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
