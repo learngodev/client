@@ -3,25 +3,26 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/exceptions/app_exception.dart';
 import 'auth_controller.dart';
 
-class SignInController extends StateNotifier<AsyncValue<void>> {
-  SignInController(this._ref) : super(const AsyncValue.data(null));
-
-  final Ref _ref;
+class SignInController extends Notifier<AsyncValue<void>> {
+  @override
+  AsyncValue<void> build() => const AsyncValue.data(null);
 
   Future<void> signIn({
     required String schoolId,
     required String identifier,
     required String password,
+    required bool rememberPassword,
   }) async {
     if (state.isLoading) return;
     state = const AsyncValue.loading();
     try {
-      await _ref
+      await ref
           .read(authStateProvider.notifier)
           .signIn(
             schoolId: schoolId,
             identifier: identifier,
             password: password,
+            rememberPassword: rememberPassword,
           );
       state = const AsyncValue.data(null);
     } on AppException catch (error, stack) {
@@ -39,6 +40,4 @@ class SignInController extends StateNotifier<AsyncValue<void>> {
 }
 
 final signInControllerProvider =
-    StateNotifierProvider<SignInController, AsyncValue<void>>((ref) {
-      return SignInController(ref);
-    });
+    NotifierProvider<SignInController, AsyncValue<void>>(SignInController.new);

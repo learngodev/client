@@ -1,5 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/storage/login_preference_storage.dart';
 import '../../../core/storage/token_storage.dart';
 import '../data/auth_repository.dart';
 import '../domain/account.dart';
@@ -55,15 +56,15 @@ class AuthState {
   }
 }
 
-class AuthController extends StateNotifier<AuthState> {
-  AuthController(this._ref) : super(const AuthState.unknown()) {
-    _bootstrap();
+class AuthController extends Notifier<AuthState> {
+  @override
+  AuthState build() {
+    Future.microtask(_bootstrap);
+    return const AuthState.unknown();
   }
 
-  final Ref _ref;
-
   Future<void> _bootstrap() async {
-    final storage = _ref.read(tokenStorageProvider);
+    final storage = ref.read(tokenStorageProvider);
     final storedTokens = await storage.readTokens();
     if (storedTokens == null) {
       state = const AuthState.unauthenticated();
@@ -78,9 +79,11 @@ class AuthController extends StateNotifier<AuthState> {
     required String schoolId,
     required String identifier,
     required String password,
+    required bool rememberPassword,
   }) async {
-    final repository = _ref.read(authRepositoryProvider);
-    final storage = _ref.read(tokenStorageProvider);
+    final repository = ref.read(authRepositoryProvider);
+    final storage = ref.read(tokenStorageProvider);
+    final preferenceStorage = ref.read(loginPreferenceStorageProvider);
 
     final result = await repository.signIn(
       schoolId: schoolId,
@@ -89,6 +92,14 @@ class AuthController extends StateNotifier<AuthState> {
     );
 
     await storage.saveTokens(result.tokens);
+    await preferenceStorage.save(
+      LoginPreference(
+        schoolId: schoolId.trim(),
+        identifier: identifier.trim(),
+        rememberPassword: rememberPassword,
+        password: rememberPassword ? password : null,
+      ),
+    );
     state = AuthState.authenticated(
       account: result.account,
       tokens: result.tokens,
@@ -112,12 +123,12 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
-    final storage = _ref.read(tokenStorageProvider);
+    final storage = ref.read(tokenStorageProvider);
     await storage.clear();
     state = const AuthState.unauthenticated();
   }
 }
 
-final authStateProvider = StateNotifierProvider<AuthController, AuthState>(
-  (ref) => AuthController(ref),
+final authStateProvider = NotifierProvider<AuthController, AuthState>(
+  AuthController.new,
 );

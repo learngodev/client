@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/exceptions/app_exception.dart';
+import '../../../core/storage/login_preference_storage.dart';
 import '../application/auth_controller.dart';
 import '../application/sign_in_controller.dart';
 import '../domain/account.dart';
@@ -16,9 +17,33 @@ class SignInPage extends HookConsumerWidget {
     final identifierController = useTextEditingController();
     final passwordController = useTextEditingController();
     final isObscure = useState(true);
+    final rememberPassword = useState(false);
     useListenable(schoolIdController);
     useListenable(identifierController);
     useListenable(passwordController);
+
+    final lastLoginPreference = ref.watch(lastLoginPreferenceProvider);
+
+    useEffect(() {
+      final preference = lastLoginPreference.valueOrNull;
+      if (preference != null) {
+        if (preference.schoolId.isNotEmpty &&
+            schoolIdController.text != preference.schoolId) {
+          schoolIdController.text = preference.schoolId;
+        }
+        if (preference.identifier.isNotEmpty &&
+            identifierController.text != preference.identifier) {
+          identifierController.text = preference.identifier;
+        }
+        rememberPassword.value = preference.rememberPassword;
+        if (preference.rememberPassword &&
+            (preference.password?.isNotEmpty ?? false) &&
+            passwordController.text != preference.password) {
+          passwordController.text = preference.password!;
+        }
+      }
+      return null;
+    }, [lastLoginPreference]);
 
     final signInState = ref.watch(signInControllerProvider);
     ref.listen<AsyncValue<void>>(signInControllerProvider, (previous, next) {
@@ -89,6 +114,20 @@ class SignInPage extends HookConsumerWidget {
                     ),
                     obscureText: isObscure.value,
                   ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: rememberPassword.value,
+                        onChanged: (checked) {
+                          rememberPassword.value = checked ?? false;
+                          if (!rememberPassword.value) {
+                            passwordController.clear();
+                          }
+                        },
+                      ),
+                      const Text('记住密码'),
+                    ],
+                  ),
                   const SizedBox(height: 24),
                   FilledButton(
                     onPressed: !canSubmit || signInState.isLoading
@@ -101,6 +140,7 @@ class SignInPage extends HookConsumerWidget {
                                   schoolId: schoolIdController.text.trim(),
                                   identifier: identifierController.text.trim(),
                                   password: passwordController.text,
+                                  rememberPassword: rememberPassword.value,
                                 );
                           },
                     child: signInState.isLoading
