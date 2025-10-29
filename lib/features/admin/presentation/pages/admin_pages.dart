@@ -688,6 +688,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                           label: Text(
                             '角色：${_accountRoleFilterLabel(role.value)}',
                           ),
+                          onSelected: (_) {},
                           onDeleted: () {
                             role.value = _AccountRoleFilter.all;
                           },
@@ -697,6 +698,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                           label: Text(
                             '状态：${_accountStatusFilterLabel(statusFilter.value)}',
                           ),
+                          onSelected: (_) {},
                           onDeleted: () {
                             statusFilter.value = _AccountStatusFilter.all;
                           },
@@ -704,6 +706,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                       if (department.value != _kAllDepartments)
                         FilterChip(
                           label: Text('院系：$departmentChipLabel'),
+                          onSelected: (_) {},
                           onDeleted: () {
                             department.value = _kAllDepartments;
                             classFilter.value = _kAllClasses;
@@ -712,6 +715,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                       if (classFilter.value != _kAllClasses)
                         FilterChip(
                           label: Text('班级：$classChipLabel'),
+                          onSelected: (_) {},
                           onDeleted: () {
                             classFilter.value = _kAllClasses;
                           },
@@ -719,6 +723,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                       if (debouncedQuery.value.isNotEmpty)
                         FilterChip(
                           label: Text('关键词：${debouncedQuery.value}'),
+                          onSelected: (_) {},
                           onDeleted: () {
                             queryController.clear();
                             debouncedQuery.value = '';
@@ -804,6 +809,34 @@ class AdminAccountsPage extends HookConsumerWidget {
                       ),
                   ],
                 ),
+                if (department.value == _kAllDepartments ||
+                    department.value == _kNoDepartment) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('全部班级'),
+                        selected: classFilter.value == _kAllClasses,
+                        onSelected: (selected) {
+                          if (selected) {
+                            classFilter.value = _kAllClasses;
+                          }
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('未分配班级'),
+                        selected: classFilter.value == _kNoClass,
+                        onSelected: (selected) {
+                          classFilter.value = selected
+                              ? _kNoClass
+                              : _kAllClasses;
+                        },
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 12),
                 DropdownMenu<String>(
                   key: ValueKey(department.value),
