@@ -1,10 +1,60 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../application/admin_providers.dart';
+import '../../../auth/application/auth_controller.dart';
+import '../../../../core/exceptions/app_exception.dart';
+import '../../data/admin_repository.dart';
+import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../domain/sample_data.dart' as admin_data;
+
+int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
+  final nameCompare = a.department.name.toLowerCase().compareTo(
+    b.department.name.toLowerCase(),
+  );
+  if (nameCompare != 0) {
+    return nameCompare;
+  }
+  return a.department.id.compareTo(b.department.id);
+}
+
+int _compareClassInfos(ClassInfo a, ClassInfo b) {
+  final nameCompare = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  if (nameCompare != 0) {
+    return nameCompare;
+  }
+  return a.id.compareTo(b.id);
+}
+
+const _kAutoLoadMoreThreshold = 280.0;
+
+List<AdminAccount> _mergeAccountPages(
+  List<AdminAccount> existing,
+  List<AdminAccount> incoming,
+) {
+  if (existing.isEmpty) {
+    return [...incoming];
+  }
+  if (incoming.isEmpty) {
+    return existing;
+  }
+  final merged = [...existing];
+  for (final account in incoming) {
+    final index = merged.indexWhere((item) => item.id == account.id);
+    if (index >= 0) {
+      merged[index] = account;
+    } else {
+      merged.add(account);
+    }
+  }
+  return merged;
+}
 
 /// Clean, single-file admin pages implementation (overview, accounts, structures, OSS, system)
 
@@ -74,171 +124,786 @@ class AdminAccountsPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = useState(_AccountRoleFilter.all);
-    final controller = useTextEditingController();
-    useListenable(controller);
+    final statusFilter = useState(_AccountStatusFilter.all);
+    final queryController = useTextEditingController();
+    useListenable(queryController);
+    final debouncedQuery = useState(queryController.text.trim());
+    useEffect(() {
+      final timer = Timer(const Duration(milliseconds: 320), () {
+        debouncedQuery.value = queryController.text.trim();
+      });
+      return timer.cancel;
+    }, [queryController.text]);
+
     final department = useState<String>(_kAllDepartments);
-    final accounts = admin_data.adminAccountItems;
+    final classFilter = useState<String>(_kAllClasses);
+    final requestedPage = useState<int>(1);
+    final aggregatedAccountsState = useState<List<AdminAccount>>(
+      <AdminAccount>[],
+    );
+    final totalAccountsState = useState<int>(0);
+    final isLoadingMore = useState<bool>(false);
+    final isRefreshing = useState<bool>(false);
+    final loadMoreError = useState<String?>(null);
+    final lastCompletedPageRef = useRef<int>(0);
+
+    final authState = ref.watch(authStateProvider);
+    final schoolId = authState.account?.schoolId ?? '';
+    final isAuthenticated = authState.isAuthenticated && schoolId.isNotEmpty;
+
+    if (!isAuthenticated) {
+      return const Center(child: Text('请先登录以查看账号信息'));
+    }
+
+    final departmentTreeAsync = ref.watch(adminDepartmentTreeProvider);
+    final departmentNodes =
+        departmentTreeAsync.asData?.value ?? const <DepartmentNode>[];
+
+    const pageSize = 200;
+    AdminAccountRole? selectedRole;
+    switch (role.value) {
+      case _AccountRoleFilter.all:
+        selectedRole = null;
+      case _AccountRoleFilter.teachers:
+        selectedRole = AdminAccountRole.teacher;
+      case _AccountRoleFilter.students:
+        selectedRole = AdminAccountRole.student;
+    }
+
+    AdminAccountStatus? selectedStatus;
+    switch (statusFilter.value) {
+      case _AccountStatusFilter.all:
+        selectedStatus = null;
+      case _AccountStatusFilter.active:
+        selectedStatus = AdminAccountStatus.active;
+      case _AccountStatusFilter.locked:
+        selectedStatus = AdminAccountStatus.locked;
+      case _AccountStatusFilter.pendingReset:
+        selectedStatus = AdminAccountStatus.passwordResetRequired;
+    }
+
+    String? selectedDepartmentId;
+    String? departmentScope;
+    switch (department.value) {
+      case _kAllDepartments:
+        selectedDepartmentId = null;
+        departmentScope = null;
+      case _kNoDepartment:
+        selectedDepartmentId = null;
+        departmentScope = 'unassigned';
+      default:
+        selectedDepartmentId = department.value;
+        departmentScope = null;
+    }
+
+    String? selectedClassId;
+    String? classScope;
+    switch (classFilter.value) {
+      case _kAllClasses:
+        selectedClassId = null;
+        classScope = null;
+      case _kNoClass:
+        selectedClassId = null;
+        classScope = 'unassigned';
+      default:
+        selectedClassId = classFilter.value;
+        classScope = null;
+    }
+
+    final filterKey =
+        '$schoolId|${selectedRole?.apiValue ?? 'all'}|${selectedStatus?.apiValue ?? 'all'}|${department.value}|${classFilter.value}|${debouncedQuery.value}';
+    final previousFilterKey = usePrevious(filterKey);
+    final filtersChanged =
+        previousFilterKey != null && previousFilterKey != filterKey;
+
+    final effectivePage = filtersChanged ? 1 : requestedPage.value;
+
+    final request = AdminAccountListRequest(
+      schoolId: schoolId,
+      role: selectedRole,
+      page: effectivePage,
+      pageSize: pageSize,
+      query: debouncedQuery.value,
+      status: selectedStatus,
+      departmentId: selectedDepartmentId,
+      departmentScope: departmentScope,
+      classId: selectedClassId,
+      classScope: classScope,
+    );
+
+    useEffect(() {
+      if (!filtersChanged) {
+        return null;
+      }
+      aggregatedAccountsState.value = const <AdminAccount>[];
+      totalAccountsState.value = 0;
+      loadMoreError.value = null;
+      isLoadingMore.value = false;
+      isRefreshing.value = false;
+      lastCompletedPageRef.value = 0;
+      if (requestedPage.value != 1) {
+        requestedPage.value = 1;
+      }
+      return null;
+    }, [filterKey]);
+
+    final accountsState = ref.watch(adminAccountListProvider(request));
     final invites = admin_data.adminAccountInvites;
+    final scrollController = useScrollController();
 
-    final departments =
-        accounts.map((account) => account.department).toSet().toList()..sort();
+    useEffect(() {
+      if (!filtersChanged) {
+        return null;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!scrollController.hasClients) {
+          return;
+        }
+        scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+        );
+      });
+      return null;
+    }, [filterKey, filtersChanged, scrollController]);
 
-    final query = controller.text.trim();
-    final lowerQuery = query.toLowerCase();
+    useEffect(() {
+      accountsState.when(
+        data: (pageData) {
+          totalAccountsState.value = pageData.total;
+          if (effectivePage == 1) {
+            aggregatedAccountsState.value = [...pageData.accounts];
+          } else if (pageData.accounts.isNotEmpty) {
+            aggregatedAccountsState.value = _mergeAccountPages(
+              aggregatedAccountsState.value,
+              pageData.accounts,
+            );
+          }
+          loadMoreError.value = null;
+          isLoadingMore.value = false;
+          isRefreshing.value = false;
+          lastCompletedPageRef.value = effectivePage;
+          if (requestedPage.value != effectivePage) {
+            requestedPage.value = effectivePage;
+          }
+        },
+        error: (error, _) {
+          if (aggregatedAccountsState.value.isNotEmpty) {
+            loadMoreError.value = error.toString();
+          }
+          isLoadingMore.value = false;
+          isRefreshing.value = false;
+          final previousPage = lastCompletedPageRef.value == 0
+              ? 1
+              : lastCompletedPageRef.value;
+          if (requestedPage.value != previousPage) {
+            requestedPage.value = previousPage;
+          }
+        },
+        loading: () {},
+      );
+      return null;
+    }, [accountsState, effectivePage]);
 
-    final filtered = accounts.where((a) {
+    final pageData = accountsState.valueOrNull;
+    final List<AdminAccount> aggregatedAccounts =
+        aggregatedAccountsState.value.isEmpty &&
+            (pageData?.accounts.isNotEmpty ?? false)
+        ? pageData!.accounts
+        : aggregatedAccountsState.value;
+    final totalAvailable = totalAccountsState.value > 0
+        ? totalAccountsState.value
+        : (pageData?.total ?? aggregatedAccounts.length);
+
+    final showInitialLoading =
+        accountsState.isLoading &&
+        aggregatedAccounts.isEmpty &&
+        !isRefreshing.value;
+    if (showInitialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (accountsState.hasError && aggregatedAccounts.isEmpty) {
+      final error = accountsState.error;
+      return _ErrorPlaceholder(
+        message: error?.toString() ?? '加载失败',
+        onRetry: () => ref.invalidate(adminAccountListProvider(request)),
+      );
+    }
+
+    final List<AdminAccount> accounts = [...aggregatedAccounts]
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    final departmentLabels = <String, String>{
+      for (final node in departmentNodes)
+        if (node.department.id.isNotEmpty)
+          node.department.id: node.department.name,
+    };
+    final classLabelsByDepartment = <String, Map<String, String>>{
+      for (final node in departmentNodes)
+        if (node.department.id.isNotEmpty)
+          node.department.id: {
+            for (final cls in node.classes)
+              if (cls.id.isNotEmpty) cls.id: cls.name,
+          },
+    };
+
+    var hasNoDepartment = false;
+    for (final account in accounts) {
+      final deptId = account.departmentId?.trim() ?? '';
+      if (deptId.isEmpty) {
+        hasNoDepartment = true;
+        continue;
+      }
+      final label = account.department?.trim();
+      if (label != null && label.isNotEmpty) {
+        departmentLabels.putIfAbsent(deptId, () => label);
+      }
+    }
+    final sortedDepartmentEntries = departmentLabels.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    Map<String, String> classLabels = {};
+    if (selectedDepartmentId != null && selectedDepartmentId.isNotEmpty) {
+      classLabels = Map<String, String>.from(
+        classLabelsByDepartment[selectedDepartmentId] ??
+            const <String, String>{},
+      );
+    }
+
+    var hasNoClass = false;
+    if (selectedDepartmentId != null && selectedDepartmentId.isNotEmpty) {
+      for (final account in accounts) {
+        if (account.departmentId != selectedDepartmentId) {
+          continue;
+        }
+        final clsId = account.classId?.trim() ?? '';
+        if (clsId.isEmpty) {
+          hasNoClass = true;
+          continue;
+        }
+        final label = account.className?.trim();
+        if (label != null && label.isNotEmpty) {
+          classLabels.putIfAbsent(clsId, () => label);
+        }
+      }
+    }
+    final sortedClassEntries = classLabels.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    final classDropdownEntries = <DropdownMenuEntry<String>>[];
+    if (selectedDepartmentId != null && selectedDepartmentId.isNotEmpty) {
+      classDropdownEntries.add(
+        const DropdownMenuEntry<String>(value: _kAllClasses, label: '全部班级'),
+      );
+      if (hasNoClass || classFilter.value == _kNoClass) {
+        if (!classDropdownEntries.any((entry) => entry.value == _kNoClass)) {
+          classDropdownEntries.add(
+            const DropdownMenuEntry<String>(value: _kNoClass, label: '未分配班级'),
+          );
+        }
+      }
+      for (final entry in sortedClassEntries) {
+        classDropdownEntries.add(
+          DropdownMenuEntry<String>(value: entry.key, label: entry.value),
+        );
+      }
+      if (classFilter.value != _kAllClasses &&
+          classFilter.value != _kNoClass &&
+          !classDropdownEntries.any(
+            (entry) => entry.value == classFilter.value,
+          )) {
+        classDropdownEntries.add(
+          DropdownMenuEntry<String>(
+            value: classFilter.value,
+            label: classLabels[classFilter.value] ?? '已选择班级',
+          ),
+        );
+      }
+    }
+
+    final normalizedQuery = debouncedQuery.value.toLowerCase();
+    final List<AdminAccount> filtered = accounts.where((account) {
       final matchesRole = switch (role.value) {
         _AccountRoleFilter.all => true,
-        _AccountRoleFilter.teachers =>
-          a.role == admin_data.AdminAccountRole.teacher,
-        _AccountRoleFilter.students =>
-          a.role == admin_data.AdminAccountRole.student,
+        _AccountRoleFilter.teachers => account.role == AdminAccountRole.teacher,
+        _AccountRoleFilter.students => account.role == AdminAccountRole.student,
       };
-      final matchesDepartment =
-          department.value == _kAllDepartments ||
-          a.department == department.value;
-      final matchesQuery = lowerQuery.isEmpty
+      final matchesDepartment = switch (department.value) {
+        _kAllDepartments => true,
+        _kNoDepartment =>
+          account.departmentId == null || account.departmentId!.isEmpty,
+        _ => account.departmentId == department.value,
+      };
+      final matchesClass = switch (classFilter.value) {
+        _kAllClasses => true,
+        _kNoClass => account.classId == null || account.classId!.isEmpty,
+        _ => account.classId == classFilter.value,
+      };
+      final matchesStatus = switch (statusFilter.value) {
+        _AccountStatusFilter.all => true,
+        _AccountStatusFilter.active =>
+          account.status == AdminAccountStatus.active,
+        _AccountStatusFilter.locked =>
+          account.status == AdminAccountStatus.locked,
+        _AccountStatusFilter.pendingReset =>
+          account.status == AdminAccountStatus.passwordResetRequired,
+      };
+      final matchesQuery = normalizedQuery.isEmpty
           ? true
-          : a.matchesQuery(query) ||
-                a.name.toLowerCase().contains(lowerQuery) ||
-                a.email.toLowerCase().contains(lowerQuery);
-      return matchesRole && matchesDepartment && matchesQuery;
-    }).toList()..sort((a, b) => a.name.compareTo(b.name));
+          : account.name.toLowerCase().contains(normalizedQuery) ||
+                account.identifier.toLowerCase().contains(normalizedQuery) ||
+                account.email.toLowerCase().contains(normalizedQuery);
+      return matchesRole &&
+          matchesDepartment &&
+          matchesClass &&
+          matchesStatus &&
+          matchesQuery;
+    }).toList();
 
     final metrics = _AccountMetrics.fromAccounts(filtered);
     final hasActiveFilters =
         role.value != _AccountRoleFilter.all ||
+        statusFilter.value != _AccountStatusFilter.all ||
         department.value != _kAllDepartments ||
-        query.isNotEmpty;
+        classFilter.value != _kAllClasses ||
+        debouncedQuery.value.isNotEmpty;
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Text('账号管理', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.insights_outlined,
-          title: '筛选结果概览',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                hasActiveFilters
-                    ? '共筛选到 ${metrics.total} 个账号'
-                    : '系统共包含 ${metrics.total} 个账号样本',
-              ),
-              const SizedBox(height: 12),
-              _AccountMetricsGrid(metrics: metrics),
-            ],
-          ),
+    final dropdownEntries = <DropdownMenuEntry<String>>[
+      const DropdownMenuEntry<String>(value: _kAllDepartments, label: '全部院系'),
+      if (hasNoDepartment)
+        const DropdownMenuEntry<String>(value: _kNoDepartment, label: '未分配院系'),
+      for (final entry in sortedDepartmentEntries)
+        DropdownMenuEntry<String>(value: entry.key, label: entry.value),
+    ];
+
+    if (department.value != _kAllDepartments &&
+        department.value != _kNoDepartment &&
+        !dropdownEntries.any((entry) => entry.value == department.value)) {
+      dropdownEntries.add(
+        DropdownMenuEntry<String>(
+          value: department.value,
+          label: departmentLabels[department.value] ?? '已选择院系',
         ),
-        const SizedBox(height: 16),
-        _AccountSectionCard(
-          icon: Icons.tune_outlined,
-          title: '筛选',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final f in _AccountRoleFilter.values)
-                    ChoiceChip(
-                      label: Text(_accountRoleFilterLabel(f)),
-                      selected: role.value == f,
-                      onSelected: (selected) {
-                        if (selected) {
-                          role.value = f;
-                        }
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              DropdownMenu<String>(
-                key: ValueKey(department.value),
-                initialSelection: department.value,
-                label: const Text('按院系统一筛选'),
-                leadingIcon: const Icon(Icons.account_tree_outlined),
-                onSelected: (value) {
-                  department.value = value ?? _kAllDepartments;
-                },
-                dropdownMenuEntries: [
-                  const DropdownMenuEntry<String>(
-                    value: _kAllDepartments,
-                    label: '全部院系',
-                  ),
-                  for (final dept in departments)
-                    DropdownMenuEntry<String>(value: dept, label: dept),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: '搜索账号',
-                  prefixIcon: Icon(Icons.search),
+      );
+    }
+
+    if (department.value == _kNoDepartment &&
+        !dropdownEntries.any((entry) => entry.value == _kNoDepartment)) {
+      dropdownEntries.insert(
+        1,
+        const DropdownMenuEntry<String>(value: _kNoDepartment, label: '未分配院系'),
+      );
+    }
+
+    final selectedDepartmentLabel = switch (department.value) {
+      _kAllDepartments => null,
+      _kNoDepartment => '未分配院系',
+      _ => departmentLabels[department.value] ?? '已选择院系',
+    };
+
+    final selectedClassLabel = switch (classFilter.value) {
+      _kAllClasses => null,
+      _kNoClass => '未分配班级',
+      _ => classLabels[classFilter.value] ?? '已选择班级',
+    };
+
+    final departmentChipLabel = department.value == _kNoDepartment
+        ? '未分配院系'
+        : selectedDepartmentLabel ?? '已选择院系';
+    final classChipLabel = classFilter.value == _kNoClass
+        ? '未分配班级'
+        : selectedClassLabel ?? '已选择班级';
+
+    final hasMore = accounts.length < totalAvailable;
+
+    Future<void> handleLoadMore() async {
+      if (isLoadingMore.value || accountsState.isLoading) {
+        return;
+      }
+      if (!hasMore) {
+        return;
+      }
+      final nextPage = lastCompletedPageRef.value + 1;
+      isLoadingMore.value = true;
+      loadMoreError.value = null;
+      requestedPage.value = nextPage;
+    }
+
+    useEffect(
+      () {
+        void maybeTriggerAutoLoad() {
+          if (!scrollController.hasClients) {
+            return;
+          }
+          if (!hasMore ||
+              isLoadingMore.value ||
+              accountsState.isLoading ||
+              loadMoreError.value != null) {
+            return;
+          }
+          final position = scrollController.position;
+          final remaining = position.maxScrollExtent - position.pixels;
+          if (remaining <= _kAutoLoadMoreThreshold) {
+            unawaited(handleLoadMore());
+          }
+        }
+
+        scrollController.addListener(maybeTriggerAutoLoad);
+        return () => scrollController.removeListener(maybeTriggerAutoLoad);
+      },
+      [
+        scrollController,
+        hasMore,
+        accountsState.isLoading,
+        isLoadingMore.value,
+        loadMoreError.value,
+      ],
+    );
+
+    useEffect(() {
+      final error = loadMoreError.value;
+      if (error == null) {
+        return null;
+      }
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(SnackBar(content: Text('加载更多失败：$error')));
+      return null;
+    }, [loadMoreError.value]);
+
+    Future<void> handleRefresh() async {
+      isRefreshing.value = true;
+      loadMoreError.value = null;
+      aggregatedAccountsState.value = const <AdminAccount>[];
+      totalAccountsState.value = 0;
+      lastCompletedPageRef.value = 0;
+      requestedPage.value = 1;
+      final refreshRequest = AdminAccountListRequest(
+        schoolId: schoolId,
+        role: selectedRole,
+        page: 1,
+        pageSize: pageSize,
+        query: debouncedQuery.value,
+        status: selectedStatus,
+        departmentId: selectedDepartmentId,
+        departmentScope: departmentScope,
+        classId: selectedClassId,
+        classScope: classScope,
+      );
+      try {
+        final _ = await ref.refresh(
+          adminAccountListProvider(refreshRequest).future,
+        );
+      } catch (_) {
+        // 错误由 accountsState 的 error 分支统一处理。
+      }
+    }
+
+    void updateAccountInState(AdminAccount updated) {
+      aggregatedAccountsState.value = [
+        for (final existing in aggregatedAccountsState.value)
+          if (existing.id == updated.id) updated else existing,
+      ];
+    }
+
+    void removeAccountFromState(String accountId) {
+      final next = [
+        for (final existing in aggregatedAccountsState.value)
+          if (existing.id != accountId) existing,
+      ];
+      aggregatedAccountsState.value = next;
+      if (totalAccountsState.value > 0) {
+        totalAccountsState.value = totalAccountsState.value - 1;
+      }
+    }
+
+    void resetFilters() {
+      FocusScope.of(context).unfocus();
+      if (role.value != _AccountRoleFilter.all) {
+        role.value = _AccountRoleFilter.all;
+      }
+      if (statusFilter.value != _AccountStatusFilter.all) {
+        statusFilter.value = _AccountStatusFilter.all;
+      }
+      if (department.value != _kAllDepartments) {
+        department.value = _kAllDepartments;
+      }
+      if (classFilter.value != _kAllClasses) {
+        classFilter.value = _kAllClasses;
+      }
+      if (queryController.text.isNotEmpty) {
+        queryController.clear();
+      }
+      if (debouncedQuery.value.isNotEmpty) {
+        debouncedQuery.value = '';
+      }
+    }
+
+    void showAccountDetails(AdminAccount account) {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        showDragHandle: true,
+        builder: (sheetContext) {
+          return _AccountDetailSheet(
+            account: account,
+            onAccountUpdated: updateAccountInState,
+            onAccountRemoved: removeAccountFromState,
+          );
+        },
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: handleRefresh,
+      child: ListView(
+        controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        children: [
+          Text('账号管理', style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          _AccountSectionCard(
+            icon: Icons.insights_outlined,
+            title: '筛选结果概览',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasActiveFilters
+                      ? '共筛选到 ${metrics.total} 个账号'
+                      : '系统共包含 $totalAvailable 个账号',
                 ),
-              ),
-              if (hasActiveFilters) ...[
                 const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.filter_alt_off_outlined),
-                    label: const Text('重置筛选'),
-                    onPressed: () {
-                      role.value = _AccountRoleFilter.all;
-                      department.value = _kAllDepartments;
-                      controller.clear();
-                      FocusScope.of(context).unfocus();
-                    },
+                _AccountMetricsGrid(metrics: metrics),
+                if (hasActiveFilters) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (role.value != _AccountRoleFilter.all)
+                        FilterChip(
+                          label: Text(
+                            '角色：${_accountRoleFilterLabel(role.value)}',
+                          ),
+                          onDeleted: () {
+                            role.value = _AccountRoleFilter.all;
+                          },
+                        ),
+                      if (statusFilter.value != _AccountStatusFilter.all)
+                        FilterChip(
+                          label: Text(
+                            '状态：${_accountStatusFilterLabel(statusFilter.value)}',
+                          ),
+                          onDeleted: () {
+                            statusFilter.value = _AccountStatusFilter.all;
+                          },
+                        ),
+                      if (department.value != _kAllDepartments)
+                        FilterChip(
+                          label: Text('院系：$departmentChipLabel'),
+                          onDeleted: () {
+                            department.value = _kAllDepartments;
+                            classFilter.value = _kAllClasses;
+                          },
+                        ),
+                      if (classFilter.value != _kAllClasses)
+                        FilterChip(
+                          label: Text('班级：$classChipLabel'),
+                          onDeleted: () {
+                            classFilter.value = _kAllClasses;
+                          },
+                        ),
+                      if (debouncedQuery.value.isNotEmpty)
+                        FilterChip(
+                          label: Text('关键词：${debouncedQuery.value}'),
+                          onDeleted: () {
+                            queryController.clear();
+                            debouncedQuery.value = '';
+                          },
+                        ),
+                    ],
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        _AccountSectionCard(
-          icon: Icons.manage_accounts_outlined,
-          title: '账号列表',
-          child: filtered.isEmpty
-              ? _EmptyPlaceholder(
-                  title: '暂无账号',
-                  description: hasActiveFilters
-                      ? '没有符合筛选条件的账号，请调整筛选条件后再试。'
-                      : '系统中尚未录入账号样本。',
-                )
-              : Column(
+          const SizedBox(height: 16),
+          _AccountSectionCard(
+            icon: Icons.tune_outlined,
+            title: '筛选',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: queryController,
+                  decoration: InputDecoration(
+                    labelText: '搜索账号',
+                    hintText: '支持姓名、学号/工号或邮箱关键词',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: queryController.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: '清空搜索',
+                            onPressed: () {
+                              queryController.clear();
+                              debouncedQuery.value = '';
+                            },
+                            icon: const Icon(Icons.close),
+                          ),
+                  ),
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) {
+                    debouncedQuery.value = queryController.text.trim();
+                  },
+                ),
+                const SizedBox(height: 12),
+                if (hasActiveFilters) ...[
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: resetFilters,
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('重置筛选'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    for (final a in filtered)
-                      _AccountTile(
-                        account: a,
-                        onFeatureTap: (f) => _showDevelopmentToast(context, f),
+                    for (final f in _AccountRoleFilter.values)
+                      ChoiceChip(
+                        label: Text(_accountRoleFilterLabel(f)),
+                        selected: role.value == f,
+                        onSelected: (selected) {
+                          if (selected) {
+                            role.value = f;
+                          }
+                        },
                       ),
                   ],
                 ),
-        ),
-        if (invites.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final f in _AccountStatusFilter.values)
+                      ChoiceChip(
+                        label: Text(_accountStatusFilterLabel(f)),
+                        selected: statusFilter.value == f,
+                        onSelected: (selected) {
+                          if (selected) {
+                            statusFilter.value = f;
+                          }
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownMenu<String>(
+                  key: ValueKey(department.value),
+                  initialSelection: department.value,
+                  label: const Text('按院系统一筛选'),
+                  leadingIcon: const Icon(Icons.account_tree_outlined),
+                  onSelected: (value) {
+                    department.value = value ?? _kAllDepartments;
+                    classFilter.value = _kAllClasses;
+                  },
+                  dropdownMenuEntries: dropdownEntries,
+                ),
+                if (department.value != _kAllDepartments &&
+                    department.value != _kNoDepartment) ...[
+                  const SizedBox(height: 12),
+                  DropdownMenu<String>(
+                    key: ValueKey('${department.value}|${classFilter.value}'),
+                    initialSelection: classFilter.value,
+                    label: const Text('按班级筛选'),
+                    leadingIcon: const Icon(Icons.group_outlined),
+                    onSelected: (value) {
+                      classFilter.value = value ?? _kAllClasses;
+                    },
+                    dropdownMenuEntries: classDropdownEntries,
+                  ),
+                ],
+              ],
+            ),
+          ),
           const SizedBox(height: 16),
           _AccountSectionCard(
-            icon: Icons.mark_email_unread_outlined,
-            title: '待处理邀请',
+            icon: Icons.manage_accounts_outlined,
+            title: '账号列表',
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                for (final invite in invites)
-                  _AccountInviteTile(
-                    invite: invite,
-                    onFeatureTap: (feature) =>
-                        _showDevelopmentToast(context, feature),
+                if (filtered.isEmpty)
+                  _EmptyPlaceholder(
+                    title: '暂无账号',
+                    description: hasActiveFilters
+                        ? '没有符合筛选条件的账号，请调整筛选条件后再试。'
+                        : '暂未查询到账号数据，稍后再试或检查连接。',
+                  )
+                else
+                  Column(
+                    children: [
+                      for (final account in filtered)
+                        _AccountTile(
+                          account: account,
+                          onOpenDetails: () => showAccountDetails(account),
+                        ),
+                    ],
+                  ),
+                if (loadMoreError.value != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      '加载更多失败：${loadMoreError.value}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                if (hasMore || isLoadingMore.value)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: OutlinedButton.icon(
+                      onPressed: isLoadingMore.value ? null : handleLoadMore,
+                      icon: isLoadingMore.value
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.unfold_more),
+                      label: Text(isLoadingMore.value ? '加载中…' : '加载更多'),
+                    ),
                   ),
               ],
             ),
           ),
+          if (invites.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _AccountSectionCard(
+              icon: Icons.mark_email_unread_outlined,
+              title: '待处理邀请',
+              child: Column(
+                children: [
+                  for (final invite in invites)
+                    _AccountInviteTile(
+                      invite: invite,
+                      onFeatureTap: (feature) =>
+                          _showDevelopmentToast(context, feature),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -248,53 +913,1121 @@ class AdminStructuresPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tree = ref.watch(adminDepartmentTreeProvider);
-    final query = useState('');
+    final viewPreferences = ref.watch(adminDepartmentViewPreferencesProvider);
+    final filterController = useTextEditingController(
+      text: viewPreferences.query,
+    );
+    useListenable(filterController);
+    final authState = ref.watch(authStateProvider);
+    final schoolId = authState.account?.schoolId ?? '';
+    final canManageStructures =
+        authState.isAuthenticated && schoolId.isNotEmpty;
+    final baseTree = ref.watch(adminDepartmentTreeProvider);
+    final allDepartments = baseTree.maybeWhen(
+      data: (nodes) => nodes.map((node) => node.department).toList(),
+      orElse: () => <Department>[],
+    );
+    final expandedDepartments = ref.watch(adminExpandedDepartmentsProvider);
+    final filteredTree = ref.watch(adminFilteredDepartmentTreeProvider);
+    final metrics = ref.watch(adminFilteredDepartmentMetricsProvider);
+    final filterValue = viewPreferences.query;
+    final onlyEmpty = viewPreferences.onlyEmpty;
+    final normalizedQuery = filterController.text.trim().toLowerCase();
+    final highlightedDepartmentId = useState<String?>(null);
+    final highlightTimer = useRef<Timer?>(null);
+    final scrollController = useScrollController();
+    final departmentItemKeys = useRef<Map<String, GlobalKey>>(
+      <String, GlobalKey>{},
+    );
+    final lastScrolledQuery = useRef<String>('');
 
-    return tree.when(
-      data: (nodes) {
-        final normalized = query.value.trim().toLowerCase();
-        final filtered = nodes.where((node) {
-          if (normalized.isEmpty) return true;
-          final departmentMatch = node.department.name.toLowerCase().contains(
-            normalized,
+    void scheduleHighlight(String? departmentId) {
+      if (departmentId == null || departmentId.isEmpty) {
+        return;
+      }
+      highlightTimer.value?.cancel();
+      highlightedDepartmentId.value = departmentId;
+      highlightTimer.value = Timer(const Duration(seconds: 3), () {
+        if (!context.mounted) return;
+        highlightedDepartmentId.value = null;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final key = departmentItemKeys.value[departmentId];
+        final targetContext = key?.currentContext;
+        if (targetContext == null) {
+          return;
+        }
+        await Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 360),
+          curve: Curves.easeInOut,
+          alignment: 0.08,
+        );
+      });
+    }
+
+    useEffect(() {
+      if (filterController.text != filterValue) {
+        filterController.text = filterValue;
+      }
+      return null;
+    }, [filterValue]);
+
+    useEffect(() {
+      final data = baseTree.asData?.value;
+      if (data != null) {
+        ref
+            .read(adminExpandedDepartmentsProvider.notifier)
+            .pruneToIds(data.map((node) => node.department.id));
+      }
+      return null;
+    }, [baseTree]);
+
+    useEffect(() {
+      if (!canManageStructures) {
+        ref
+            .read(adminExpandedDepartmentsProvider.notifier)
+            .clear(persist: false);
+      }
+      return null;
+    }, [canManageStructures]);
+
+    useEffect(() {
+      if (normalizedQuery.isEmpty) {
+        lastScrolledQuery.value = '';
+        return null;
+      }
+      final nodes = filteredTree.asData?.value;
+      if (nodes != null) {
+        final notifier = ref.read(adminExpandedDepartmentsProvider.notifier);
+        for (final node in nodes) {
+          notifier.setExpanded(node.department.id, true);
+        }
+      }
+      return null;
+    }, [filteredTree, normalizedQuery]);
+
+    useEffect(() {
+      if (normalizedQuery.isEmpty) {
+        lastScrolledQuery.value = '';
+        return null;
+      }
+      final nodes = filteredTree.asData?.value;
+      if (nodes == null || nodes.isEmpty) {
+        return null;
+      }
+      if (lastScrolledQuery.value == normalizedQuery) {
+        return null;
+      }
+      lastScrolledQuery.value = normalizedQuery;
+      scheduleHighlight(nodes.first.department.id);
+      return null;
+    }, [filteredTree, normalizedQuery]);
+
+    useEffect(() {
+      return () {
+        highlightTimer.value?.cancel();
+      };
+    }, const []);
+
+    Future<void> refreshStructures() async {
+      await ref.read(adminDepartmentTreeProvider.notifier).refresh();
+      ref.invalidate(adminFilteredDepartmentTreeProvider);
+    }
+
+    bool updateDepartmentTreeLocally(
+      List<DepartmentNode> Function(List<DepartmentNode>) transform,
+    ) {
+      final applied = ref
+          .read(adminDepartmentTreeProvider.notifier)
+          .updateTree(transform);
+      if (applied) {
+        ref.invalidate(adminFilteredDepartmentTreeProvider);
+        final currentNodes = ref
+            .read(adminDepartmentTreeProvider)
+            .maybeWhen<List<DepartmentNode>?>(
+              data: (value) => value,
+              orElse: () => null,
+            );
+        if (currentNodes != null) {
+          ref
+              .read(adminExpandedDepartmentsProvider.notifier)
+              .pruneToIds(currentNodes.map((node) => node.department.id));
+        }
+      }
+      return applied;
+    }
+
+    void expandAllDepartments(Iterable<DepartmentNode> nodes) {
+      final notifier = ref.read(adminExpandedDepartmentsProvider.notifier);
+      notifier.setAll(nodes.map((node) => node.department.id));
+    }
+
+    void collapseAllDepartments() {
+      ref.read(adminExpandedDepartmentsProvider.notifier).clear();
+    }
+
+    Future<void> showCreateDepartmentDialog() async {
+      if (!canManageStructures) return;
+
+      final nameController = TextEditingController();
+      var submitting = false;
+      String? errorText;
+
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: !submitting,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setState) {
+              return AlertDialog(
+                title: const Text('新增院系'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: '院系名称',
+                        hintText: '例如：计算机学院',
+                        errorText: errorText,
+                      ),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) {
+                        if (!submitting) {
+                          setState(() {
+                            errorText = null;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () {
+                            Navigator.of(dialogCtx).pop(false);
+                          },
+                    child: const Text('取消'),
+                  ),
+                  FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            if (name.isEmpty) {
+                              setState(() {
+                                errorText = '请输入院系名称';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              submitting = true;
+                              errorText = null;
+                            });
+                            try {
+                              var applied = false;
+                              final departmentId = await ref
+                                  .read(adminRepositoryProvider)
+                                  .createDepartment(
+                                    schoolId: schoolId,
+                                    name: name,
+                                  );
+                              if (departmentId.isNotEmpty) {
+                                final department = Department(
+                                  id: departmentId,
+                                  schoolId: schoolId,
+                                  name: name,
+                                );
+                                var mutated = false;
+                                final updated = updateDepartmentTreeLocally((
+                                  nodes,
+                                ) {
+                                  final updatedNodes = <DepartmentNode>[];
+                                  for (final existing in nodes) {
+                                    if (existing.department.id ==
+                                        department.id) {
+                                      mutated = true;
+                                      final classes = [...existing.classes]
+                                        ..sort(_compareClassInfos);
+                                      updatedNodes.add(
+                                        existing.copyWith(
+                                          department: department,
+                                          classes: classes,
+                                        ),
+                                      );
+                                    } else {
+                                      updatedNodes.add(existing);
+                                    }
+                                  }
+                                  if (!mutated) {
+                                    mutated = true;
+                                    updatedNodes.add(
+                                      DepartmentNode(
+                                        department: department,
+                                        classes: const [],
+                                      ),
+                                    );
+                                  }
+                                  updatedNodes.sort(_compareDepartmentNodes);
+                                  return updatedNodes;
+                                });
+                                applied = updated && mutated;
+                              }
+                              if (applied) {
+                                ref
+                                    .read(
+                                      adminExpandedDepartmentsProvider.notifier,
+                                    )
+                                    .setExpanded(departmentId, true);
+                              } else {
+                                await refreshStructures();
+                                ref
+                                    .read(
+                                      adminExpandedDepartmentsProvider.notifier,
+                                    )
+                                    .setExpanded(departmentId, true);
+                              }
+                              scheduleHighlight(departmentId);
+                              if (!dialogCtx.mounted) return;
+                              Navigator.of(dialogCtx).pop(true);
+                            } catch (error, stackTrace) {
+                              debugPrint('创建院系异常: $error\n$stackTrace');
+                              setState(() {
+                                errorText = '创建失败：${error.toString()}';
+                                submitting = false;
+                              });
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('创建'),
+                  ),
+                ],
+              );
+            },
           );
-          final classMatch = node.classes.any((clazz) {
-            final grade = clazz.grade?.toLowerCase() ?? '';
-            final description = clazz.description?.toLowerCase() ?? '';
-            return clazz.name.toLowerCase().contains(normalized) ||
-                grade.contains(normalized) ||
-                description.contains(normalized);
-          });
-          return departmentMatch || classMatch;
-        }).toList();
+        },
+      );
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('院系与班级', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                labelText: '搜索院系或班级',
+      if (result == true && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('院系创建成功')));
+      }
+    }
+
+    Future<void> showCreateClassDialog() async {
+      if (!canManageStructures) return;
+      final departments = allDepartments;
+      if (departments.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('请先创建院系，再添加班级。')));
+        }
+        return;
+      }
+
+      final nameController = TextEditingController();
+      var submitting = false;
+      String? selectedDepartmentId = departments.first.id;
+      String? errorText;
+
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: !submitting,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setState) {
+              return AlertDialog(
+                title: const Text('新增班级'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedDepartmentId,
+                      decoration: const InputDecoration(labelText: '所属院系'),
+                      items: [
+                        for (final dept in departments)
+                          DropdownMenuItem<String>(
+                            value: dept.id,
+                            child: Text('${dept.name}（${dept.id}）'),
+                          ),
+                      ],
+                      onChanged: submitting
+                          ? null
+                          : (value) {
+                              setState(() {
+                                selectedDepartmentId = value;
+                              });
+                            },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: '班级名称',
+                        hintText: '例如：22 级 1 班',
+                        errorText: errorText,
+                      ),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) {
+                        if (!submitting) {
+                          setState(() {
+                            errorText = null;
+                          });
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () {
+                            Navigator.of(dialogCtx).pop(false);
+                          },
+                    child: const Text('取消'),
+                  ),
+                  FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final departmentId = selectedDepartmentId;
+                            final name = nameController.text.trim();
+                            if (departmentId == null || departmentId.isEmpty) {
+                              setState(() {
+                                errorText = '请选择院系';
+                              });
+                              return;
+                            }
+                            if (name.isEmpty) {
+                              setState(() {
+                                errorText = '请输入班级名称';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              submitting = true;
+                              errorText = null;
+                            });
+                            try {
+                              var applied = false;
+                              final classId = await ref
+                                  .read(adminRepositoryProvider)
+                                  .createClass(
+                                    schoolId: schoolId,
+                                    departmentId: departmentId,
+                                    name: name,
+                                  );
+                              if (classId.isNotEmpty) {
+                                final newClass = ClassInfo(
+                                  id: classId,
+                                  departmentId: departmentId,
+                                  name: name,
+                                );
+                                var inserted = false;
+                                final updated = updateDepartmentTreeLocally((
+                                  nodes,
+                                ) {
+                                  final updatedNodes = <DepartmentNode>[];
+                                  for (final existing in nodes) {
+                                    if (existing.department.id ==
+                                        departmentId) {
+                                      inserted = true;
+                                      final classes = [
+                                        ...existing.classes,
+                                        newClass,
+                                      ]..sort(_compareClassInfos);
+                                      updatedNodes.add(
+                                        existing.copyWith(classes: classes),
+                                      );
+                                    } else {
+                                      updatedNodes.add(existing);
+                                    }
+                                  }
+                                  if (!inserted) {
+                                    return nodes;
+                                  }
+                                  updatedNodes.sort(_compareDepartmentNodes);
+                                  return updatedNodes;
+                                });
+                                applied = updated && inserted;
+                              }
+                              if (applied) {
+                                ref
+                                    .read(
+                                      adminExpandedDepartmentsProvider.notifier,
+                                    )
+                                    .setExpanded(departmentId, true);
+                              } else {
+                                await refreshStructures();
+                                ref
+                                    .read(
+                                      adminExpandedDepartmentsProvider.notifier,
+                                    )
+                                    .setExpanded(departmentId, true);
+                              }
+                              scheduleHighlight(departmentId);
+                              if (!dialogCtx.mounted) return;
+                              Navigator.of(dialogCtx).pop(true);
+                            } catch (error, stackTrace) {
+                              debugPrint('创建班级异常: $error\n$stackTrace');
+                              setState(() {
+                                errorText = '创建失败：${error.toString()}';
+                                submitting = false;
+                              });
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('创建'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (result == true && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('班级创建成功')));
+      }
+    }
+
+    Future<void> showRenameDepartmentDialog(DepartmentNode node) async {
+      if (!canManageStructures) return;
+
+      final nameController = TextEditingController(text: node.department.name);
+      var submitting = false;
+      String? errorText;
+
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: !submitting,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setState) {
+              return AlertDialog(
+                title: const Text('重命名院系'),
+                content: TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: '新的院系名称',
+                    errorText: errorText,
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) {
+                    if (!submitting) {
+                      setState(() {
+                        errorText = null;
+                      });
+                    }
+                  },
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () {
+                            Navigator.of(dialogCtx).pop(false);
+                          },
+                    child: const Text('取消'),
+                  ),
+                  FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            if (name.isEmpty) {
+                              setState(() {
+                                errorText = '请输入院系名称';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              submitting = true;
+                              errorText = null;
+                            });
+                            try {
+                              final updatedDepartment = await ref
+                                  .read(adminRepositoryProvider)
+                                  .updateDepartment(
+                                    schoolId: schoolId,
+                                    departmentId: node.department.id,
+                                    name: name,
+                                  );
+                              final applied = updateDepartmentTreeLocally((
+                                nodes,
+                              ) {
+                                var changed = false;
+                                final updatedNodes = <DepartmentNode>[];
+                                for (final existing in nodes) {
+                                  if (existing.department.id ==
+                                      updatedDepartment.id) {
+                                    changed = true;
+                                    final classes = [...existing.classes]
+                                      ..sort(_compareClassInfos);
+                                    updatedNodes.add(
+                                      existing.copyWith(
+                                        department: updatedDepartment,
+                                        classes: classes,
+                                      ),
+                                    );
+                                  } else {
+                                    updatedNodes.add(existing);
+                                  }
+                                }
+                                if (!changed) {
+                                  return nodes;
+                                }
+                                updatedNodes.sort(_compareDepartmentNodes);
+                                return updatedNodes;
+                              });
+                              if (!applied) {
+                                await refreshStructures();
+                              }
+                              scheduleHighlight(updatedDepartment.id);
+                              if (!dialogCtx.mounted) return;
+                              Navigator.of(dialogCtx).pop(true);
+                            } catch (error) {
+                              setState(() {
+                                errorText = error.toString();
+                                submitting = false;
+                              });
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('保存'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (result == true && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('院系名称已更新')));
+      }
+    }
+
+    Future<void> confirmDeleteDepartment(DepartmentNode node) async {
+      if (!canManageStructures) return;
+      if (node.classes.isNotEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('请先删除该院系下的所有班级。')));
+        }
+        return;
+      }
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('删除院系'),
+            content: Text('确定要删除院系“${node.department.name}”吗？此操作不可恢复。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
               ),
-              onChanged: (value) => query.value = value,
-            ),
-            const SizedBox(height: 12),
-            if (filtered.isEmpty)
-              const _EmptyPlaceholder(
-                title: '暂无匹配结果',
-                description: '尝试调整关键词，或检查是否创建了相关院系/班级。',
-              )
-            else
-              for (final node in filtered)
-                _DepartmentExpansion(node: node, query: normalized),
-          ],
+              FilledButton.tonal(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: FilledButton.styleFrom(
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onErrorContainer,
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                ),
+                child: const Text('确认删除'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmed == true) {
+        try {
+          await ref
+              .read(adminRepositoryProvider)
+              .deleteDepartment(
+                schoolId: schoolId,
+                departmentId: node.department.id,
+              );
+          final applied = updateDepartmentTreeLocally((nodes) {
+            final filtered = nodes
+                .where(
+                  (existing) => existing.department.id != node.department.id,
+                )
+                .toList();
+            if (filtered.length == nodes.length) {
+              return nodes;
+            }
+            filtered.sort(_compareDepartmentNodes);
+            return filtered;
+          });
+          if (!applied) {
+            await refreshStructures();
+          }
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('院系已删除')));
+          }
+        } catch (error) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('删除失败：${error.toString()}')));
+          }
+        }
+      }
+    }
+
+    Future<void> showRenameClassDialog(
+      DepartmentNode node,
+      ClassInfo clazz,
+    ) async {
+      if (!canManageStructures) return;
+
+      final nameController = TextEditingController(text: clazz.name);
+      var submitting = false;
+      String? errorText;
+
+      final result = await showDialog<bool>(
+        context: context,
+        barrierDismissible: !submitting,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setState) {
+              return AlertDialog(
+                title: Text('重命名班级（${node.department.name}）'),
+                content: TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: '新的班级名称',
+                    errorText: errorText,
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) {
+                    if (!submitting) {
+                      setState(() {
+                        errorText = null;
+                      });
+                    }
+                  },
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () {
+                            Navigator.of(dialogCtx).pop(false);
+                          },
+                    child: const Text('取消'),
+                  ),
+                  FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            final name = nameController.text.trim();
+                            if (name.isEmpty) {
+                              setState(() {
+                                errorText = '请输入班级名称';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              submitting = true;
+                              errorText = null;
+                            });
+                            try {
+                              final updatedClass = await ref
+                                  .read(adminRepositoryProvider)
+                                  .updateClass(
+                                    schoolId: schoolId,
+                                    classId: clazz.id,
+                                    name: name,
+                                  );
+                              final applied = updateDepartmentTreeLocally((
+                                nodes,
+                              ) {
+                                var nodeUpdated = false;
+                                final updatedNodes = <DepartmentNode>[];
+                                for (final existing in nodes) {
+                                  if (!nodeUpdated &&
+                                      existing.department.id ==
+                                          updatedClass.departmentId) {
+                                    final classes = <ClassInfo>[];
+                                    var classUpdated = false;
+                                    for (final item in existing.classes) {
+                                      if (item.id == updatedClass.id) {
+                                        classUpdated = true;
+                                        classes.add(updatedClass);
+                                      } else {
+                                        classes.add(item);
+                                      }
+                                    }
+                                    if (!classUpdated) {
+                                      return nodes;
+                                    }
+                                    classes.sort(_compareClassInfos);
+                                    updatedNodes.add(
+                                      existing.copyWith(classes: classes),
+                                    );
+                                    nodeUpdated = true;
+                                  } else {
+                                    updatedNodes.add(existing);
+                                  }
+                                }
+                                if (!nodeUpdated) {
+                                  return nodes;
+                                }
+                                updatedNodes.sort(_compareDepartmentNodes);
+                                return updatedNodes;
+                              });
+                              if (!applied) {
+                                await refreshStructures();
+                              }
+                              scheduleHighlight(updatedClass.departmentId);
+                              if (!dialogCtx.mounted) return;
+                              Navigator.of(dialogCtx).pop(true);
+                            } catch (error) {
+                              setState(() {
+                                errorText = error.toString();
+                                submitting = false;
+                              });
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('保存'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (result == true && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('班级名称已更新')));
+      }
+    }
+
+    Future<void> confirmDeleteClass(
+      DepartmentNode node,
+      ClassInfo clazz,
+    ) async {
+      if (!canManageStructures) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('删除班级'),
+            content: Text('确定要删除班级“${clazz.name}”吗？此操作不可恢复。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton.tonal(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: FilledButton.styleFrom(
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onErrorContainer,
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                ),
+                child: const Text('确认删除'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmed == true) {
+        try {
+          await ref
+              .read(adminRepositoryProvider)
+              .deleteClass(schoolId: schoolId, classId: clazz.id);
+          final applied = updateDepartmentTreeLocally((nodes) {
+            final updatedNodes = <DepartmentNode>[];
+            var nodeUpdated = false;
+            for (final existing in nodes) {
+              if (!nodeUpdated &&
+                  existing.department.id == node.department.id) {
+                final classes = [
+                  for (final item in existing.classes)
+                    if (item.id != clazz.id) item,
+                ];
+                if (classes.length == existing.classes.length) {
+                  return nodes;
+                }
+                classes.sort(_compareClassInfos);
+                updatedNodes.add(existing.copyWith(classes: classes));
+                nodeUpdated = true;
+              } else {
+                updatedNodes.add(existing);
+              }
+            }
+            if (!nodeUpdated) {
+              return nodes;
+            }
+            updatedNodes.sort(_compareDepartmentNodes);
+            return updatedNodes;
+          });
+          if (!applied) {
+            await refreshStructures();
+          }
+          scheduleHighlight(node.department.id);
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('班级已删除')));
+          }
+        } catch (error) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('删除失败：${error.toString()}')));
+          }
+        }
+      }
+    }
+
+    return filteredTree.when(
+      data: (nodes) {
+        final normalized = normalizedQuery;
+        final metricsValue = metrics.maybeWhen(
+          data: (value) => value,
+          orElse: () => null,
+        );
+        final canToggleBulkExpansion = normalized.isEmpty;
+        final allVisibleExpanded =
+            canToggleBulkExpansion &&
+            nodes.isNotEmpty &&
+            nodes.every(
+              (node) => expandedDepartments.contains(node.department.id),
+            );
+        final canCollapseAny =
+            canToggleBulkExpansion && expandedDepartments.isNotEmpty;
+
+        return RefreshIndicator(
+          onRefresh: refreshStructures,
+          child: ListView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text('院系与班级', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: canManageStructures
+                        ? () {
+                            showCreateDepartmentDialog();
+                          }
+                        : null,
+                    icon: const Icon(Icons.domain_add_outlined),
+                    label: const Text('新增院系'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: canManageStructures && allDepartments.isNotEmpty
+                        ? () {
+                            showCreateClassDialog();
+                          }
+                        : null,
+                    icon: const Icon(Icons.group_add_outlined),
+                    label: const Text('新增班级'),
+                  ),
+                ],
+              ),
+              if (!canManageStructures) ...[
+                const SizedBox(height: 12),
+                Text(
+                  '需登录且拥有学校信息后才能创建院系与班级。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              if (metricsValue != null)
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _AdminStatsCard(
+                      icon: Icons.apartment_outlined,
+                      title: '筛选院系',
+                      value: metricsValue.departmentCount.toString(),
+                      subtitle: '符合条件的院系数量。',
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    _AdminStatsCard(
+                      icon: Icons.class_outlined,
+                      title: '筛选班级',
+                      value: metricsValue.classCount.toString(),
+                      subtitle: '这些院系下的班级合计。',
+                      color: Theme.of(context).colorScheme.secondary,
+                    ),
+                    _AdminStatsCard(
+                      icon: Icons.hourglass_empty_outlined,
+                      title: '暂无班级',
+                      value: metricsValue.emptyDepartmentCount.toString(),
+                      subtitle: '仍未配置班级的院系数。',
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                  ],
+                ),
+              if (metricsValue != null) const SizedBox(height: 12),
+              TextField(
+                controller: filterController,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  labelText: '搜索院系或班级',
+                  suffixIcon: filterController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: '清空搜索',
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            ref
+                                .read(
+                                  adminDepartmentViewPreferencesProvider
+                                      .notifier,
+                                )
+                                .setQuery('');
+                          },
+                        ),
+                ),
+                onChanged: (value) => ref
+                    .read(adminDepartmentViewPreferencesProvider.notifier)
+                    .setQuery(value),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  FilterChip(
+                    label: const Text('仅显示未配置班级'),
+                    selected: onlyEmpty,
+                    onSelected: (selected) => ref
+                        .read(adminDepartmentViewPreferencesProvider.notifier)
+                        .setOnlyEmpty(selected),
+                  ),
+                  if (canToggleBulkExpansion && nodes.isNotEmpty) ...[
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.unfold_more),
+                      label: const Text('展开全部'),
+                      onPressed: allVisibleExpanded
+                          ? null
+                          : () => expandAllDepartments(nodes),
+                    ),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.unfold_less),
+                      label: const Text('折叠全部'),
+                      onPressed: canCollapseAny
+                          ? () => collapseAllDepartments()
+                          : null,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (nodes.isEmpty)
+                const _EmptyPlaceholder(
+                  title: '暂无匹配结果',
+                  description: '尝试调整关键词或取消筛选条件后再试。',
+                )
+              else
+                ...(() {
+                  final visibleIds = {
+                    for (final node in nodes) node.department.id,
+                  };
+                  departmentItemKeys.value.removeWhere(
+                    (key, _) => !visibleIds.contains(key),
+                  );
+                  return nodes.map((node) {
+                    final key = departmentItemKeys.value.putIfAbsent(
+                      node.department.id,
+                      () => GlobalKey(),
+                    );
+                    return _DepartmentExpansion(
+                      key: key,
+                      node: node,
+                      query: normalized,
+                      canManage: canManageStructures,
+                      initiallyExpanded: expandedDepartments.contains(
+                        node.department.id,
+                      ),
+                      highlighted:
+                          highlightedDepartmentId.value == node.department.id,
+                      onExpansionChanged: (isExpanded) {
+                        ref
+                            .read(adminExpandedDepartmentsProvider.notifier)
+                            .setExpanded(node.department.id, isExpanded);
+                      },
+                      onRenameDepartment: showRenameDepartmentDialog,
+                      onDeleteDepartment: confirmDeleteDepartment,
+                      onRenameClass: showRenameClassDialog,
+                      onDeleteClass: confirmDeleteClass,
+                    );
+                  }).toList();
+                })(),
+            ],
+          ),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorPlaceholder(message: e.toString(), onRetry: () {}),
+      error: (e, _) => _ErrorPlaceholder(
+        message: e.toString(),
+        onRetry: () {
+          ref.invalidate(adminDepartmentTreeProvider);
+        },
+      ),
     );
   }
 }
@@ -578,13 +2311,49 @@ class _ErrorPlaceholder extends StatelessWidget {
 }
 
 class _DepartmentExpansion extends StatelessWidget {
-  const _DepartmentExpansion({required this.node, required this.query});
+  const _DepartmentExpansion({
+    super.key,
+    required this.node,
+    required this.query,
+    required this.canManage,
+    required this.initiallyExpanded,
+    required this.highlighted,
+    required this.onExpansionChanged,
+    required this.onRenameDepartment,
+    required this.onDeleteDepartment,
+    required this.onRenameClass,
+    required this.onDeleteClass,
+  });
+
   final DepartmentNode node;
   final String query;
+  final bool canManage;
+  final bool initiallyExpanded;
+  final bool highlighted;
+  final ValueChanged<bool> onExpansionChanged;
+  final Future<void> Function(DepartmentNode) onRenameDepartment;
+  final Future<void> Function(DepartmentNode) onDeleteDepartment;
+  final Future<void> Function(DepartmentNode, ClassInfo) onRenameClass;
+  final Future<void> Function(DepartmentNode, ClassInfo) onDeleteClass;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final departmentTitleStyle = theme.textTheme.titleMedium;
+    final departmentHighlightStyle = departmentTitleStyle?.copyWith(
+      color: theme.colorScheme.primary,
+      fontWeight: FontWeight.w600,
+    );
+    final classTitleStyle = theme.textTheme.bodyLarge;
+    final classHighlightStyle = classTitleStyle?.copyWith(
+      color: theme.colorScheme.primary,
+      fontWeight: FontWeight.w600,
+    );
+    final classSubtitleStyle = theme.textTheme.bodySmall;
+    final classSubtitleHighlightStyle = classSubtitleStyle?.copyWith(
+      color: theme.colorScheme.primary,
+      fontWeight: FontWeight.w600,
+    );
     final normalized = query.trim().toLowerCase();
     final departmentMatches = normalized.isEmpty
         ? true
@@ -599,6 +2368,11 @@ class _DepartmentExpansion extends StatelessWidget {
                 description.contains(normalized);
           }).toList();
 
+    final shouldExpandForQuery =
+        normalized.isNotEmpty &&
+        (departmentMatches || filteredClasses.isNotEmpty);
+    final expanded = shouldExpandForQuery ? true : initiallyExpanded;
+
     final children = filteredClasses.isEmpty
         ? <Widget>[
             ListTile(
@@ -612,154 +2386,780 @@ class _DepartmentExpansion extends StatelessWidget {
         : filteredClasses
               .map(
                 (clazz) => ListTile(
-                  title: Text(clazz.name),
-                  subtitle: Text(_buildClassSubtitle(clazz)),
+                  title: Text.rich(
+                    TextSpan(
+                      children: _buildHighlightedSpans(
+                        clazz.name,
+                        normalized,
+                        classTitleStyle,
+                        classHighlightStyle,
+                      ),
+                    ),
+                    style: classTitleStyle,
+                  ),
+                  subtitle: Text.rich(
+                    TextSpan(
+                      children: _buildClassSubtitleSpans(
+                        clazz,
+                        normalized,
+                        classSubtitleStyle,
+                        classSubtitleHighlightStyle,
+                      ),
+                    ),
+                    style: classSubtitleStyle,
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    tooltip: '管理班级',
+                    enabled: canManage,
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'rename':
+                          unawaited(onRenameClass(node, clazz));
+                          break;
+                        case 'delete':
+                          unawaited(onDeleteClass(node, clazz));
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'rename',
+                        child: Text('重命名班级'),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text(
+                          '删除班级',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
               .toList();
 
-    return Card(
-      elevation: 0,
-      child: ExpansionTile(
-        title: Text(node.department.name, style: theme.textTheme.titleMedium),
-        subtitle: Text(
-          '院系ID：${node.department.id} · 学校：${node.department.schoolId}',
+    final highlightColor = theme.colorScheme.secondaryContainer.withValues(
+      alpha: highlighted ? 0.5 : 0.0,
+    );
+    final surfaceColor = theme.colorScheme.surface;
+    final borderRadius = BorderRadius.circular(12);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: highlighted ? highlightColor : surfaceColor,
+        borderRadius: borderRadius,
+        border: highlighted
+            ? Border.all(color: theme.colorScheme.secondary, width: 1.2)
+            : null,
+        boxShadow: highlighted
+            ? [
+                BoxShadow(
+                  color: theme.colorScheme.secondary.withValues(alpha: 0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : null,
+      ),
+      child: Card(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        color: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: borderRadius),
+        clipBehavior: Clip.antiAlias,
+        child: ExpansionTile(
+          key: PageStorageKey(node.department.id),
+          initiallyExpanded: expanded,
+          onExpansionChanged: onExpansionChanged,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    children: _buildHighlightedSpans(
+                      node.department.name,
+                      normalized,
+                      departmentTitleStyle,
+                      departmentHighlightStyle,
+                    ),
+                  ),
+                  style: departmentTitleStyle,
+                ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: '管理院系',
+                enabled: canManage,
+                onSelected: (value) {
+                  switch (value) {
+                    case 'rename':
+                      unawaited(onRenameDepartment(node));
+                      break;
+                    case 'delete':
+                      unawaited(onDeleteDepartment(node));
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem<String>(
+                    value: 'rename',
+                    child: Text('重命名院系'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'delete',
+                    enabled: node.classes.isEmpty,
+                    child: Text(
+                      node.classes.isEmpty ? '删除院系' : '删除院系（需先清空班级）',
+                      style: TextStyle(
+                        color: node.classes.isEmpty
+                            ? theme.colorScheme.error
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          subtitle: Text(
+            '院系ID：${node.department.id} · 学校：${node.department.schoolId}',
+          ),
+          children: children,
         ),
-        initiallyExpanded:
-            normalized.isNotEmpty &&
-            (departmentMatches || filteredClasses.isNotEmpty),
-        children: children,
       ),
     );
   }
 }
 
-String _buildClassSubtitle(ClassInfo clazz) {
-  final parts = <String>['班级ID：${clazz.id}'];
-  if (clazz.grade != null && clazz.grade!.isNotEmpty) {
-    parts.add('年级：${clazz.grade}');
+List<InlineSpan> _buildHighlightedSpans(
+  String text,
+  String query,
+  TextStyle? baseStyle,
+  TextStyle? highlightStyle,
+) {
+  if (query.isEmpty) {
+    return [TextSpan(text: text, style: baseStyle)];
   }
-  if (clazz.description != null && clazz.description!.isNotEmpty) {
-    parts.add(clazz.description!);
+  final lowerText = text.toLowerCase();
+  final lowerQuery = query.toLowerCase();
+  final matchIndex = lowerText.indexOf(lowerQuery);
+  if (matchIndex == -1) {
+    return [TextSpan(text: text, style: baseStyle)];
   }
-  return parts.join(' · ');
+
+  final spans = <InlineSpan>[];
+  var start = 0;
+  final queryLength = query.length;
+  while (start < text.length) {
+    final index = lowerText.indexOf(lowerQuery, start);
+    if (index < 0) {
+      spans.add(TextSpan(text: text.substring(start), style: baseStyle));
+      break;
+    }
+    if (index > start) {
+      spans.add(TextSpan(text: text.substring(start, index), style: baseStyle));
+    }
+    final matchText = text.substring(index, index + queryLength);
+    spans.add(
+      TextSpan(
+        text: matchText,
+        style:
+            highlightStyle ??
+            (baseStyle ?? const TextStyle()).merge(
+              const TextStyle(fontWeight: FontWeight.w600),
+            ),
+      ),
+    );
+    start = index + queryLength;
+  }
+  return spans;
+}
+
+List<InlineSpan> _buildClassSubtitleSpans(
+  ClassInfo clazz,
+  String query,
+  TextStyle? baseStyle,
+  TextStyle? highlightStyle,
+) {
+  final spans = <InlineSpan>[];
+
+  void addSeparatorIfNeeded() {
+    if (spans.isNotEmpty) {
+      spans.add(TextSpan(text: ' · ', style: baseStyle));
+    }
+  }
+
+  addSeparatorIfNeeded();
+  spans.addAll(
+    _buildHighlightedSpans(
+      '班级ID：${clazz.id}',
+      query,
+      baseStyle,
+      highlightStyle,
+    ),
+  );
+
+  final grade = clazz.grade;
+  if (grade != null && grade.isNotEmpty) {
+    addSeparatorIfNeeded();
+    spans.addAll(
+      _buildHighlightedSpans('年级：$grade', query, baseStyle, highlightStyle),
+    );
+  }
+
+  final description = clazz.description;
+  if (description != null && description.isNotEmpty) {
+    addSeparatorIfNeeded();
+    spans.addAll(
+      _buildHighlightedSpans(description, query, baseStyle, highlightStyle),
+    );
+  }
+
+  return spans;
 }
 
 class _AccountTile extends StatelessWidget {
-  const _AccountTile({required this.account, required this.onFeatureTap});
-  final admin_data.AdminAccountItem account;
-  final void Function(String) onFeatureTap;
+  const _AccountTile({required this.account, required this.onOpenDetails});
+  final AdminAccount account;
+  final VoidCallback onOpenDetails;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(8),
+        onTap: onOpenDetails,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  account.role.icon,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            account.name,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Chip(
+                          label: Text(account.role.label),
+                          side: BorderSide.none,
+                          backgroundColor: theme
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.4),
+                        ),
+                        Chip(
+                          label: Text(account.statusLabel),
+                          side: BorderSide(
+                            color: account
+                                .statusColor(theme)
+                                .withValues(alpha: 0.4),
+                          ),
+                          backgroundColor: account
+                              .statusColor(theme)
+                              .withValues(alpha: 0.16),
+                          labelStyle: theme.textTheme.bodySmall?.copyWith(
+                            color: account.statusColor(theme),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(account.email.isEmpty ? '未提供邮箱' : account.email),
+                    const SizedBox(height: 4),
+                    Text(
+                      '账号：${account.identifier}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '所属：${account.structureLabel}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '最近活跃：${account.lastActiveLabel}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    if (account.phone != null && account.phone!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '联系电话：${account.phone}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: '更多操作',
+                onPressed: onOpenDetails,
+                icon: const Icon(Icons.more_vert),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _AccountDetailSheet extends HookConsumerWidget {
+  const _AccountDetailSheet({
+    required this.account,
+    required this.onAccountUpdated,
+    required this.onAccountRemoved,
+  });
+
+  final AdminAccount account;
+  final ValueChanged<AdminAccount> onAccountUpdated;
+  final ValueChanged<String> onAccountRemoved;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final currentAccount = useState(account);
+    final loadingAction = useState<_AccountActionType?>(null);
+
+    void showSnack(String message, {bool error = false}) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: error
+              ? theme.colorScheme.error
+              : theme.colorScheme.inverseSurface,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    Future<bool> confirmAction(_AccountSheetAction action) async {
+      if (action.confirmationMessage == null) {
+        return true;
+      }
+      if (!context.mounted) {
+        return false;
+      }
+      final confirmLabel = action.confirmationConfirmLabel ?? '确认';
+      final title = action.destructive ? '请谨慎操作' : '确认操作';
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(title),
+            content: Text(action.confirmationMessage!),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                style: action.destructive
+                    ? FilledButton.styleFrom(
+                        backgroundColor: theme.colorScheme.error,
+                        foregroundColor: theme.colorScheme.onError,
+                      )
+                    : null,
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(confirmLabel),
+              ),
+            ],
+          );
+        },
+      );
+      return result ?? false;
+    }
+
+    Future<void> handleAction(_AccountSheetAction action) async {
+      if (loadingAction.value != null) {
+        return;
+      }
+      if (!await confirmAction(action)) {
+        return;
+      }
+      final authState = ref.read(authStateProvider);
+      final schoolId = authState.account?.schoolId ?? '';
+      if (schoolId.isEmpty) {
+        showSnack('缺少学校信息，请重新登录后再试。', error: true);
+        return;
+      }
+      final repository = ref.read(adminRepositoryProvider);
+      loadingAction.value = action.type;
+      try {
+        switch (action.type) {
+          case _AccountActionType.resetPassword:
+            await repository.resetAccountPassword(
+              schoolId: schoolId,
+              accountId: currentAccount.value.id,
+            );
+            final updated = currentAccount.value.copyWith(
+              status: AdminAccountStatus.passwordResetRequired,
+            );
+            currentAccount.value = updated;
+            onAccountUpdated(updated);
+            showSnack('已发送密码重置指引');
+            break;
+          case _AccountActionType.lock:
+            await repository.lockAccount(
+              schoolId: schoolId,
+              accountId: currentAccount.value.id,
+            );
+            final updated = currentAccount.value.copyWith(
+              status: AdminAccountStatus.locked,
+            );
+            currentAccount.value = updated;
+            onAccountUpdated(updated);
+            showSnack('账号已锁定');
+            break;
+          case _AccountActionType.unlock:
+            await repository.unlockAccount(
+              schoolId: schoolId,
+              accountId: currentAccount.value.id,
+            );
+            final updated = currentAccount.value.copyWith(
+              status: AdminAccountStatus.active,
+            );
+            currentAccount.value = updated;
+            onAccountUpdated(updated);
+            showSnack('账号已恢复正常');
+            break;
+          case _AccountActionType.delete:
+            await repository.deleteAccount(
+              schoolId: schoolId,
+              accountId: currentAccount.value.id,
+            );
+            onAccountRemoved(currentAccount.value.id);
+            showSnack('账号已移除');
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+            return;
+        }
+      } on AppException catch (error) {
+        showSnack(error.message, error: true);
+      } catch (error) {
+        showSnack(error.toString(), error: true);
+      } finally {
+        if (context.mounted) {
+          loadingAction.value = null;
+        }
+      }
+    }
+
+    final accountValue = currentAccount.value;
+    final statusColor = accountValue.statusColor(theme);
+    final createdAtLabel = DateFormat(
+      'yyyy-MM-dd HH:mm',
+    ).format(accountValue.createdAt.toLocal());
+
+    final actions = <_AccountSheetAction>[
+      const _AccountSheetAction(
+        label: '重置密码',
+        type: _AccountActionType.resetPassword,
+        icon: Icons.lock_reset_outlined,
+        confirmationMessage: '确定向该账号发送密码重置指引吗？',
+        confirmationConfirmLabel: '发送',
+      ),
+      if (accountValue.status == AdminAccountStatus.locked)
+        const _AccountSheetAction(
+          label: '解除锁定',
+          type: _AccountActionType.unlock,
+          icon: Icons.lock_open_outlined,
+          confirmationMessage: '确认解除账号锁定并允许其重新登录吗？',
+          confirmationConfirmLabel: '解除锁定',
+        )
+      else
+        const _AccountSheetAction(
+          label: '锁定账号',
+          type: _AccountActionType.lock,
+          icon: Icons.lock_outline,
+          confirmationMessage: '锁定后账号将无法登录，确定继续吗？',
+          confirmationConfirmLabel: '锁定',
+        ),
+      const _AccountSheetAction(
+        label: '移除账号',
+        type: _AccountActionType.delete,
+        icon: Icons.person_remove_outlined,
+        destructive: true,
+        confirmationMessage: '账号删除后不可恢复，确定永久删除该账号吗？',
+        confirmationConfirmLabel: '删除',
+      ),
+    ];
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: MediaQuery.of(context).viewPadding.bottom + 20,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: Icon(
+                      accountValue.role.icon,
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          accountValue.name,
+                          style: theme.textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            Chip(
+                              label: Text(accountValue.role.label),
+                              side: BorderSide.none,
+                              backgroundColor: theme
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withValues(alpha: 0.35),
+                            ),
+                            Chip(
+                              label: Text(accountValue.statusLabel),
+                              side: BorderSide(color: statusColor),
+                              labelStyle: theme.textTheme.bodySmall?.copyWith(
+                                color: statusColor,
+                              ),
+                              backgroundColor: statusColor.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _AccountInfoTile(
+                icon: Icons.badge_outlined,
+                label: '账号 ID',
+                value: accountValue.id,
+                onCopy: () =>
+                    _copyTextToClipboard(context, '账号 ID', accountValue.id),
+              ),
+              _AccountInfoTile(
+                icon: Icons.alternate_email_outlined,
+                label: '登录账号',
+                value: accountValue.identifier,
+                onCopy: () => _copyTextToClipboard(
+                  context,
+                  '登录账号',
+                  accountValue.identifier,
+                ),
+              ),
+              _AccountInfoTile(
+                icon: Icons.email_outlined,
+                label: '邮箱地址',
+                value: accountValue.email,
+                onCopy: () =>
+                    _copyTextToClipboard(context, '邮箱地址', accountValue.email),
+              ),
+              _AccountInfoTile(
+                icon: Icons.phone_outlined,
+                label: '联系电话',
+                value: accountValue.phone ?? '',
+                onCopy:
+                    accountValue.phone == null || accountValue.phone!.isEmpty
+                    ? null
+                    : () => _copyTextToClipboard(
+                        context,
+                        '联系电话',
+                        accountValue.phone!,
+                      ),
+              ),
+              _AccountInfoTile(
+                icon: Icons.account_tree_outlined,
+                label: '所属结构',
+                value: accountValue.structureLabel,
+              ),
+              _AccountInfoTile(
+                icon: Icons.lock_clock_outlined,
+                label: '最近活跃',
+                value: accountValue.lastActiveLabel,
+              ),
+              _AccountInfoTile(
+                icon: Icons.calendar_month_outlined,
+                label: '创建时间',
+                value: createdAtLabel,
+              ),
+              const SizedBox(height: 20),
+              Text('操作', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 12),
+              Column(
+                children: [
+                  for (final action in actions)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: OutlinedButton.icon(
+                        icon: loadingAction.value == action.type
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    action.destructive
+                                        ? theme.colorScheme.error
+                                        : theme.colorScheme.primary,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                action.icon,
+                                color: action.destructive
+                                    ? theme.colorScheme.error
+                                    : null,
+                              ),
+                        label: Text(action.label),
+                        style: action.destructive
+                            ? OutlinedButton.styleFrom(
+                                foregroundColor: theme.colorScheme.error,
+                              )
+                            : null,
+                        onPressed: loadingAction.value == action.type
+                            ? null
+                            : () => handleAction(action),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum _AccountActionType { resetPassword, lock, unlock, delete }
+
+class _AccountSheetAction {
+  const _AccountSheetAction({
+    required this.label,
+    required this.type,
+    required this.icon,
+    this.destructive = false,
+    this.confirmationMessage,
+    this.confirmationConfirmLabel,
+  });
+
+  final String label;
+  final _AccountActionType type;
+  final IconData icon;
+  final bool destructive;
+  final String? confirmationMessage;
+  final String? confirmationConfirmLabel;
+}
+
+class _AccountInfoTile extends StatelessWidget {
+  const _AccountInfoTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onCopy,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback? onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final displayValue = value.isEmpty ? '—' : value;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(
-              account.role.icon,
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
-          ),
+          Icon(icon, size: 20, color: theme.colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        account.name,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    Chip(
-                      label: Text(account.roleLabel),
-                      side: BorderSide.none,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.4),
-                    ),
-                    Chip(
-                      label: Text(account.statusLabel),
-                      side: BorderSide(
-                        color: account
-                            .statusColor(theme)
-                            .withValues(alpha: 0.4),
-                      ),
-                      backgroundColor: account
-                          .statusColor(theme)
-                          .withValues(alpha: 0.16),
-                      labelStyle: theme.textTheme.bodySmall?.copyWith(
-                        color: account.statusColor(theme),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(account.email),
+                Text(label, style: theme.textTheme.labelSmall),
                 const SizedBox(height: 4),
-                Text(
-                  '账号：${account.identifier}',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '所属：${account.structureLabel}',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '最近活跃：${account.lastActiveLabel}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                ),
-                if (account.phone != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '联系电话：${account.phone}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-                if (account.note != null && account.note!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    account.note!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
+                SelectableText(displayValue),
               ],
             ),
           ),
-          IconButton(
-            tooltip: '更多操作',
-            onPressed: () => onFeatureTap('更多'),
-            icon: const Icon(Icons.more_vert),
-          ),
+          if (onCopy != null && value.isNotEmpty)
+            IconButton(
+              tooltip: '复制$label',
+              icon: const Icon(Icons.copy, size: 18),
+              onPressed: onCopy,
+            ),
         ],
       ),
     );
   }
+}
+
+void _copyTextToClipboard(BuildContext context, String label, String value) {
+  if (value.isEmpty) {
+    return;
+  }
+  Clipboard.setData(ClipboardData(text: value));
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text('$label已复制')));
 }
 
 class _AccountMetrics {
@@ -771,9 +3171,7 @@ class _AccountMetrics {
     required this.pendingReset,
   });
 
-  factory _AccountMetrics.fromAccounts(
-    List<admin_data.AdminAccountItem> accounts,
-  ) {
+  factory _AccountMetrics.fromAccounts(List<AdminAccount> accounts) {
     var teachers = 0;
     var students = 0;
     var locked = 0;
@@ -781,15 +3179,15 @@ class _AccountMetrics {
 
     for (final account in accounts) {
       switch (account.role) {
-        case admin_data.AdminAccountRole.teacher:
+        case AdminAccountRole.teacher:
           teachers++;
-        case admin_data.AdminAccountRole.student:
+        case AdminAccountRole.student:
           students++;
       }
-      if (account.locked) {
+      if (account.status == AdminAccountStatus.locked) {
         locked++;
       }
-      if (account.requiresPasswordReset) {
+      if (account.status == AdminAccountStatus.passwordResetRequired) {
         pendingReset++;
       }
     }
@@ -996,12 +3394,26 @@ class _AccountInviteTile extends StatelessWidget {
 enum _AccountRoleFilter { all, teachers, students }
 
 const String _kAllDepartments = '__all_departments__';
+const String _kNoDepartment = '__no_department__';
+const String _kAllClasses = '__all_classes__';
+const String _kNoClass = '__no_class__';
 
 String _accountRoleFilterLabel(_AccountRoleFilter f) {
   return switch (f) {
     _AccountRoleFilter.all => '全部账号',
     _AccountRoleFilter.teachers => '教师',
     _AccountRoleFilter.students => '学生',
+  };
+}
+
+enum _AccountStatusFilter { all, active, locked, pendingReset }
+
+String _accountStatusFilterLabel(_AccountStatusFilter f) {
+  return switch (f) {
+    _AccountStatusFilter.all => '全部状态',
+    _AccountStatusFilter.active => '正常',
+    _AccountStatusFilter.locked => '已锁定',
+    _AccountStatusFilter.pendingReset => '待重置密码',
   };
 }
 

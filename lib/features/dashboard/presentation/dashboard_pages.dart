@@ -29,8 +29,7 @@ class AdminDashboardPage extends HookConsumerWidget {
       child: metrics.when(
         data: (stats) => RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(adminDepartmentTreeProvider);
-            await ref.read(adminDepartmentTreeProvider.future);
+            await ref.read(adminDepartmentTreeProvider.notifier).refresh();
           },
           child: ListView(
             padding: const EdgeInsets.all(24),
@@ -118,7 +117,9 @@ class AdminDashboardPage extends HookConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _DashboardErrorCard(
           message: error.toString(),
-          onRetry: () => ref.invalidate(adminDepartmentTreeProvider),
+          onRetry: () {
+            ref.read(adminDepartmentTreeProvider.notifier).refresh();
+          },
         ),
       ),
     );
@@ -224,7 +225,8 @@ class TeacherDashboardPage extends HookConsumerWidget {
                       child: LinearProgressIndicator(
                         value: insights[index].progress,
                         backgroundColor: theme
-                            .colorScheme.surfaceContainerHighest
+                            .colorScheme
+                            .surfaceContainerHighest
                             .withValues(alpha: 0.5),
                         valueColor: AlwaysStoppedAnimation(
                           insights[index].barColor(theme),
@@ -520,8 +522,9 @@ class _DashboardStatCard extends StatelessWidget {
         width: 240,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.surfaceContainerHighest
-              .withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
