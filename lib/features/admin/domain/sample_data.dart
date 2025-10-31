@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'oss.dart' as oss;
+
 enum AdminAccountRole { teacher, student }
 
 extension AdminAccountRoleX on AdminAccountRole {
@@ -92,20 +94,40 @@ class AdminAccountItem {
 
 class AdminAccountInvite {
   const AdminAccountInvite({
+    required this.id,
     required this.email,
     required this.role,
     required this.invitedBy,
     required this.createdAtLabel,
     required this.expiresAtLabel,
+    required this.invitationUrl,
   });
 
+  final String id;
   final String email;
   final AdminAccountRole role;
   final String invitedBy;
   final String createdAtLabel;
   final String expiresAtLabel;
+  final String invitationUrl;
 
   String get roleLabel => role.label;
+
+  AdminAccountInvite copyWith({
+    String? createdAtLabel,
+    String? expiresAtLabel,
+    String? invitationUrl,
+  }) {
+    return AdminAccountInvite(
+      id: id,
+      email: email,
+      role: role,
+      invitedBy: invitedBy,
+      createdAtLabel: createdAtLabel ?? this.createdAtLabel,
+      expiresAtLabel: expiresAtLabel ?? this.expiresAtLabel,
+      invitationUrl: invitationUrl ?? this.invitationUrl,
+    );
+  }
 }
 
 const List<AdminAccountItem> adminAccountItems = [
@@ -183,109 +205,28 @@ const List<AdminAccountItem> adminAccountItems = [
 
 const List<AdminAccountInvite> adminAccountInvites = [
   AdminAccountInvite(
+    id: 'invite-1',
     email: 'newteacher@school.edu.cn',
     role: AdminAccountRole.teacher,
     invitedBy: '系统管理员',
     createdAtLabel: '10-20 09:10',
     expiresAtLabel: '10-27 09:10',
+    invitationUrl: 'https://admin.learn-go.dev/invite/invite-1',
   ),
   AdminAccountInvite(
+    id: 'invite-2',
     email: 'intern2023@school.edu.cn',
     role: AdminAccountRole.student,
     invitedBy: '张老师',
     createdAtLabel: '10-18 14:25',
     expiresAtLabel: '10-25 14:25',
+    invitationUrl: 'https://admin.learn-go.dev/invite/invite-2',
   ),
 ];
 
-class AdminOssCredential {
-  const AdminOssCredential({
-    required this.name,
-    required this.endpoint,
-    required this.region,
-    required this.bucket,
-    required this.accessKeyMasked,
-    required this.directoryPrefix,
-    required this.allowPublicRead,
-    required this.allowMultipartUpload,
-    required this.createdAtLabel,
-    required this.lastRotatedLabel,
-    this.isPrimary = false,
-    this.active = true,
-  });
-
-  final String name;
-  final String endpoint;
-  final String region;
-  final String bucket;
-  final String accessKeyMasked;
-  final String directoryPrefix;
-  final bool allowPublicRead;
-  final bool allowMultipartUpload;
-  final String createdAtLabel;
-  final String lastRotatedLabel;
-  final bool isPrimary;
-  final bool active;
-
-  String get statusLabel => active ? '启用' : '停用';
-
-  Color statusColor(ThemeData theme) {
-    return active ? theme.colorScheme.primary : theme.colorScheme.outline;
-  }
-}
-
-enum AdminOssPolicyStatus { enabled, readOnly, disabled }
-
-extension AdminOssPolicyStatusX on AdminOssPolicyStatus {
-  String get label {
-    return switch (this) {
-      AdminOssPolicyStatus.enabled => '启用',
-      AdminOssPolicyStatus.readOnly => '仅读',
-      AdminOssPolicyStatus.disabled => '已禁用',
-    };
-  }
-
-  Color color(ThemeData theme) {
-    return switch (this) {
-      AdminOssPolicyStatus.enabled => theme.colorScheme.primary,
-      AdminOssPolicyStatus.readOnly => theme.colorScheme.tertiary,
-      AdminOssPolicyStatus.disabled => theme.colorScheme.outline,
-    };
-  }
-}
-
-class AdminOssPolicy {
-  const AdminOssPolicy({
-    required this.name,
-    required this.description,
-    required this.status,
-    required this.lastUpdatedLabel,
-    required this.appliesTo,
-  });
-
-  final String name;
-  final String description;
-  final AdminOssPolicyStatus status;
-  final String lastUpdatedLabel;
-  final String appliesTo;
-}
-
-class AdminOssAuditLog {
-  const AdminOssAuditLog({
-    required this.action,
-    required this.operator,
-    required this.timeLabel,
-    required this.detail,
-  });
-
-  final String action;
-  final String operator;
-  final String timeLabel;
-  final String detail;
-}
-
-const List<AdminOssCredential> adminOssCredentials = [
-  AdminOssCredential(
+final List<oss.AdminOssCredential> adminOssCredentials = List.unmodifiable([
+  oss.AdminOssCredential(
+    id: 'cred-primary',
     name: '主凭证 · 生产环境',
     endpoint: 'oss-cn-hangzhou.aliyuncs.com',
     region: '华东 1',
@@ -294,12 +235,13 @@ const List<AdminOssCredential> adminOssCredentials = [
     directoryPrefix: 'prod/',
     allowPublicRead: false,
     allowMultipartUpload: true,
-    createdAtLabel: '创建于 2024-08-12',
-    lastRotatedLabel: '最后轮换：30 天前',
     isPrimary: true,
     active: true,
+    createdAt: DateTime(2024, 8, 12),
+    lastRotatedAt: DateTime.now().subtract(const Duration(days: 30)),
   ),
-  AdminOssCredential(
+  oss.AdminOssCredential(
+    id: 'cred-backup',
     name: '备份凭证 · 教师资料',
     endpoint: 'oss-cn-hangzhou.aliyuncs.com',
     region: '华东 1',
@@ -308,11 +250,13 @@ const List<AdminOssCredential> adminOssCredentials = [
     directoryPrefix: 'teacher/',
     allowPublicRead: true,
     allowMultipartUpload: true,
-    createdAtLabel: '创建于 2024-10-01',
-    lastRotatedLabel: '最后轮换：12 天前',
+    isPrimary: false,
     active: true,
+    createdAt: DateTime(2024, 10, 1),
+    lastRotatedAt: DateTime.now().subtract(const Duration(days: 12)),
   ),
-  AdminOssCredential(
+  oss.AdminOssCredential(
+    id: 'cred-test',
     name: '测试凭证',
     endpoint: 'oss-cn-beijing.aliyuncs.com',
     region: '华北 2',
@@ -321,59 +265,67 @@ const List<AdminOssCredential> adminOssCredentials = [
     directoryPrefix: 'dev/',
     allowPublicRead: false,
     allowMultipartUpload: false,
-    createdAtLabel: '创建于 2023-12-05',
-    lastRotatedLabel: '最后轮换：90 天前',
+    isPrimary: false,
     active: false,
+    createdAt: DateTime(2023, 12, 5),
+    lastRotatedAt: DateTime.now().subtract(const Duration(days: 90)),
   ),
-];
+]);
 
-const List<AdminOssPolicy> adminOssPolicies = [
-  AdminOssPolicy(
+final List<oss.AdminOssPolicy> adminOssPolicies = List.unmodifiable([
+  oss.AdminOssPolicy(
+    id: 'policy-homework',
     name: '学生作业上传策略',
     description: '限制文件大小至 50MB，允许 PDF、图片与压缩包格式。',
-    status: AdminOssPolicyStatus.enabled,
-    lastUpdatedLabel: '更新于 2024-09-25',
+    status: oss.AdminOssPolicyStatus.enabled,
     appliesTo: '学生端 · 作业上传',
+    lastUpdatedAt: DateTime(2024, 9, 25, 10, 0),
   ),
-  AdminOssPolicy(
+  oss.AdminOssPolicy(
+    id: 'policy-teacher-share',
     name: '教师资料共享策略',
     description: '开启只读公开访问，用于课堂资料分享。',
-    status: AdminOssPolicyStatus.readOnly,
-    lastUpdatedLabel: '更新于 2024-10-15',
+    status: oss.AdminOssPolicyStatus.readOnly,
     appliesTo: '教师端 · 资料管理',
+    lastUpdatedAt: DateTime(2024, 10, 15, 9, 12),
   ),
-  AdminOssPolicy(
+  oss.AdminOssPolicy(
+    id: 'policy-backup',
     name: '内部备份策略',
     description: '仅允许管理端上传，禁止外部访问。',
-    status: AdminOssPolicyStatus.disabled,
-    lastUpdatedLabel: '更新于 2024-07-02',
+    status: oss.AdminOssPolicyStatus.disabled,
     appliesTo: '运维备份任务',
+    lastUpdatedAt: DateTime(2024, 7, 2, 17, 5),
   ),
-];
+]);
 
-const List<AdminOssAuditLog> adminOssAuditLogs = [
-  AdminOssAuditLog(
+final List<oss.AdminOssAuditLog> adminOssAuditLogs = List.unmodifiable([
+  oss.AdminOssAuditLog(
+    id: 'log-1',
     action: '轮换 AccessKey',
     operator: '系统管理员',
-    timeLabel: '10-18 20:35',
     detail: '主凭证执行自动轮换并同步至应用配置。',
+    createdAt: DateTime.now().subtract(const Duration(days: 12, hours: 4)),
   ),
-  AdminOssAuditLog(
+  oss.AdminOssAuditLog(
+    id: 'log-2',
     action: '修改公开访问策略',
     operator: '张老师',
-    timeLabel: '10-15 09:12',
     detail: '教师资料共享策略切换为只读公开访问。',
+    createdAt: DateTime.now().subtract(const Duration(days: 15, hours: 6)),
   ),
-  AdminOssAuditLog(
+  oss.AdminOssAuditLog(
+    id: 'log-3',
     action: '禁用测试凭证',
     operator: '系统管理员',
-    timeLabel: '09-30 17:05',
     detail: '测试凭证在上线后被手动禁用。',
+    createdAt: DateTime.now().subtract(const Duration(days: 30, hours: 2)),
   ),
-];
+]);
 
 class AdminSystemSwitch {
   const AdminSystemSwitch({
+    required this.id,
     required this.title,
     required this.description,
     required this.enabled,
@@ -384,6 +336,7 @@ class AdminSystemSwitch {
     this.environment = '生产环境',
   });
 
+  final String id;
   final String title;
   final String description;
   final bool enabled;
@@ -392,10 +345,25 @@ class AdminSystemSwitch {
   final IconData icon;
   final List<String> tags;
   final String environment;
+
+  AdminSystemSwitch copyWith({bool? enabled, String? lastUpdatedLabel}) {
+    return AdminSystemSwitch(
+      id: id,
+      title: title,
+      description: description,
+      enabled: enabled ?? this.enabled,
+      lastUpdatedLabel: lastUpdatedLabel ?? this.lastUpdatedLabel,
+      responsible: responsible,
+      icon: icon,
+      tags: tags,
+      environment: environment,
+    );
+  }
 }
 
 class AdminSystemParameter {
   const AdminSystemParameter({
+    required this.id,
     required this.key,
     required this.value,
     required this.scope,
@@ -404,12 +372,25 @@ class AdminSystemParameter {
     this.locked = false,
   });
 
+  final String id;
   final String key;
   final String value;
   final String scope;
   final String description;
   final String lastUpdatedLabel;
   final bool locked;
+
+  AdminSystemParameter copyWith({String? value, String? lastUpdatedLabel}) {
+    return AdminSystemParameter(
+      id: id,
+      key: key,
+      value: value ?? this.value,
+      scope: scope,
+      description: description,
+      lastUpdatedLabel: lastUpdatedLabel ?? this.lastUpdatedLabel,
+      locked: locked,
+    );
+  }
 }
 
 enum AdminSystemBroadcastStatus { scheduled, sent, draft }
@@ -434,6 +415,7 @@ extension AdminSystemBroadcastStatusX on AdminSystemBroadcastStatus {
 
 class AdminSystemBroadcast {
   const AdminSystemBroadcast({
+    required this.id,
     required this.title,
     required this.messagePreview,
     required this.status,
@@ -443,6 +425,7 @@ class AdminSystemBroadcast {
     this.pinned = false,
   });
 
+  final String id;
   final String title;
   final String messagePreview;
   final AdminSystemBroadcastStatus status;
@@ -450,6 +433,23 @@ class AdminSystemBroadcast {
   final String scheduleLabel;
   final String createdBy;
   final bool pinned;
+
+  AdminSystemBroadcast copyWith({
+    AdminSystemBroadcastStatus? status,
+    bool? pinned,
+    String? scheduleLabel,
+  }) {
+    return AdminSystemBroadcast(
+      id: id,
+      title: title,
+      messagePreview: messagePreview,
+      status: status ?? this.status,
+      targetLabel: targetLabel,
+      scheduleLabel: scheduleLabel ?? this.scheduleLabel,
+      createdBy: createdBy,
+      pinned: pinned ?? this.pinned,
+    );
+  }
 }
 
 class AdminSystemAuditLog {
@@ -470,6 +470,7 @@ class AdminSystemAuditLog {
 
 const List<AdminSystemSwitch> adminSystemSwitches = [
   AdminSystemSwitch(
+    id: 'switch-maintenance',
     title: '夜间维护模式',
     description: '在每日 23:30 - 06:30 内限制学生端访问，教师端保持可用。',
     enabled: true,
@@ -479,6 +480,7 @@ const List<AdminSystemSwitch> adminSystemSwitches = [
     tags: ['计划任务', '自动恢复'],
   ),
   AdminSystemSwitch(
+    id: 'switch-assignment-reminder',
     title: '作业提交提醒推送',
     description: '距离截止时间 1 小时自动推送提醒至学生端与家长端。',
     enabled: true,
@@ -488,6 +490,7 @@ const List<AdminSystemSwitch> adminSystemSwitches = [
     tags: ['消息服务'],
   ),
   AdminSystemSwitch(
+    id: 'switch-ai-assist',
     title: '实验特性：AI 批改建议',
     description: '允许教师端使用智能批改建议，需单独开通权限。',
     enabled: false,
@@ -500,6 +503,7 @@ const List<AdminSystemSwitch> adminSystemSwitches = [
 
 const List<AdminSystemParameter> adminSystemParameters = [
   AdminSystemParameter(
+    id: 'param-max-upload',
     key: 'MAX_UPLOAD_SIZE_MB',
     value: '80',
     scope: '文件上传服务',
@@ -508,6 +512,7 @@ const List<AdminSystemParameter> adminSystemParameters = [
     locked: true,
   ),
   AdminSystemParameter(
+    id: 'param-timezone',
     key: 'DEFAULT_TIMEZONE',
     value: 'Asia/Shanghai',
     scope: '全局时区',
@@ -515,6 +520,7 @@ const List<AdminSystemParameter> adminSystemParameters = [
     lastUpdatedLabel: '更新于 2024-08-20',
   ),
   AdminSystemParameter(
+    id: 'param-session-timeout',
     key: 'SESSION_IDLE_TIMEOUT',
     value: '30m',
     scope: '认证服务',
@@ -522,6 +528,7 @@ const List<AdminSystemParameter> adminSystemParameters = [
     lastUpdatedLabel: '更新于 2024-10-05',
   ),
   AdminSystemParameter(
+    id: 'param-feature-flags',
     key: 'FEATURE_FLAGS',
     value: 'ai_grading,live_classroom',
     scope: '功能开关',
@@ -532,6 +539,7 @@ const List<AdminSystemParameter> adminSystemParameters = [
 
 const List<AdminSystemBroadcast> adminSystemBroadcasts = [
   AdminSystemBroadcast(
+    id: 'broadcast-oct-maintenance',
     title: '10 月系统升级通知',
     messagePreview: '定于 10-28 02:00 - 03:00 进行数据库维护，期间服务可能短暂波动。',
     status: AdminSystemBroadcastStatus.scheduled,
@@ -541,6 +549,7 @@ const List<AdminSystemBroadcast> adminSystemBroadcasts = [
     pinned: true,
   ),
   AdminSystemBroadcast(
+    id: 'broadcast-ai-feature',
     title: '作业批改新功能上线',
     messagePreview: 'AI 批改建议将在试点院系开放试用，如需参与请向教务处申请。',
     status: AdminSystemBroadcastStatus.draft,
@@ -549,6 +558,7 @@ const List<AdminSystemBroadcast> adminSystemBroadcasts = [
     createdBy: '创新组',
   ),
   AdminSystemBroadcast(
+    id: 'broadcast-sept-report',
     title: '9 月例行巡检完成',
     messagePreview: '服务性能已恢复正常，如遇问题可提交工单。',
     status: AdminSystemBroadcastStatus.sent,

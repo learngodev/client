@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../application/admin_providers.dart';
 import '../../../auth/application/auth_controller.dart';
@@ -12,6 +14,7 @@ import '../../../../core/exceptions/app_exception.dart';
 import '../../data/admin_repository.dart';
 import '../../domain/accounts.dart';
 import '../../domain/models.dart';
+import '../../domain/oss.dart' as oss;
 import '../../domain/sample_data.dart' as admin_data;
 
 int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
@@ -33,6 +36,9 @@ int _compareClassInfos(ClassInfo a, ClassInfo b) {
 }
 
 const _kAutoLoadMoreThreshold = 280.0;
+const _kAccountFilterPrefsKey = 'admin.account.filters';
+
+typedef _AccountFilterPayload = Map<String, dynamic>;
 
 List<AdminAccount> _mergeAccountPages(
   List<AdminAccount> existing,
@@ -68,10 +74,90 @@ class AdminOverviewPage extends ConsumerWidget {
     return tree.when(
       data: (nodes) {
         final metrics = AdminDepartmentMetrics.fromNodes(nodes);
+        final notifier = ref.read(adminDepartmentTreeProvider.notifier);
+        final emptyDepartments = [
+          for (final node in nodes)
+            if (node.classes.isEmpty) node.department.name,
+        ];
+        final quickChecks = <_QuickCheckItem>[];
+        if (metrics.departmentCount == 0) {
+          quickChecks.add(
+            _QuickCheckItem(
+              icon: Icons.corporate_fare_outlined,
+              title: '尚未创建院系',
+              description: '创建院系后即可录入班级与账号信息。',
+              severity: _QuickCheckSeverity.warning,
+            ),
+          );
+        } else if (metrics.emptyDepartmentCount > 0) {
+          final previewNames = emptyDepartments.take(3).join('、');
+          final detail = emptyDepartments.length > 3
+              ? '$previewNames 等 ${metrics.emptyDepartmentCount} 个院系待补充班级。'
+              : '$previewNames 缺少班级配置，建议尽快补充。';
+          quickChecks.add(
+            _QuickCheckItem(
+              icon: Icons.warning_amber_outlined,
+              title: '${metrics.emptyDepartmentCount} 个院系未配置班级',
+              description: detail.isEmpty ? '存在未配置班级的院系，建议补充班级信息。' : detail,
+              severity: _QuickCheckSeverity.warning,
+            ),
+          );
+        } else {
+          quickChecks.add(
+            _QuickCheckItem(
+              icon: Icons.task_alt_outlined,
+              title: '所有院系均已配置班级',
+              description: '班级结构完整，可进行账号分配。',
+              severity: _QuickCheckSeverity.success,
+            ),
+          );
+        }
+
+        if (metrics.classCount == 0 && metrics.departmentCount > 0) {
+          quickChecks.add(
+            const _QuickCheckItem(
+              icon: Icons.class_outlined,
+              title: '院系已创建但尚无班级',
+              description: '为院系添加至少一个班级后，学生账号才能正确分配。',
+              severity: _QuickCheckSeverity.info,
+            ),
+          );
+        }
+
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
             Text('学校概览', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.refresh),
+                label: const Text('刷新院系数据'),
+                onPressed: () async {
+                  try {
+                    await notifier.refresh();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(const SnackBar(content: Text('院系数据已刷新')));
+                    }
+                  } catch (error) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('刷新失败：$error'),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.errorContainer,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,
@@ -104,10 +190,7 @@ class AdminOverviewPage extends ConsumerWidget {
             _AccountSectionCard(
               icon: Icons.analytics_outlined,
               title: '快速检查',
-              child: const _EmptyPlaceholder(
-                title: '更多监控项',
-                description: '该区域可扩展为更多运维统计与快速入口。',
-              ),
+              child: _QuickCheckList(items: quickChecks),
             ),
           ],
         );
@@ -137,6 +220,7 @@ class AdminAccountsPage extends HookConsumerWidget {
 
     final department = useState<String>(_kAllDepartments);
     final classFilter = useState<String>(_kAllClasses);
+    final isFilterHydrated = useState<bool>(false);
     final requestedPage = useState<int>(1);
     final aggregatedAccountsState = useState<List<AdminAccount>>(
       <AdminAccount>[],
@@ -151,9 +235,138 @@ class AdminAccountsPage extends HookConsumerWidget {
     final schoolId = authState.account?.schoolId ?? '';
     final isAuthenticated = authState.isAuthenticated && schoolId.isNotEmpty;
 
+    useEffect(() {
+      final accountId = authState.account?.id;
+      if (!authState.isAuthenticated ||
+          accountId == null ||
+          accountId.isEmpty) {
+        role.value = _AccountRoleFilter.all;
+        statusFilter.value = _AccountStatusFilter.all;
+        department.value = _kAllDepartments;
+        classFilter.value = _kAllClasses;
+        isFilterHydrated.value = true;
+        return null;
+      }
+
+      var cancelled = false;
+      isFilterHydrated.value = false;
+      Future<void>(() async {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final raw = prefs.getString(_kAccountFilterPrefsKey);
+          if (cancelled) {
+            return;
+          }
+          if (raw != null && raw.isNotEmpty) {
+            final decoded = jsonDecode(raw);
+            if (decoded is Map<String, dynamic>) {
+              final entry = decoded[accountId];
+              if (entry is Map<String, dynamic>) {
+                final roleRaw = entry['role'] as String?;
+                final statusRaw = entry['status'] as String?;
+                final departmentRaw = entry['department'] as String?;
+                final classRaw = entry['class'] as String?;
+
+                if (roleRaw != null) {
+                  final matchedRole = _AccountRoleFilter.values.firstWhere(
+                    (value) => value.name == roleRaw,
+                    orElse: () => _AccountRoleFilter.all,
+                  );
+                  if (role.value != matchedRole) {
+                    role.value = matchedRole;
+                  }
+                }
+
+                if (statusRaw != null) {
+                  final matchedStatus = _AccountStatusFilter.values.firstWhere(
+                    (value) => value.name == statusRaw,
+                    orElse: () => _AccountStatusFilter.all,
+                  );
+                  if (statusFilter.value != matchedStatus) {
+                    statusFilter.value = matchedStatus;
+                  }
+                }
+
+                if (departmentRaw != null && departmentRaw.isNotEmpty) {
+                  if (department.value != departmentRaw) {
+                    department.value = departmentRaw;
+                  }
+                }
+
+                if (classRaw != null && classRaw.isNotEmpty) {
+                  if (classFilter.value != classRaw) {
+                    classFilter.value = classRaw;
+                  }
+                }
+              }
+            }
+          }
+        } catch (_) {
+          // Ignore hydration errors to avoid blocking UI.
+        } finally {
+          if (!cancelled) {
+            isFilterHydrated.value = true;
+          }
+        }
+      });
+
+      return () {
+        cancelled = true;
+      };
+    }, [authState.account?.id]);
+
     if (!isAuthenticated) {
       return const Center(child: Text('请先登录以查看账号信息'));
     }
+
+    useEffect(
+      () {
+        if (!isFilterHydrated.value) {
+          return null;
+        }
+        final accountId = authState.account?.id;
+        if (!authState.isAuthenticated ||
+            accountId == null ||
+            accountId.isEmpty) {
+          return null;
+        }
+
+        Future<void>(() async {
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            _AccountFilterPayload payload = <String, dynamic>{};
+            final raw = prefs.getString(_kAccountFilterPrefsKey);
+            if (raw != null && raw.isNotEmpty) {
+              final decoded = jsonDecode(raw);
+              if (decoded is Map<String, dynamic>) {
+                payload = Map<String, dynamic>.from(decoded);
+              }
+            }
+
+            payload[accountId] = <String, dynamic>{
+              'role': role.value.name,
+              'status': statusFilter.value.name,
+              'department': department.value,
+              'class': classFilter.value,
+            };
+
+            await prefs.setString(_kAccountFilterPrefsKey, jsonEncode(payload));
+          } catch (_) {
+            // Ignore persistence errors to keep UX smooth.
+          }
+        });
+
+        return null;
+      },
+      [
+        authState.account?.id,
+        role.value,
+        statusFilter.value,
+        department.value,
+        classFilter.value,
+        isFilterHydrated.value,
+      ],
+    );
 
     final departmentTreeAsync = ref.watch(adminDepartmentTreeProvider);
     final departmentNodes =
@@ -248,7 +461,10 @@ class AdminAccountsPage extends HookConsumerWidget {
     }, [filterKey]);
 
     final accountsState = ref.watch(adminAccountListProvider(request));
-    final invites = admin_data.adminAccountInvites;
+    final invitesState = useState<List<admin_data.AdminAccountInvite>>(
+      admin_data.adminAccountInvites.map((invite) => invite).toList(),
+    );
+    final invites = invitesState.value;
     final scrollController = useScrollController();
 
     useEffect(() {
@@ -516,6 +732,21 @@ class AdminAccountsPage extends HookConsumerWidget {
         ? '未分配班级'
         : selectedClassLabel ?? '已选择班级';
 
+    final filterNotices = <String>[];
+    if (department.value == _kNoDepartment) {
+      filterNotices.add('当前仅显示未分配院系的账号。');
+    }
+    if (classFilter.value == _kNoClass) {
+      if (department.value != _kAllDepartments &&
+          department.value != _kNoDepartment) {
+        final label = departmentLabels[department.value]?.trim();
+        final displayLabel = (label == null || label.isEmpty) ? '所选院系' : label;
+        filterNotices.add('当前仅显示 $displayLabel 下未分配班级的账号。');
+      } else {
+        filterNotices.add('当前仅显示未分配班级的账号。');
+      }
+    }
+
     final hasMore = accounts.length < totalAvailable;
 
     Future<void> handleLoadMore() async {
@@ -655,6 +886,63 @@ class AdminAccountsPage extends HookConsumerWidget {
       );
     }
 
+    void showInviteSnack(String message, {bool error = false}) {
+      if (!context.mounted) {
+        return;
+      }
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+        ),
+      );
+    }
+
+    Future<void> copyInviteLink(admin_data.AdminAccountInvite invite) async {
+      await Clipboard.setData(ClipboardData(text: invite.invitationUrl));
+      showInviteSnack('邀请链接已复制，可直接发送给 ${invite.email}');
+    }
+
+    Future<void> resendInvite(admin_data.AdminAccountInvite invite) async {
+      showInviteSnack('已重新发送邀请邮件至 ${invite.email}');
+    }
+
+    Future<void> revokeInvite(admin_data.AdminAccountInvite invite) async {
+      if (!context.mounted) {
+        return;
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('撤销邀请'),
+            content: Text('确认要撤销发给 ${invite.email} 的邀请吗？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('确认撤销'),
+              ),
+            ],
+          );
+        },
+      );
+      if (confirmed != true) {
+        return;
+      }
+      invitesState.value = [
+        for (final existing in invitesState.value)
+          if (existing.id != invite.id) existing,
+      ];
+      showInviteSnack('已撤销邀请');
+    }
+
     return RefreshIndicator(
       onRefresh: handleRefresh,
       child: ListView(
@@ -675,6 +963,10 @@ class AdminAccountsPage extends HookConsumerWidget {
                       ? '共筛选到 ${metrics.total} 个账号'
                       : '系统共包含 $totalAvailable 个账号',
                 ),
+                if (filterNotices.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _FilterNoticeGroup(notices: filterNotices),
+                ],
                 const SizedBox(height: 12),
                 _AccountMetricsGrid(metrics: metrics),
                 if (hasActiveFilters) ...[
@@ -928,8 +1220,9 @@ class AdminAccountsPage extends HookConsumerWidget {
                   for (final invite in invites)
                     _AccountInviteTile(
                       invite: invite,
-                      onFeatureTap: (feature) =>
-                          _showDevelopmentToast(context, feature),
+                      onCopyLink: () => copyInviteLink(invite),
+                      onResend: () => resendInvite(invite),
+                      onRevoke: () => revokeInvite(invite),
                     ),
                 ],
               ),
@@ -2065,69 +2358,564 @@ class AdminStructuresPage extends HookConsumerWidget {
   }
 }
 
-class AdminOssSettingsPage extends ConsumerWidget {
+class AdminOssSettingsPage extends HookConsumerWidget {
   const AdminOssSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final credentials = admin_data.adminOssCredentials;
-    final policies = admin_data.adminOssPolicies;
-    final logs = admin_data.adminOssAuditLogs;
+    final ossState = ref.watch(adminOssProvider);
+    final ossNotifier = ref.read(adminOssProvider.notifier);
+    final credentialBusy = useState<Set<String>>(<String>{});
+    final policyBusy = useState<Set<String>>(<String>{});
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text('OSS 设置', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.vpn_key_outlined,
-          title: '访问凭证',
-          child: Column(
+    void showSnack(String message) {
+      if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+    }
+
+    String errorMessage(Object error) {
+      if (error is AppException) {
+        return error.message;
+      }
+      if (error is StateError) {
+        return error.message;
+      }
+      return error.toString();
+    }
+
+    Future<void> copyCredential(oss.AdminOssCredential credential) async {
+      final payload = StringBuffer()
+        ..writeln('名称：${credential.name}')
+        ..writeln('Endpoint：${credential.endpoint}')
+        ..writeln('Bucket：${credential.bucket}')
+        ..writeln('访问凭证：${credential.accessKeyMasked}');
+      await Clipboard.setData(ClipboardData(text: payload.toString()));
+      showSnack('已复制 ${credential.name} 的访问信息');
+    }
+
+    Future<void> runCredentialMutation(
+      String id,
+      Future<String?> Function() operation,
+    ) async {
+      if (id.isEmpty) {
+        return;
+      }
+      final current = {...credentialBusy.value}..add(id);
+      credentialBusy.value = current;
+      try {
+        final message = await operation();
+        if (message != null && message.isNotEmpty) {
+          showSnack(message);
+        }
+      } on Object catch (error) {
+        showSnack('操作失败：${errorMessage(error)}');
+      } finally {
+        final updated = {...credentialBusy.value}..remove(id);
+        credentialBusy.value = updated;
+      }
+    }
+
+    Future<void> runPolicyMutation(
+      String id,
+      Future<String?> Function() operation,
+    ) async {
+      if (id.isEmpty) {
+        return;
+      }
+      final current = {...policyBusy.value}..add(id);
+      policyBusy.value = current;
+      try {
+        final message = await operation();
+        if (message != null && message.isNotEmpty) {
+          showSnack(message);
+        }
+      } on Object catch (error) {
+        showSnack('操作失败：${errorMessage(error)}');
+      } finally {
+        final updated = {...policyBusy.value}..remove(id);
+        policyBusy.value = updated;
+      }
+    }
+
+    bool isCredentialBusy(String id) => credentialBusy.value.contains(id);
+    bool isPolicyBusy(String id) => policyBusy.value.contains(id);
+
+    return ossState.when(
+      data: (data) {
+        final credentials = data.credentials;
+        final policies = data.policies;
+        final logs = data.auditLogs;
+        return RefreshIndicator(
+          onRefresh: () => ossNotifier.refresh(),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            physics: const AlwaysScrollableScrollPhysics(),
             children: [
-              for (final c in credentials)
-                _OssCredentialTile(
-                  credential: c,
-                  onFeatureTap: (f) => _showDevelopmentToast(context, f),
-                ),
+              Row(
+                children: [
+                  Text(
+                    'OSS 设置',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: '刷新',
+                    onPressed: () {
+                      unawaited(ossNotifier.refresh());
+                    },
+                    icon: const Icon(Icons.refresh_outlined),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.vpn_key_outlined,
+                title: '访问凭证',
+                child: credentials.isEmpty
+                    ? const _EmptyPlaceholder(
+                        title: '暂无凭证',
+                        description: '尚未配置 OSS 访问凭证，无法上传教学资料。',
+                      )
+                    : Column(
+                        children: [
+                          for (final credential in credentials)
+                            _OssCredentialTile(
+                              credential: credential,
+                              isMutating: isCredentialBusy(credential.id),
+                              onCopyKey: () => copyCredential(credential),
+                              onToggleActive: (value) =>
+                                  runCredentialMutation(
+                                    credential.id,
+                                    () async {
+                                      await ossNotifier.updateCredential(
+                                        credentialId: credential.id,
+                                        active: value,
+                                      );
+                                      return value
+                                          ? '凭证已启用'
+                                          : '凭证已停用';
+                                    },
+                                  ),
+                              onTogglePublicRead: (value) =>
+                                  runCredentialMutation(
+                                    credential.id,
+                                    () async {
+                                      await ossNotifier.updateCredential(
+                                        credentialId: credential.id,
+                                        allowPublicRead: value,
+                                      );
+                                      return value
+                                          ? '已允许公开只读访问'
+                                          : '已关闭公开只读访问';
+                                    },
+                                  ),
+                              onToggleMultipart: (value) =>
+                                  runCredentialMutation(
+                                    credential.id,
+                                    () async {
+                                      await ossNotifier.updateCredential(
+                                        credentialId: credential.id,
+                                        allowMultipartUpload: value,
+                                      );
+                                      return value
+                                          ? '已开启分片上传'
+                                          : '已关闭分片上传';
+                                    },
+                                  ),
+                              onSetPrimary: credential.isPrimary
+                                  ? null
+                                  : () => runCredentialMutation(
+                                        credential.id,
+                                        () async {
+                                          await ossNotifier.updateCredential(
+                                            credentialId: credential.id,
+                                            isPrimary: true,
+                                            active: true,
+                                          );
+                                          return '已设为主凭证，并保持启用状态';
+                                        },
+                                      ),
+                              onEdit: () async {
+                                final formKey = GlobalKey<FormState>();
+                                final nameController =
+                                    TextEditingController(text: credential.name);
+                                final endpointController = TextEditingController(
+                                  text: credential.endpoint,
+                                );
+                                final regionController =
+                                    TextEditingController(text: credential.region);
+                                final bucketController =
+                                    TextEditingController(text: credential.bucket);
+                                final prefixController = TextEditingController(
+                                  text: credential.directoryPrefix,
+                                );
+                                final accessKeyController =
+                                    TextEditingController(
+                                  text: credential.accessKeyMasked,
+                                );
+                                try {
+                                  final result = await showDialog<
+                                      ({
+                                        String name,
+                                        String endpoint,
+                                        String region,
+                                        String bucket,
+                                        String directoryPrefix,
+                                        String accessKeyMasked,
+                                      })>(
+                                    context: context,
+                                    builder: (dialogContext) {
+                                      return AlertDialog(
+                                        title: Text('编辑 ${credential.name}'),
+                                        content: SingleChildScrollView(
+                                          child: Form(
+                                            key: formKey,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                TextFormField(
+                                                  controller: nameController,
+                                                  decoration: const InputDecoration(
+                                                    labelText: '名称',
+                                                    helperText: '仅用于管理端展示，建议包含用途说明',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return '名称不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: endpointController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: 'Endpoint',
+                                                    helperText:
+                                                        '例如：oss-cn-hangzhou.aliyuncs.com',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return 'Endpoint 不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: regionController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: '区域',
+                                                    helperText: '例如：华东 1',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return '区域不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: bucketController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: 'Bucket',
+                                                    helperText: '例如：learn-go-prod',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return 'Bucket 不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: prefixController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: '目录前缀',
+                                                    helperText:
+                                                        '可留空，示例：prod/ 或 teacher/',
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: accessKeyController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                    labelText: '访问凭证标识',
+                                                    helperText:
+                                                        '仅展示已有凭证掩码，例如：LTAI****',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return '访问凭证标识不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(dialogContext).pop(),
+                                            child: const Text('取消'),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () {
+                                              if (!formKey.currentState!.validate()) {
+                                                return;
+                                              }
+                                              Navigator.of(dialogContext).pop((
+                                                name: nameController.text.trim(),
+                                                endpoint:
+                                                    endpointController.text.trim(),
+                                                region: regionController.text.trim(),
+                                                bucket: bucketController.text.trim(),
+                                                directoryPrefix:
+                                                    prefixController.text.trim(),
+                                                accessKeyMasked:
+                                                    accessKeyController.text.trim(),
+                                              ));
+                                            },
+                                            child: const Text('保存'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                  if (result == null) {
+                                    return;
+                                  }
+                                  await runCredentialMutation(
+                                    credential.id,
+                                    () async {
+                                      final updated =
+                                          await ossNotifier.updateCredential(
+                                        credentialId: credential.id,
+                                        name: result.name,
+                                        endpoint: result.endpoint,
+                                        region: result.region,
+                                        bucket: result.bucket,
+                                        directoryPrefix: result.directoryPrefix,
+                                        accessKeyDisplay: result.accessKeyMasked,
+                                      );
+                                      return '已更新 ${updated.name} 的访问信息';
+                                    },
+                                  );
+                                } finally {
+                                  nameController.dispose();
+                                  endpointController.dispose();
+                                  regionController.dispose();
+                                  bucketController.dispose();
+                                  prefixController.dispose();
+                                  accessKeyController.dispose();
+                                }
+                              },
+                            ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.rule_folder_outlined,
+                title: '安全策略',
+                child: policies.isEmpty
+                    ? const _EmptyPlaceholder(
+                        title: '暂无安全策略',
+                        description: '建议为不同业务配置合适的策略，以保障文件访问安全。',
+                      )
+                    : Column(
+                        children: [
+                          for (final policy in policies)
+                            _OssPolicyTile(
+                              policy: policy,
+                              isMutating: isPolicyBusy(policy.id),
+                              onStatusChanged: isPolicyBusy(policy.id)
+                                  ? null
+                                  : (status) => runPolicyMutation(
+                                        policy.id,
+                                        () async {
+                                          final updated =
+                                              await ossNotifier.updatePolicyStatus(
+                                            policyId: policy.id,
+                                            status: status,
+                                          );
+                                          return '已更新 ${updated.name} 策略状态';
+                                        },
+                                      ),
+                            ),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.event_note_outlined,
+                title: '审计记录',
+                child: logs.isEmpty
+                    ? const _EmptyPlaceholder(
+                        title: '暂无审计',
+                        description: '当发生凭证或策略变更时，会在此记录操作轨迹。',
+                      )
+                    : Column(
+                        children: [
+                          for (final log in logs) _OssAuditTile(log: log),
+                        ],
+                      ),
+              ),
             ],
           ),
-        ),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.rule_folder_outlined,
-          title: '安全策略',
-          child: Column(
-            children: [
-              for (final p in policies)
-                _OssPolicyTile(
-                  policy: p,
-                  onFeatureTap: (f) => _showDevelopmentToast(context, f),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.event_note_outlined,
-          title: '审计记录',
-          child: logs.isEmpty
-              ? const _EmptyPlaceholder(title: '暂无审计', description: '')
-              : Column(children: [for (final l in logs) _OssAuditTile(log: l)]),
-        ),
-      ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _ErrorPlaceholder(
+        message: errorMessage(error),
+        onRetry: () {
+          unawaited(ossNotifier.refresh());
+        },
+      ),
     );
   }
 }
 
-class AdminSystemSettingsPage extends ConsumerWidget {
+class AdminSystemSettingsPage extends HookConsumerWidget {
   const AdminSystemSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final switches = admin_data.adminSystemSwitches;
-    final parameters = admin_data.adminSystemParameters;
-    final broadcasts = admin_data.adminSystemBroadcasts;
+    final switchesState = useState<List<admin_data.AdminSystemSwitch>>(
+      admin_data.adminSystemSwitches.map((s) => s).toList(),
+    );
+    final parametersState = useState<List<admin_data.AdminSystemParameter>>(
+      admin_data.adminSystemParameters.map((p) => p).toList(),
+    );
+    final broadcastsState = useState<List<admin_data.AdminSystemBroadcast>>(
+      admin_data.adminSystemBroadcasts.map((b) => b).toList(),
+    );
     final audits = admin_data.adminSystemAuditLogs;
+
+    void showSnack(String message) {
+      if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+    }
+
+    void toggleSystemSwitch(String id, bool value) {
+      final nowLabel = DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
+      switchesState.value = switchesState.value.map((item) {
+        if (item.id == id) {
+          return item.copyWith(
+            enabled: value,
+            lastUpdatedLabel: '最近更新：$nowLabel · 由 系统管理员',
+          );
+        }
+        return item;
+      }).toList();
+      final target = switchesState.value.firstWhere((item) => item.id == id);
+      showSnack(value ? '已启用「${target.title}」' : '已停用「${target.title}」');
+    }
+
+    Future<void> editParameter(
+      admin_data.AdminSystemParameter parameter,
+    ) async {
+      if (parameter.locked) {
+        showSnack('参数 ${parameter.key} 已锁定，无法修改');
+        return;
+      }
+      final controller = TextEditingController(text: parameter.value);
+      final result = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text('编辑 ${parameter.key}'),
+            content: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: '新的参数值',
+                helperText: parameter.description,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () =>
+                    Navigator.of(dialogContext).pop(controller.text.trim()),
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
+      );
+      final normalized = result?.trim();
+      if (normalized == null || normalized.isEmpty) {
+        return;
+      }
+      final nowLabel = DateFormat('MM-dd HH:mm').format(DateTime.now());
+      parametersState.value = parametersState.value.map((item) {
+        if (item.id == parameter.id) {
+          return item.copyWith(
+            value: normalized,
+            lastUpdatedLabel: '更新于 $nowLabel',
+          );
+        }
+        return item;
+      }).toList();
+      showSnack('参数 ${parameter.key} 已更新');
+    }
+
+    void toggleBroadcastPinned(String id) {
+      broadcastsState.value = broadcastsState.value.map((item) {
+        if (item.id == id) {
+          return item.copyWith(pinned: !item.pinned);
+        }
+        return item;
+      }).toList();
+    }
+
+    void updateBroadcastStatus(
+      String id,
+      admin_data.AdminSystemBroadcastStatus status,
+    ) {
+      final nowLabel = DateFormat('MM-dd HH:mm').format(DateTime.now());
+      admin_data.AdminSystemBroadcast? affected;
+      broadcastsState.value = broadcastsState.value.map((item) {
+        if (item.id == id) {
+          affected = item;
+          return item.copyWith(
+            status: status,
+            scheduleLabel: status == admin_data.AdminSystemBroadcastStatus.sent
+                ? '发送时间：$nowLabel'
+                : item.scheduleLabel,
+          );
+        }
+        return item;
+      }).toList();
+      if (affected != null) {
+        showSnack('已更新公告「${affected!.title}」状态');
+      }
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -2139,10 +2927,10 @@ class AdminSystemSettingsPage extends ConsumerWidget {
           title: '系统开关',
           child: Column(
             children: [
-              for (final s in switches)
+              for (final item in switchesState.value)
                 _SystemSwitchTile(
-                  item: s,
-                  onFeatureTap: (f) => _showDevelopmentToast(context, f),
+                  item: item,
+                  onToggle: (value) => toggleSystemSwitch(item.id, value),
                 ),
             ],
           ),
@@ -2153,10 +2941,10 @@ class AdminSystemSettingsPage extends ConsumerWidget {
           title: '平台参数',
           child: Column(
             children: [
-              for (final p in parameters)
+              for (final parameter in parametersState.value)
                 _SystemParameterTile(
-                  item: p,
-                  onFeatureTap: (f) => _showDevelopmentToast(context, f),
+                  item: parameter,
+                  onEdit: () => editParameter(parameter),
                 ),
             ],
           ),
@@ -2167,10 +2955,12 @@ class AdminSystemSettingsPage extends ConsumerWidget {
           title: '通知广播',
           child: Column(
             children: [
-              for (final b in broadcasts)
+              for (final broadcast in broadcastsState.value)
                 _SystemBroadcastTile(
-                  item: b,
-                  onFeatureTap: (f) => _showDevelopmentToast(context, f),
+                  item: broadcast,
+                  onTogglePinned: () => toggleBroadcastPinned(broadcast.id),
+                  onStatusChanged: (status) =>
+                      updateBroadcastStatus(broadcast.id, status),
                 ),
             ],
           ),
@@ -2180,7 +2970,9 @@ class AdminSystemSettingsPage extends ConsumerWidget {
           icon: Icons.rule_outlined,
           title: '审计记录',
           child: Column(
-            children: [for (final a in audits) _SystemAuditTile(item: a)],
+            children: [
+              for (final audit in audits) _SystemAuditTile(item: audit),
+            ],
           ),
         ),
       ],
@@ -2189,6 +2981,129 @@ class AdminSystemSettingsPage extends ConsumerWidget {
 }
 
 // -------------------- Helpers & small widgets --------------------
+
+class _FilterNotice extends StatelessWidget {
+  const _FilterNotice({required this.text, this.hasBottomPadding = true});
+
+  final String text;
+  final bool hasBottomPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: hasBottomPadding ? 8 : 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterNoticeGroup extends StatelessWidget {
+  const _FilterNoticeGroup({required this.notices});
+
+  final List<String> notices;
+
+  @override
+  Widget build(BuildContext context) {
+    if (notices.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < notices.length; i++)
+          _FilterNotice(
+            text: notices[i],
+            hasBottomPadding: i < notices.length - 1,
+          ),
+      ],
+    );
+  }
+}
+
+enum _QuickCheckSeverity { success, info, warning }
+
+class _QuickCheckItem {
+  const _QuickCheckItem({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.severity,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final _QuickCheckSeverity severity;
+}
+
+class _QuickCheckList extends StatelessWidget {
+  const _QuickCheckList({required this.items});
+
+  final List<_QuickCheckItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const _EmptyPlaceholder(
+        title: '暂无提醒',
+        description: '当前没有需要处理的事项。',
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          _QuickCheckRow(item: items[i]),
+          if (i < items.length - 1) const Divider(height: 16),
+        ],
+      ],
+    );
+  }
+}
+
+class _QuickCheckRow extends StatelessWidget {
+  const _QuickCheckRow({required this.item});
+
+  final _QuickCheckItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Color tone = switch (item.severity) {
+      _QuickCheckSeverity.success => theme.colorScheme.primary,
+      _QuickCheckSeverity.info => theme.colorScheme.tertiary,
+      _QuickCheckSeverity.warning => theme.colorScheme.error,
+    };
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(item.icon, color: tone),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.title,
+                style: theme.textTheme.titleSmall?.copyWith(color: tone),
+              ),
+              const SizedBox(height: 4),
+              Text(item.description, style: theme.textTheme.bodySmall),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 class _AdminStatsCard extends StatelessWidget {
   const _AdminStatsCard({
@@ -3333,10 +4248,17 @@ class _AccountMetricCard extends StatelessWidget {
 }
 
 class _AccountInviteTile extends StatelessWidget {
-  const _AccountInviteTile({required this.invite, required this.onFeatureTap});
+  const _AccountInviteTile({
+    required this.invite,
+    required this.onCopyLink,
+    required this.onResend,
+    required this.onRevoke,
+  });
 
   final admin_data.AdminAccountInvite invite;
-  final void Function(String) onFeatureTap;
+  final VoidCallback onCopyLink;
+  final VoidCallback onResend;
+  final VoidCallback onRevoke;
 
   @override
   Widget build(BuildContext context) {
@@ -3400,17 +4322,17 @@ class _AccountInviteTile extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.link_outlined),
                   label: const Text('复制邀请链接'),
-                  onPressed: () => onFeatureTap('复制邀请链接'),
+                  onPressed: onCopyLink,
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.send_outlined),
                   label: const Text('重新发送'),
-                  onPressed: () => onFeatureTap('重新发送邀请'),
+                  onPressed: onResend,
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.close_outlined),
                   label: const Text('撤销邀请'),
-                  onPressed: () => onFeatureTap('撤销邀请'),
+                  onPressed: onRevoke,
                   style: TextButton.styleFrom(
                     foregroundColor: theme.colorScheme.error,
                   ),
@@ -3453,42 +4375,246 @@ String _accountStatusFilterLabel(_AccountStatusFilter f) {
 class _OssCredentialTile extends StatelessWidget {
   const _OssCredentialTile({
     required this.credential,
-    required this.onFeatureTap,
+    required this.isMutating,
+    this.onCopyKey,
+    this.onToggleActive,
+    this.onTogglePublicRead,
+    this.onToggleMultipart,
+    this.onSetPrimary,
+    this.onEdit,
   });
-  final admin_data.AdminOssCredential credential;
-  final void Function(String) onFeatureTap;
+
+  final oss.AdminOssCredential credential;
+  final bool isMutating;
+  final VoidCallback? onCopyKey;
+  final ValueChanged<bool>? onToggleActive;
+  final ValueChanged<bool>? onTogglePublicRead;
+  final ValueChanged<bool>? onToggleMultipart;
+  final VoidCallback? onSetPrimary;
+  final VoidCallback? onEdit;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(Icons.vpn_key_outlined, color: theme.colorScheme.primary),
-      title: Text(credential.name),
-      subtitle: Text('${credential.region} · ${credential.bucket}'),
-      trailing: IconButton(
-        icon: const Icon(Icons.copy_outlined),
-        onPressed: () => onFeatureTap('复制'),
+    final statusColor = credential.statusColor(theme);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(credential.name, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${credential.region} · ${credential.bucket}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '目录前缀：${credential.directoryPrefix.isEmpty ? '-' : credential.directoryPrefix}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Chip(
+                          label: Text(credential.statusLabel),
+                          side: BorderSide(
+                            color: statusColor.withValues(alpha: 0.3),
+                          ),
+                          labelStyle: theme.textTheme.bodySmall?.copyWith(
+                            color: statusColor,
+                          ),
+                          backgroundColor: statusColor.withValues(alpha: 0.12),
+                        ),
+                        if (credential.isPrimary)
+                          Chip(
+                            label: const Text('主凭证'),
+                            backgroundColor: theme.colorScheme.primary,
+                            labelStyle: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Switch.adaptive(
+                    value: credential.active,
+                    onChanged: isMutating ? null : onToggleActive,
+                  ),
+                  Text(
+                    credential.lastRotatedLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                  if (isMutating) ...[
+                    const SizedBox(height: 4),
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.0),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('编辑信息'),
+                onPressed: isMutating ? null : onEdit,
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.key_outlined),
+                label: const Text('复制访问信息'),
+                onPressed: onCopyKey,
+              ),
+              if (!credential.isPrimary)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.star_outline),
+                  label: const Text('设为主凭证'),
+                  onPressed: isMutating ? null : onSetPrimary,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('允许公开只读访问'),
+            subtitle: const Text('开启后可直接对外共享只读资源'),
+            value: credential.allowPublicRead,
+            onChanged: isMutating ? null : onTogglePublicRead,
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('允许分片上传'),
+            subtitle: const Text('适用于大文件或断点续传场景'),
+            value: credential.allowMultipartUpload,
+            onChanged: isMutating ? null : onToggleMultipart,
+          ),
+        ],
       ),
     );
   }
 }
 
 class _OssPolicyTile extends StatelessWidget {
-  const _OssPolicyTile({required this.policy, required this.onFeatureTap});
-  final admin_data.AdminOssPolicy policy;
-  final void Function(String) onFeatureTap;
+  const _OssPolicyTile({
+    required this.policy,
+    required this.isMutating,
+    this.onStatusChanged,
+  });
+
+  final oss.AdminOssPolicy policy;
+  final bool isMutating;
+  final ValueChanged<oss.AdminOssPolicyStatus>? onStatusChanged;
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(policy.name),
-      subtitle: Text(policy.description),
+    final theme = Theme.of(context);
+    final statusColor = policy.status.color(theme);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(policy.name, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(policy.description, style: theme.textTheme.bodySmall),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              DropdownButton<oss.AdminOssPolicyStatus>(
+                value: policy.status,
+                onChanged: isMutating
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          onStatusChanged?.call(value);
+                        }
+                      },
+                items: oss.AdminOssPolicyStatus.values
+                    .map(
+                      (status) => DropdownMenuItem<oss.AdminOssPolicyStatus>(
+                        value: status,
+                        child: Text(status.label),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(width: 12),
+              Chip(
+                label: Text(policy.status.label),
+                backgroundColor: statusColor.withValues(alpha: 0.12),
+                labelStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: statusColor,
+                ),
+              ),
+              if (isMutating) ...[
+                const SizedBox(width: 12),
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2.0),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Chip(
+                avatar: const Icon(Icons.inventory_2_outlined, size: 16),
+                label: Text(policy.appliesTo),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            policy.lastUpdatedLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _OssAuditTile extends StatelessWidget {
   const _OssAuditTile({required this.log});
-  final admin_data.AdminOssAuditLog log;
+  final oss.AdminOssAuditLog log;
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -3499,41 +4625,218 @@ class _OssAuditTile extends StatelessWidget {
 }
 
 class _SystemSwitchTile extends StatelessWidget {
-  const _SystemSwitchTile({required this.item, required this.onFeatureTap});
+  const _SystemSwitchTile({required this.item, required this.onToggle});
+
   final admin_data.AdminSystemSwitch item;
-  final void Function(String) onFeatureTap;
+  final ValueChanged<bool> onToggle;
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(item.title),
-      subtitle: Text(item.description),
-      trailing: Switch.adaptive(
-        value: item.enabled,
-        onChanged: (_) => onFeatureTap('切换 ${item.title}'),
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.title, style: theme.textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(item.description, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Chip(
+                      label: Text(item.environment),
+                      avatar: const Icon(Icons.cloud_outlined, size: 16),
+                    ),
+                    for (final tag in item.tags)
+                      Chip(
+                        label: Text(tag),
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.lastUpdatedLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(value: item.enabled, onChanged: onToggle),
+        ],
       ),
     );
   }
 }
 
 class _SystemParameterTile extends StatelessWidget {
-  const _SystemParameterTile({required this.item, required this.onFeatureTap});
+  const _SystemParameterTile({required this.item, required this.onEdit});
+
   final admin_data.AdminSystemParameter item;
-  final void Function(String) onFeatureTap;
+  final VoidCallback onEdit;
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(title: Text(item.key), subtitle: Text('当前值：${item.value}'));
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(item.key, style: theme.textTheme.titleMedium),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: item.locked ? '参数已锁定' : '编辑参数',
+                onPressed: item.locked ? null : onEdit,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('当前值：${item.value}', style: theme.textTheme.bodySmall),
+          const SizedBox(height: 4),
+          Text('作用域：${item.scope}', style: theme.textTheme.bodySmall),
+          const SizedBox(height: 4),
+          Text(
+            item.lastUpdatedLabel,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          if (item.locked) ...[
+            const SizedBox(height: 6),
+            Chip(
+              label: const Text('已锁定'),
+              avatar: const Icon(Icons.lock_outline, size: 16),
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
 class _SystemBroadcastTile extends StatelessWidget {
-  const _SystemBroadcastTile({required this.item, required this.onFeatureTap});
+  const _SystemBroadcastTile({
+    required this.item,
+    required this.onTogglePinned,
+    required this.onStatusChanged,
+  });
+
   final admin_data.AdminSystemBroadcast item;
-  final void Function(String) onFeatureTap;
+  final VoidCallback onTogglePinned;
+  final ValueChanged<admin_data.AdminSystemBroadcastStatus> onStatusChanged;
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(item.title),
-      subtitle: Text(item.messagePreview),
+    final theme = Theme.of(context);
+    final statusColor = item.status.color(theme);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(item.messagePreview, style: theme.textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  item.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                ),
+                tooltip: item.pinned ? '取消置顶' : '置顶公告',
+                onPressed: onTogglePinned,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Chip(
+                label: Text(item.status.label),
+                backgroundColor: statusColor.withValues(alpha: 0.12),
+                labelStyle: theme.textTheme.bodySmall?.copyWith(
+                  color: statusColor,
+                ),
+              ),
+              Chip(
+                label: Text(item.targetLabel),
+                avatar: const Icon(Icons.group_outlined, size: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              DropdownButton<admin_data.AdminSystemBroadcastStatus>(
+                value: item.status,
+                onChanged: (value) {
+                  if (value != null) {
+                    onStatusChanged(value);
+                  }
+                },
+                items: admin_data.AdminSystemBroadcastStatus.values
+                    .map(
+                      (status) =>
+                          DropdownMenuItem<
+                            admin_data.AdminSystemBroadcastStatus
+                          >(value: status, child: Text(status.label)),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                item.scheduleLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text('创建人：${item.createdBy}', style: theme.textTheme.bodySmall),
+        ],
+      ),
     );
   }
 }
@@ -3548,15 +4851,4 @@ class _SystemAuditTile extends StatelessWidget {
       subtitle: Text('${item.category} · ${item.operator}'),
     );
   }
-}
-
-void _showDevelopmentToast(BuildContext context, String feature) {
-  final messenger = ScaffoldMessenger.of(context);
-  messenger.hideCurrentSnackBar();
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text('$feature 功能即将上线'),
-      behavior: SnackBarBehavior.floating,
-    ),
-  );
 }

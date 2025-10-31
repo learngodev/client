@@ -8,6 +8,7 @@ import '../../auth/application/auth_controller.dart';
 import '../data/admin_repository.dart';
 import '../domain/accounts.dart';
 import '../domain/models.dart';
+import '../domain/oss.dart' as oss;
 
 int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
   final nameCompare = a.department.name.toLowerCase().compareTo(
@@ -509,6 +510,190 @@ class AdminAccountListRequest {
     query,
   );
 }
+
+class AdminOssState {
+  const AdminOssState({
+    this.credentials = const <oss.AdminOssCredential>[],
+    this.policies = const <oss.AdminOssPolicy>[],
+    this.auditLogs = const <oss.AdminOssAuditLog>[],
+  });
+
+  final List<oss.AdminOssCredential> credentials;
+  final List<oss.AdminOssPolicy> policies;
+  final List<oss.AdminOssAuditLog> auditLogs;
+
+  AdminOssState copyWith({
+    List<oss.AdminOssCredential>? credentials,
+    List<oss.AdminOssPolicy>? policies,
+    List<oss.AdminOssAuditLog>? auditLogs,
+  }) {
+    return AdminOssState(
+      credentials: credentials ?? this.credentials,
+      policies: policies ?? this.policies,
+      auditLogs: auditLogs ?? this.auditLogs,
+    );
+  }
+}
+
+class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
+  static const int _defaultAuditLimit = 20;
+
+  @override
+  Future<AdminOssState> build() async {
+    final authState = ref.watch(authStateProvider);
+    if (!authState.isAuthenticated) {
+      return const AdminOssState();
+    }
+    final schoolId = authState.account?.schoolId ?? '';
+    if (schoolId.isEmpty) {
+      throw StateError('缺少学校信息，请重新登录后再试。');
+    }
+    return _fetchAll(schoolId: schoolId, limit: _defaultAuditLimit);
+  }
+
+  Future<void> refresh({int limit = _defaultAuditLimit}) async {
+    final schoolId = _requireSchoolId();
+    final result = await AsyncValue.guard(
+      () => _fetchAll(schoolId: schoolId, limit: limit),
+    );
+    state = result;
+  }
+
+  Future<oss.AdminOssCredential> updateCredential({
+    required String credentialId,
+    String? name,
+    String? endpoint,
+    String? region,
+    String? bucket,
+    String? directoryPrefix,
+    String? accessKeyDisplay,
+    bool? allowPublicRead,
+    bool? allowMultipartUpload,
+    bool? active,
+    bool? isPrimary,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final credential = await repository.updateOssCredential(
+      schoolId: schoolId,
+      credentialId: credentialId,
+      name: name,
+      endpoint: endpoint,
+      region: region,
+      bucket: bucket,
+      directoryPrefix: directoryPrefix,
+      accessKeyDisplay: accessKeyDisplay,
+      allowPublicRead: allowPublicRead,
+      allowMultipartUpload: allowMultipartUpload,
+      active: active,
+      isPrimary: isPrimary,
+    );
+
+    state = state.whenData((current) {
+      final updatedCredentials = current.credentials.map((item) {
+        if (item.id == credential.id) {
+          return credential;
+        }
+        if (credential.isPrimary && item.isPrimary) {
+          return item.copyWith(isPrimary: false);
+        }
+        return item;
+      }).toList();
+      return current.copyWith(credentials: updatedCredentials);
+    });
+
+    await _refreshAuditLogs(schoolId: schoolId, limit: _defaultAuditLimit);
+    return credential;
+  }
+
+  Future<oss.AdminOssPolicy> updatePolicyStatus({
+    required String policyId,
+    required oss.AdminOssPolicyStatus status,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final policy = await repository.updateOssPolicyStatus(
+      schoolId: schoolId,
+      policyId: policyId,
+      status: status,
+    );
+
+    state = state.whenData((current) {
+      final updatedPolicies = current.policies.map((item) {
+        if (item.id == policy.id) {
+          return policy;
+        }
+        return item;
+      }).toList();
+      return current.copyWith(policies: updatedPolicies);
+    });
+
+    await _refreshAuditLogs(schoolId: schoolId, limit: _defaultAuditLimit);
+    return policy;
+  }
+
+  Future<void> _refreshAuditLogs({
+    required String schoolId,
+    required int limit,
+  }) async {
+    try {
+      final repository = ref.read(adminRepositoryProvider);
+      final logs = await repository.fetchOssAuditLogs(
+        schoolId: schoolId,
+        limit: limit,
+      );
+      state = state.whenData(
+        (current) => current.copyWith(auditLogs: logs),
+      );
+    } catch (_) {
+      // 忽略日志刷新失败，避免影响主流程。
+    }
+  }
+
+  Future<AdminOssState> _fetchAll({
+    required String schoolId,
+    required int limit,
+  }) async {
+    final repository = ref.read(adminRepositoryProvider);
+    final credentialsFuture = repository.fetchOssCredentials(
+      schoolId: schoolId,
+    );
+    final policiesFuture = repository.fetchOssPolicies(
+      schoolId: schoolId,
+    );
+    final logsFuture = repository.fetchOssAuditLogs(
+      schoolId: schoolId,
+      limit: limit,
+    );
+
+    final credentials = await credentialsFuture;
+    final policies = await policiesFuture;
+    final logs = await logsFuture;
+
+    return AdminOssState(
+      credentials: credentials,
+      policies: policies,
+      auditLogs: logs,
+    );
+  }
+
+  String _requireSchoolId() {
+    final authState = ref.read(authStateProvider);
+    if (!authState.isAuthenticated) {
+      throw StateError('当前登录状态已失效，请重新登录。');
+    }
+    final schoolId = authState.account?.schoolId ?? '';
+    if (schoolId.isEmpty) {
+      throw StateError('缺少学校信息，请重新登录后再试。');
+    }
+    return schoolId;
+  }
+}
+
+final adminOssProvider =
+    AsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
+      AdminOssNotifier.new,
+    );
 
 final adminExpandedDepartmentsProvider =
     StateNotifierProvider<AdminExpandedDepartmentsNotifier, Set<String>>(

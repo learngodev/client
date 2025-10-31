@@ -5,6 +5,7 @@ import '../../../core/exceptions/app_exception.dart';
 import '../../../core/network/dio_provider.dart';
 import '../domain/accounts.dart';
 import '../domain/models.dart';
+import '../domain/oss.dart';
 
 class AdminRepository {
   const AdminRepository(this._dio);
@@ -216,6 +217,254 @@ class AdminRepository {
       failureMessage: '删除账号失败',
       requestType: _AccountActionRequestType.delete,
     );
+  }
+
+  Future<List<AdminOssCredential>> fetchOssCredentials({
+    required String schoolId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/oss/credentials',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取 OSS 凭证列表');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取 OSS 凭证列表失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final list = _extractMapList(data, nestedKey: 'credentials')
+          .map(AdminOssCredential.fromJson)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+      return list;
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<AdminOssPolicy>> fetchOssPolicies({
+    required String schoolId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/oss/policies',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取 OSS 策略列表');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取 OSS 策略失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return _extractMapList(data, nestedKey: 'policies')
+          .map(AdminOssPolicy.fromJson)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<AdminOssAuditLog>> fetchOssAuditLogs({
+    required String schoolId,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/oss/audit_logs',
+        queryParameters: {'school_id': schoolId, 'limit': limit},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取 OSS 审计记录');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取 OSS 审计记录失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return _extractMapList(data, nestedKey: 'logs')
+          .map(AdminOssAuditLog.fromJson)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminOssCredential> updateOssCredential({
+    required String schoolId,
+    required String credentialId,
+    String? name,
+    String? endpoint,
+    String? region,
+    String? bucket,
+    String? directoryPrefix,
+    String? accessKeyDisplay,
+    bool? allowPublicRead,
+    bool? allowMultipartUpload,
+    bool? active,
+    bool? isPrimary,
+  }) async {
+    final payload = <String, dynamic>{'school_id': schoolId};
+    void putIfNotNull(String key, dynamic value) {
+      if (value != null) {
+        payload[key] = value;
+      }
+    }
+
+    putIfNotNull('name', name);
+    putIfNotNull('endpoint', endpoint);
+    putIfNotNull('region', region);
+    putIfNotNull('bucket', bucket);
+    putIfNotNull('directory_prefix', directoryPrefix);
+    putIfNotNull('access_key_display', accessKeyDisplay);
+    if (allowPublicRead != null) {
+      payload['allow_public_read'] = allowPublicRead;
+    }
+    if (allowMultipartUpload != null) {
+      payload['allow_multipart_upload'] = allowMultipartUpload;
+    }
+    if (active != null) {
+      payload['active'] = active;
+    }
+    if (isPrimary != null) {
+      payload['is_primary'] = isPrimary;
+    }
+
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/oss/credentials/$credentialId',
+        data: payload,
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('更新 OSS 凭证失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新 OSS 凭证失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is! Map<String, dynamic>) {
+        throw const AppException('更新凭证返回数据格式异常');
+      }
+      final credentialMap = data['credential'];
+      if (credentialMap is! Map<String, dynamic>) {
+        throw const AppException('更新凭证返回数据缺失');
+      }
+      return AdminOssCredential.fromJson(credentialMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminOssPolicy> updateOssPolicyStatus({
+    required String schoolId,
+    required String policyId,
+    required AdminOssPolicyStatus status,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/oss/policies/$policyId',
+        data: <String, dynamic>{
+          'school_id': schoolId,
+          'status': status.apiValue,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('更新 OSS 策略失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新 OSS 策略失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is! Map<String, dynamic>) {
+        throw const AppException('更新策略返回数据格式异常');
+      }
+      final policyMap = data['policy'];
+      if (policyMap is! Map<String, dynamic>) {
+        throw const AppException('更新策略返回数据缺失');
+      }
+      return AdminOssPolicy.fromJson(policyMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
   }
 
   Future<String> createDepartment({
