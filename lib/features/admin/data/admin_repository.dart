@@ -339,6 +339,106 @@ class AdminRepository {
     }
   }
 
+  Future<AdminOssCredential> createOssCredential({
+    required String schoolId,
+    required String name,
+    required String endpoint,
+    required String region,
+    required String bucket,
+    String directoryPrefix = '',
+    String accessKeyDisplay = '',
+    bool allowPublicRead = false,
+    bool allowMultipartUpload = false,
+    bool active = true,
+    bool isPrimary = false,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/oss/credentials',
+        data: <String, dynamic>{
+          'school_id': schoolId,
+          'name': name,
+          'endpoint': endpoint,
+          'region': region,
+          'bucket': bucket,
+          'directory_prefix': directoryPrefix,
+          'access_key_display': accessKeyDisplay,
+          'allow_public_read': allowPublicRead,
+          'allow_multipart_upload': allowMultipartUpload,
+          'active': active,
+          'is_primary': isPrimary,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('创建 OSS 凭证失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '创建 OSS 凭证失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is! Map<String, dynamic>) {
+        throw const AppException('创建凭证返回数据格式异常');
+      }
+      final credentialMap = data['credential'];
+      if (credentialMap is! Map<String, dynamic>) {
+        throw const AppException('创建凭证返回数据缺失');
+      }
+      return AdminOssCredential.fromJson(credentialMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> deleteOssCredential({
+    required String schoolId,
+    required String credentialId,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/oss/credentials/$credentialId',
+        data: <String, dynamic>{'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('删除 OSS 凭证失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '删除 OSS 凭证失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
   Future<AdminOssCredential> updateOssCredential({
     required String schoolId,
     required String credentialId,
@@ -404,6 +504,94 @@ class AdminRepository {
         throw const AppException('更新凭证返回数据缺失');
       }
       return AdminOssCredential.fromJson(credentialMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminOssPolicy> createOssPolicy({
+    required String schoolId,
+    required String name,
+    required String appliesTo,
+    String description = '',
+    AdminOssPolicyStatus status = AdminOssPolicyStatus.enabled,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/oss/policies',
+        data: <String, dynamic>{
+          'school_id': schoolId,
+          'name': name,
+          'description': description,
+          'applies_to': appliesTo,
+          'status': status.apiValue,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('创建 OSS 策略失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '创建 OSS 策略失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is! Map<String, dynamic>) {
+        throw const AppException('创建策略返回数据格式异常');
+      }
+      final policyMap = data['policy'];
+      if (policyMap is! Map<String, dynamic>) {
+        throw const AppException('创建策略返回数据缺失');
+      }
+      return AdminOssPolicy.fromJson(policyMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> deleteOssPolicy({
+    required String schoolId,
+    required String policyId,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/oss/policies/$policyId',
+        data: <String, dynamic>{'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('删除 OSS 策略失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '删除 OSS 策略失败',
+          details: error?['details']?.toString(),
+        );
+      }
     } on DioException catch (error) {
       final body = error.response?.data;
       String? message;

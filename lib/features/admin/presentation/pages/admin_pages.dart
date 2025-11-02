@@ -2367,6 +2367,9 @@ class AdminOssSettingsPage extends HookConsumerWidget {
     final ossNotifier = ref.read(adminOssProvider.notifier);
     final credentialBusy = useState<Set<String>>(<String>{});
     final policyBusy = useState<Set<String>>(<String>{});
+  final auditBusy = useState(false);
+  final creatingCredential = useState(false);
+  final creatingPolicy = useState(false);
 
     void showSnack(String message) {
       if (!context.mounted) return;
@@ -2444,11 +2447,455 @@ class AdminOssSettingsPage extends HookConsumerWidget {
     bool isCredentialBusy(String id) => credentialBusy.value.contains(id);
     bool isPolicyBusy(String id) => policyBusy.value.contains(id);
 
+    Future<void> createCredential() async {
+      if (creatingCredential.value) {
+        return;
+      }
+      final formKey = GlobalKey<FormState>();
+      final nameController = TextEditingController();
+      final endpointController = TextEditingController();
+      final regionController = TextEditingController();
+      final bucketController = TextEditingController();
+      final prefixController = TextEditingController();
+      final accessKeyController = TextEditingController();
+      var allowPublicRead = false;
+      var allowMultipart = false;
+      var isPrimary = false;
+      var active = true;
+      try {
+        final result = await showDialog<({
+          String name,
+          String endpoint,
+          String region,
+          String bucket,
+          String directoryPrefix,
+          String accessKey,
+          bool allowPublicRead,
+          bool allowMultipart,
+          bool isPrimary,
+          bool active,
+        })>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('新增 OSS 凭证'),
+              content: StatefulBuilder(
+                builder: (context, setStateBuilder) {
+                  return SingleChildScrollView(
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(
+                            controller: nameController,
+                            decoration: const InputDecoration(
+                              labelText: '名称',
+                              helperText: '仅用于管理端展示，建议包含用途说明',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入名称';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            controller: endpointController,
+                            decoration: const InputDecoration(
+                              labelText: 'Endpoint',
+                              hintText: 'https://oss-cn-example.aliyuncs.com',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入 Endpoint';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            controller: regionController,
+                            decoration: const InputDecoration(
+                              labelText: '区域',
+                              hintText: 'cn-example',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入区域';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            controller: bucketController,
+                            decoration: const InputDecoration(
+                              labelText: 'Bucket',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入 Bucket 名称';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            controller: prefixController,
+                            decoration: const InputDecoration(
+                              labelText: '目录前缀',
+                              helperText: '可选，建议以 / 结尾',
+                            ),
+                          ),
+                          TextFormField(
+                            controller: accessKeyController,
+                            decoration: const InputDecoration(
+                              labelText: '访问凭证展示值',
+                              helperText: '仅用于标识，推荐使用已脱敏 AccessKey',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('启用凭证'),
+                            value: active,
+                            onChanged: (value) {
+                              setStateBuilder(() {
+                                active = value;
+                              });
+                            },
+                          ),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('设为主凭证'),
+                            subtitle: const Text('主凭证会默认启用并覆盖旧主凭证'),
+                            value: isPrimary,
+                            onChanged: (value) {
+                              setStateBuilder(() {
+                                isPrimary = value;
+                                if (value) {
+                                  active = true;
+                                }
+                              });
+                            },
+                          ),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('允许公开只读访问'),
+                            value: allowPublicRead,
+                            onChanged: (value) {
+                              setStateBuilder(() {
+                                allowPublicRead = value;
+                              });
+                            },
+                          ),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text('允许分片上传'),
+                            value: allowMultipart,
+                            onChanged: (value) {
+                              setStateBuilder(() {
+                                allowMultipart = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (!(formKey.currentState?.validate() ?? false)) {
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop((
+                      name: nameController.text.trim(),
+                      endpoint: endpointController.text.trim(),
+                      region: regionController.text.trim(),
+                      bucket: bucketController.text.trim(),
+                      directoryPrefix: prefixController.text.trim(),
+                      accessKey: accessKeyController.text.trim(),
+                      allowPublicRead: allowPublicRead,
+                      allowMultipart: allowMultipart,
+                      isPrimary: isPrimary,
+                      active: active,
+                    ));
+                  },
+                  child: const Text('创建'),
+                ),
+              ],
+            );
+          },
+        );
+        if (result == null) {
+          return;
+        }
+        creatingCredential.value = true;
+        final created = await ossNotifier.createCredential(
+          name: result.name,
+          endpoint: result.endpoint,
+          region: result.region,
+          bucket: result.bucket,
+          directoryPrefix: result.directoryPrefix,
+          accessKeyDisplay: result.accessKey,
+          allowPublicRead: result.allowPublicRead,
+          allowMultipartUpload: result.allowMultipart,
+          active: result.active,
+          isPrimary: result.isPrimary,
+        );
+        showSnack('已创建凭证「${created.name}」');
+      } on Object catch (error) {
+        showSnack('创建凭证失败：${errorMessage(error)}');
+      } finally {
+        creatingCredential.value = false;
+        nameController.dispose();
+        endpointController.dispose();
+        regionController.dispose();
+        bucketController.dispose();
+        prefixController.dispose();
+        accessKeyController.dispose();
+      }
+    }
+
+    Future<void> confirmDeleteCredential(
+      oss.AdminOssCredential credential,
+    ) async {
+      if (credential.isPrimary || isCredentialBusy(credential.id)) {
+        return;
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('删除凭证'),
+            content: Text('确定删除「${credential.name}」？该操作不可撤销。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('删除'),
+              ),
+            ],
+          );
+        },
+      );
+      if (confirmed != true) {
+        return;
+      }
+      await runCredentialMutation(
+        credential.id,
+        () async {
+          await ossNotifier.deleteCredential(credentialId: credential.id);
+          return '已删除凭证「${credential.name}」';
+        },
+      );
+    }
+
+    Future<void> createPolicy() async {
+      if (creatingPolicy.value) {
+        return;
+      }
+      final formKey = GlobalKey<FormState>();
+      final nameController = TextEditingController();
+      final descriptionController = TextEditingController();
+      final appliesToController = TextEditingController();
+      var status = oss.AdminOssPolicyStatus.enabled;
+      try {
+        final result = await showDialog<({
+          String name,
+          String description,
+          String appliesTo,
+          oss.AdminOssPolicyStatus status,
+        })>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('新增安全策略'),
+              content: StatefulBuilder(
+                builder: (context, setStateBuilder) {
+                  return SingleChildScrollView(
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(
+                            controller: nameController,
+                            decoration: const InputDecoration(
+                              labelText: '策略名称',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入策略名称';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            controller: appliesToController,
+                            decoration: const InputDecoration(
+                              labelText: '适用范围',
+                              helperText: '例如：student_uploads',
+                            ),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return '请输入适用范围标识';
+                              }
+                              return null;
+                            },
+                          ),
+                          TextFormField(
+                            controller: descriptionController,
+                            decoration: const InputDecoration(
+                              labelText: '描述',
+                              helperText: '可选，说明策略用途',
+                            ),
+                            maxLines: 3,
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<oss.AdminOssPolicyStatus>(
+                            value: status,
+                            decoration: const InputDecoration(labelText: '策略状态'),
+                            items: oss.AdminOssPolicyStatus.values
+                                .map(
+                                  (value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Text(value.label),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                setStateBuilder(() {
+                                  status = value;
+                                });
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (!(formKey.currentState?.validate() ?? false)) {
+                      return;
+                    }
+                    Navigator.of(dialogContext).pop((
+                      name: nameController.text.trim(),
+                      description: descriptionController.text.trim(),
+                      appliesTo: appliesToController.text.trim(),
+                      status: status,
+                    ));
+                  },
+                  child: const Text('创建'),
+                ),
+              ],
+            );
+          },
+        );
+        if (result == null) {
+          return;
+        }
+        creatingPolicy.value = true;
+        final created = await ossNotifier.createPolicy(
+          name: result.name,
+          description: result.description,
+          appliesTo: result.appliesTo,
+          status: result.status,
+        );
+        showSnack('已创建策略「${created.name}」');
+      } on Object catch (error) {
+        showSnack('创建策略失败：${errorMessage(error)}');
+      } finally {
+        creatingPolicy.value = false;
+        nameController.dispose();
+        descriptionController.dispose();
+        appliesToController.dispose();
+      }
+    }
+
+    Future<void> confirmDeletePolicy(oss.AdminOssPolicy policy) async {
+      if (isPolicyBusy(policy.id)) {
+        return;
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('删除策略'),
+            content: Text('确认删除「${policy.name}」策略？该操作不可恢复。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('删除'),
+              ),
+            ],
+          );
+        },
+      );
+      if (confirmed != true) {
+        return;
+      }
+      await runPolicyMutation(
+        policy.id,
+        () async {
+          await ossNotifier.deletePolicy(policyId: policy.id);
+          return '已删除策略「${policy.name}」';
+        },
+      );
+    }
+
+    Future<void> loadMoreAudits() async {
+      if (auditBusy.value) {
+        return;
+      }
+      final hasMore =
+          ref.read(adminOssProvider).valueOrNull?.hasMoreAuditLogs ?? false;
+      if (!hasMore) {
+        return;
+      }
+      auditBusy.value = true;
+      try {
+        await ossNotifier.loadMoreAuditLogs();
+      } on Object catch (error) {
+        showSnack('加载审计记录失败：${errorMessage(error)}');
+      } finally {
+        auditBusy.value = false;
+      }
+    }
+
     return ossState.when(
       data: (data) {
-        final credentials = data.credentials;
-        final policies = data.policies;
-        final logs = data.auditLogs;
+  final credentials = data.credentials;
+  final policies = data.policies;
+  final logs = data.auditLogs;
+  final hasMoreLogs = data.hasMoreAuditLogs;
         return RefreshIndicator(
           onRefresh: () => ossNotifier.refresh(),
           child: ListView(
@@ -2475,71 +2922,90 @@ class AdminOssSettingsPage extends HookConsumerWidget {
               _AccountSectionCard(
                 icon: Icons.vpn_key_outlined,
                 title: '访问凭证',
-                child: credentials.isEmpty
-                    ? const _EmptyPlaceholder(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed:
+                            creatingCredential.value ? null : createCredential,
+                        icon: creatingCredential.value
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.add_circle_outline),
+                        label: Text(
+                          creatingCredential.value ? '创建中…' : '新增凭证',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (credentials.isEmpty)
+                      const _EmptyPlaceholder(
                         title: '暂无凭证',
                         description: '尚未配置 OSS 访问凭证，无法上传教学资料。',
-                      )
-                    : Column(
-                        children: [
-                          for (final credential in credentials)
-                            _OssCredentialTile(
-                              credential: credential,
-                              isMutating: isCredentialBusy(credential.id),
-                              onCopyKey: () => copyCredential(credential),
-                              onToggleActive: (value) =>
-                                  runCredentialMutation(
-                                    credential.id,
-                                    () async {
-                                      await ossNotifier.updateCredential(
-                                        credentialId: credential.id,
-                                        active: value,
-                                      );
-                                      return value
-                                          ? '凭证已启用'
-                                          : '凭证已停用';
-                                    },
-                                  ),
-                              onTogglePublicRead: (value) =>
-                                  runCredentialMutation(
-                                    credential.id,
-                                    () async {
-                                      await ossNotifier.updateCredential(
-                                        credentialId: credential.id,
-                                        allowPublicRead: value,
-                                      );
-                                      return value
-                                          ? '已允许公开只读访问'
-                                          : '已关闭公开只读访问';
-                                    },
-                                  ),
-                              onToggleMultipart: (value) =>
-                                  runCredentialMutation(
-                                    credential.id,
-                                    () async {
-                                      await ossNotifier.updateCredential(
-                                        credentialId: credential.id,
-                                        allowMultipartUpload: value,
-                                      );
-                                      return value
-                                          ? '已开启分片上传'
-                                          : '已关闭分片上传';
-                                    },
-                                  ),
-                              onSetPrimary: credential.isPrimary
-                                  ? null
-                                  : () => runCredentialMutation(
-                                        credential.id,
-                                        () async {
-                                          await ossNotifier.updateCredential(
-                                            credentialId: credential.id,
-                                            isPrimary: true,
-                                            active: true,
-                                          );
-                                          return '已设为主凭证，并保持启用状态';
-                                        },
-                                      ),
-                              onEdit: () async {
+                      ),
+                    for (final credential in credentials)
+                      _OssCredentialTile(
+                        credential: credential,
+                        isMutating: isCredentialBusy(credential.id),
+                        onCopyKey: () => copyCredential(credential),
+                        onToggleActive: (value) =>
+                            runCredentialMutation(
+                              credential.id,
+                              () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  active: value,
+                                );
+                                return value
+                                    ? '凭证已启用'
+                                    : '凭证已停用';
+                              },
+                            ),
+                        onTogglePublicRead: (value) =>
+                            runCredentialMutation(
+                              credential.id,
+                              () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  allowPublicRead: value,
+                                );
+                                return value
+                                    ? '已允许公开只读访问'
+                                    : '已关闭公开只读访问';
+                              },
+                            ),
+                        onToggleMultipart: (value) =>
+                            runCredentialMutation(
+                              credential.id,
+                              () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  allowMultipartUpload: value,
+                                );
+                                return value
+                                    ? '已开启分片上传'
+                                    : '已关闭分片上传';
+                              },
+                            ),
+                        onSetPrimary: credential.isPrimary
+                            ? null
+                            : () => runCredentialMutation(
+                                  credential.id,
+                                  () async {
+                                    await ossNotifier.updateCredential(
+                                      credentialId: credential.id,
+                                      isPrimary: true,
+                                      active: true,
+                                    );
+                                    return '已设为主凭证，并保持启用状态';
+                                  },
+                                ),
+                        onEdit: () async {
                                 final formKey = GlobalKey<FormState>();
                                 final nameController =
                                     TextEditingController(text: credential.name);
@@ -2729,40 +3195,63 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                 }
                               },
                             ),
-                        ],
+                        onDelete: credential.isPrimary
+                            ? null
+                            : () => confirmDeleteCredential(credential),
                       ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               _AccountSectionCard(
                 icon: Icons.rule_folder_outlined,
                 title: '安全策略',
-                child: policies.isEmpty
-                    ? const _EmptyPlaceholder(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed: creatingPolicy.value ? null : createPolicy,
+                        icon: creatingPolicy.value
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.add_task_outlined),
+                        label: Text(
+                          creatingPolicy.value ? '创建中…' : '新增策略',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (policies.isEmpty)
+                      const _EmptyPlaceholder(
                         title: '暂无安全策略',
                         description: '建议为不同业务配置合适的策略，以保障文件访问安全。',
-                      )
-                    : Column(
-                        children: [
-                          for (final policy in policies)
-                            _OssPolicyTile(
-                              policy: policy,
-                              isMutating: isPolicyBusy(policy.id),
-                              onStatusChanged: isPolicyBusy(policy.id)
-                                  ? null
-                                  : (status) => runPolicyMutation(
-                                        policy.id,
-                                        () async {
-                                          final updated =
-                                              await ossNotifier.updatePolicyStatus(
-                                            policyId: policy.id,
-                                            status: status,
-                                          );
-                                          return '已更新 ${updated.name} 策略状态';
-                                        },
-                                      ),
-                            ),
-                        ],
                       ),
+                    for (final policy in policies)
+                      _OssPolicyTile(
+                        policy: policy,
+                        isMutating: isPolicyBusy(policy.id),
+                        onStatusChanged: isPolicyBusy(policy.id)
+                            ? null
+                            : (status) => runPolicyMutation(
+                                  policy.id,
+                                  () async {
+                                    final updated =
+                                        await ossNotifier.updatePolicyStatus(
+                                      policyId: policy.id,
+                                      status: status,
+                                    );
+                                    return '已更新 ${updated.name} 策略状态';
+                                  },
+                                ),
+                        onDelete: () => confirmDeletePolicy(policy),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
               _AccountSectionCard(
@@ -2776,6 +3265,37 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                     : Column(
                         children: [
                           for (final log in logs) _OssAuditTile(log: log),
+                          const SizedBox(height: 8),
+                          if (hasMoreLogs)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed:
+                                    auditBusy.value ? null : loadMoreAudits,
+                                icon: auditBusy.value
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.unfold_more_outlined),
+                                label:
+                                    Text(auditBusy.value ? '加载中…' : '加载更多记录'),
+                              ),
+                            )
+                          else
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 4),
+                                child: Text(
+                                  '已加载全部记录',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
               ),
@@ -4382,6 +4902,7 @@ class _OssCredentialTile extends StatelessWidget {
     this.onToggleMultipart,
     this.onSetPrimary,
     this.onEdit,
+    this.onDelete,
   });
 
   final oss.AdminOssCredential credential;
@@ -4392,6 +4913,7 @@ class _OssCredentialTile extends StatelessWidget {
   final ValueChanged<bool>? onToggleMultipart;
   final VoidCallback? onSetPrimary;
   final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -4498,6 +5020,15 @@ class _OssCredentialTile extends StatelessWidget {
                   label: const Text('设为主凭证'),
                   onPressed: isMutating ? null : onSetPrimary,
                 ),
+              if (onDelete != null)
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('删除'),
+                  onPressed: isMutating ? null : onDelete,
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -4526,11 +5057,13 @@ class _OssPolicyTile extends StatelessWidget {
     required this.policy,
     required this.isMutating,
     this.onStatusChanged,
+    this.onDelete,
   });
 
   final oss.AdminOssPolicy policy;
   final bool isMutating;
   final ValueChanged<oss.AdminOssPolicyStatus>? onStatusChanged;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -4606,6 +5139,20 @@ class _OssPolicyTile extends StatelessWidget {
               color: theme.colorScheme.outline,
             ),
           ),
+          if (onDelete != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: isMutating ? null : onDelete,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('删除策略'),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -4617,9 +5164,19 @@ class _OssAuditTile extends StatelessWidget {
   final oss.AdminOssAuditLog log;
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final detail = log.detail.trim();
+    final hasDetail = detail.isNotEmpty;
     return ListTile(
+      leading: Icon(Icons.history_toggle_off, color: theme.colorScheme.primary),
       title: Text(log.action),
-      subtitle: Text('${log.operator} · ${log.timeLabel}'),
+      subtitle: Text(
+        hasDetail
+            ? '${log.operator} · ${log.timeLabel}\n$detail'
+            : '${log.operator} · ${log.timeLabel}',
+      ),
+      isThreeLine: hasDetail,
+      dense: true,
     );
   }
 }

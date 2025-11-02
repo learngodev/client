@@ -516,27 +516,32 @@ class AdminOssState {
     this.credentials = const <oss.AdminOssCredential>[],
     this.policies = const <oss.AdminOssPolicy>[],
     this.auditLogs = const <oss.AdminOssAuditLog>[],
+    this.hasMoreAuditLogs = false,
   });
 
   final List<oss.AdminOssCredential> credentials;
   final List<oss.AdminOssPolicy> policies;
   final List<oss.AdminOssAuditLog> auditLogs;
+  final bool hasMoreAuditLogs;
 
   AdminOssState copyWith({
     List<oss.AdminOssCredential>? credentials,
     List<oss.AdminOssPolicy>? policies,
     List<oss.AdminOssAuditLog>? auditLogs,
+    bool? hasMoreAuditLogs,
   }) {
     return AdminOssState(
       credentials: credentials ?? this.credentials,
       policies: policies ?? this.policies,
       auditLogs: auditLogs ?? this.auditLogs,
+      hasMoreAuditLogs: hasMoreAuditLogs ?? this.hasMoreAuditLogs,
     );
   }
 }
 
 class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
   static const int _defaultAuditLimit = 20;
+  int _auditLimit = _defaultAuditLimit;
 
   @override
   Future<AdminOssState> build() async {
@@ -548,15 +553,80 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
     if (schoolId.isEmpty) {
       throw StateError('缺少学校信息，请重新登录后再试。');
     }
-    return _fetchAll(schoolId: schoolId, limit: _defaultAuditLimit);
+    _auditLimit = _defaultAuditLimit;
+    return _fetchAll(schoolId: schoolId, limit: _auditLimit);
   }
 
   Future<void> refresh({int limit = _defaultAuditLimit}) async {
     final schoolId = _requireSchoolId();
+    _auditLimit = limit;
     final result = await AsyncValue.guard(
-      () => _fetchAll(schoolId: schoolId, limit: limit),
+      () => _fetchAll(schoolId: schoolId, limit: _auditLimit),
     );
     state = result;
+  }
+
+  Future<oss.AdminOssCredential> createCredential({
+    required String name,
+    required String endpoint,
+    required String region,
+    required String bucket,
+    String directoryPrefix = '',
+    String accessKeyDisplay = '',
+    bool allowPublicRead = false,
+    bool allowMultipartUpload = false,
+    bool active = true,
+    bool isPrimary = false,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final credential = await repository.createOssCredential(
+      schoolId: schoolId,
+      name: name,
+      endpoint: endpoint,
+      region: region,
+      bucket: bucket,
+      directoryPrefix: directoryPrefix,
+      accessKeyDisplay: accessKeyDisplay,
+      allowPublicRead: allowPublicRead,
+      allowMultipartUpload: allowMultipartUpload,
+      active: active,
+      isPrimary: isPrimary,
+    );
+
+    state = state.whenData((current) {
+      final updated = <oss.AdminOssCredential>[
+        credential,
+        ...current.credentials.map((item) {
+          if (credential.isPrimary && item.isPrimary) {
+            return item.copyWith(isPrimary: false);
+          }
+          return item;
+        }),
+      ];
+      return current.copyWith(credentials: updated);
+    });
+
+    await _refreshAuditLogs(schoolId: schoolId, limit: _auditLimit);
+    return credential;
+  }
+
+  Future<void> deleteCredential({required String credentialId}) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    await repository.deleteOssCredential(
+      schoolId: schoolId,
+      credentialId: credentialId,
+    );
+
+    state = state.whenData((current) {
+      final updated = current.credentials
+          .where((item) => item.id != credentialId)
+          .toList(growable: false);
+      return current.copyWith(credentials: updated);
+    });
+
+    await _refreshAuditLogs(schoolId: schoolId, limit: _auditLimit);
   }
 
   Future<oss.AdminOssCredential> updateCredential({
@@ -602,8 +672,51 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
       return current.copyWith(credentials: updatedCredentials);
     });
 
-    await _refreshAuditLogs(schoolId: schoolId, limit: _defaultAuditLimit);
+    await _refreshAuditLogs(schoolId: schoolId, limit: _auditLimit);
     return credential;
+  }
+
+  Future<oss.AdminOssPolicy> createPolicy({
+    required String name,
+    required String appliesTo,
+    String description = '',
+    oss.AdminOssPolicyStatus status = oss.AdminOssPolicyStatus.enabled,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final policy = await repository.createOssPolicy(
+      schoolId: schoolId,
+      name: name,
+      appliesTo: appliesTo,
+      description: description,
+      status: status,
+    );
+
+    state = state.whenData((current) {
+      final updated = <oss.AdminOssPolicy>[policy, ...current.policies];
+      return current.copyWith(policies: updated);
+    });
+
+    await _refreshAuditLogs(schoolId: schoolId, limit: _auditLimit);
+    return policy;
+  }
+
+  Future<void> deletePolicy({required String policyId}) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    await repository.deleteOssPolicy(
+      schoolId: schoolId,
+      policyId: policyId,
+    );
+
+    state = state.whenData((current) {
+      final updated = current.policies
+          .where((item) => item.id != policyId)
+          .toList(growable: false);
+      return current.copyWith(policies: updated);
+    });
+
+    await _refreshAuditLogs(schoolId: schoolId, limit: _auditLimit);
   }
 
   Future<oss.AdminOssPolicy> updatePolicyStatus({
@@ -628,13 +741,24 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
       return current.copyWith(policies: updatedPolicies);
     });
 
-    await _refreshAuditLogs(schoolId: schoolId, limit: _defaultAuditLimit);
+    await _refreshAuditLogs(schoolId: schoolId, limit: _auditLimit);
     return policy;
+  }
+
+  Future<void> loadMoreAuditLogs({int? limit}) async {
+    final current = state.valueOrNull;
+    if (current != null && !current.hasMoreAuditLogs) {
+      return;
+    }
+    final schoolId = _requireSchoolId();
+    final nextLimit = limit ?? (_auditLimit + _defaultAuditLimit);
+    await _refreshAuditLogs(schoolId: schoolId, limit: nextLimit, replaceLimit: true);
   }
 
   Future<void> _refreshAuditLogs({
     required String schoolId,
     required int limit,
+    bool replaceLimit = false,
   }) async {
     try {
       final repository = ref.read(adminRepositoryProvider);
@@ -642,8 +766,15 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
         schoolId: schoolId,
         limit: limit,
       );
+      if (replaceLimit) {
+        _auditLimit = limit;
+      }
+      final hasMore = logs.length >= limit;
       state = state.whenData(
-        (current) => current.copyWith(auditLogs: logs),
+        (current) => current.copyWith(
+          auditLogs: logs,
+          hasMoreAuditLogs: hasMore,
+        ),
       );
     } catch (_) {
       // 忽略日志刷新失败，避免影响主流程。
@@ -670,10 +801,13 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
     final policies = await policiesFuture;
     final logs = await logsFuture;
 
+    _auditLimit = limit;
+    final hasMore = logs.length >= limit;
     return AdminOssState(
       credentials: credentials,
       policies: policies,
       auditLogs: logs,
+      hasMoreAuditLogs: hasMore,
     );
   }
 
