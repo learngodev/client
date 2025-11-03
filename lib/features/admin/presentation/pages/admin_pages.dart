@@ -2367,9 +2367,9 @@ class AdminOssSettingsPage extends HookConsumerWidget {
     final ossNotifier = ref.read(adminOssProvider.notifier);
     final credentialBusy = useState<Set<String>>(<String>{});
     final policyBusy = useState<Set<String>>(<String>{});
-  final auditBusy = useState(false);
-  final creatingCredential = useState(false);
-  final creatingPolicy = useState(false);
+    final auditBusy = useState(false);
+    final creatingCredential = useState(false);
+    final creatingPolicy = useState(false);
 
     void showSnack(String message) {
       if (!context.mounted) return;
@@ -2463,175 +2463,179 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       var isPrimary = false;
       var active = true;
       try {
-        final result = await showDialog<({
-          String name,
-          String endpoint,
-          String region,
-          String bucket,
-          String directoryPrefix,
-          String accessKey,
-          bool allowPublicRead,
-          bool allowMultipart,
-          bool isPrimary,
-          bool active,
-        })>(
-          context: context,
-          builder: (dialogContext) {
-            return AlertDialog(
-              title: const Text('新增 OSS 凭证'),
-              content: StatefulBuilder(
-                builder: (context, setStateBuilder) {
-                  return SingleChildScrollView(
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextFormField(
-                            controller: nameController,
-                            decoration: const InputDecoration(
-                              labelText: '名称',
-                              helperText: '仅用于管理端展示，建议包含用途说明',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return '请输入名称';
-                              }
-                              return null;
-                            },
+        final result =
+            await showDialog<
+              ({
+                String name,
+                String endpoint,
+                String region,
+                String bucket,
+                String directoryPrefix,
+                String accessKey,
+                bool allowPublicRead,
+                bool allowMultipart,
+                bool isPrimary,
+                bool active,
+              })
+            >(
+              context: context,
+              builder: (dialogContext) {
+                return AlertDialog(
+                  title: const Text('新增 OSS 凭证'),
+                  content: StatefulBuilder(
+                    builder: (context, setStateBuilder) {
+                      return SingleChildScrollView(
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextFormField(
+                                controller: nameController,
+                                decoration: const InputDecoration(
+                                  labelText: '名称',
+                                  helperText: '仅用于管理端展示，建议包含用途说明',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入名称';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: endpointController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Endpoint',
+                                  hintText:
+                                      'https://oss-cn-example.aliyuncs.com',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入 Endpoint';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: regionController,
+                                decoration: const InputDecoration(
+                                  labelText: '区域',
+                                  hintText: 'cn-example',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入区域';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: bucketController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Bucket',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入 Bucket 名称';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: prefixController,
+                                decoration: const InputDecoration(
+                                  labelText: '目录前缀',
+                                  helperText: '可选，建议以 / 结尾',
+                                ),
+                              ),
+                              TextFormField(
+                                controller: accessKeyController,
+                                decoration: const InputDecoration(
+                                  labelText: '访问凭证展示值',
+                                  helperText: '仅用于标识，推荐使用已脱敏 AccessKey',
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('启用凭证'),
+                                value: active,
+                                onChanged: (value) {
+                                  setStateBuilder(() {
+                                    active = value;
+                                  });
+                                },
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('设为主凭证'),
+                                subtitle: const Text('主凭证会默认启用并覆盖旧主凭证'),
+                                value: isPrimary,
+                                onChanged: (value) {
+                                  setStateBuilder(() {
+                                    isPrimary = value;
+                                    if (value) {
+                                      active = true;
+                                    }
+                                  });
+                                },
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('允许公开只读访问'),
+                                value: allowPublicRead,
+                                onChanged: (value) {
+                                  setStateBuilder(() {
+                                    allowPublicRead = value;
+                                  });
+                                },
+                              ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('允许分片上传'),
+                                value: allowMultipart,
+                                onChanged: (value) {
+                                  setStateBuilder(() {
+                                    allowMultipart = value;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                          TextFormField(
-                            controller: endpointController,
-                            decoration: const InputDecoration(
-                              labelText: 'Endpoint',
-                              hintText: 'https://oss-cn-example.aliyuncs.com',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return '请输入 Endpoint';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            controller: regionController,
-                            decoration: const InputDecoration(
-                              labelText: '区域',
-                              hintText: 'cn-example',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return '请输入区域';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            controller: bucketController,
-                            decoration: const InputDecoration(
-                              labelText: 'Bucket',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return '请输入 Bucket 名称';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            controller: prefixController,
-                            decoration: const InputDecoration(
-                              labelText: '目录前缀',
-                              helperText: '可选，建议以 / 结尾',
-                            ),
-                          ),
-                          TextFormField(
-                            controller: accessKeyController,
-                            decoration: const InputDecoration(
-                              labelText: '访问凭证展示值',
-                              helperText: '仅用于标识，推荐使用已脱敏 AccessKey',
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('启用凭证'),
-                            value: active,
-                            onChanged: (value) {
-                              setStateBuilder(() {
-                                active = value;
-                              });
-                            },
-                          ),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('设为主凭证'),
-                            subtitle: const Text('主凭证会默认启用并覆盖旧主凭证'),
-                            value: isPrimary,
-                            onChanged: (value) {
-                              setStateBuilder(() {
-                                isPrimary = value;
-                                if (value) {
-                                  active = true;
-                                }
-                              });
-                            },
-                          ),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('允许公开只读访问'),
-                            value: allowPublicRead,
-                            onChanged: (value) {
-                              setStateBuilder(() {
-                                allowPublicRead = value;
-                              });
-                            },
-                          ),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: const Text('允许分片上传'),
-                            value: allowMultipart,
-                            onChanged: (value) {
-                              setStateBuilder(() {
-                                allowMultipart = value;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                        ),
+                      );
+                    },
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('取消'),
                     ),
-                  );
-                },
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('取消'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    if (!(formKey.currentState?.validate() ?? false)) {
-                      return;
-                    }
-                    Navigator.of(dialogContext).pop((
-                      name: nameController.text.trim(),
-                      endpoint: endpointController.text.trim(),
-                      region: regionController.text.trim(),
-                      bucket: bucketController.text.trim(),
-                      directoryPrefix: prefixController.text.trim(),
-                      accessKey: accessKeyController.text.trim(),
-                      allowPublicRead: allowPublicRead,
-                      allowMultipart: allowMultipart,
-                      isPrimary: isPrimary,
-                      active: active,
-                    ));
-                  },
-                  child: const Text('创建'),
-                ),
-              ],
+                    FilledButton(
+                      onPressed: () {
+                        if (!(formKey.currentState?.validate() ?? false)) {
+                          return;
+                        }
+                        Navigator.of(dialogContext).pop((
+                          name: nameController.text.trim(),
+                          endpoint: endpointController.text.trim(),
+                          region: regionController.text.trim(),
+                          bucket: bucketController.text.trim(),
+                          directoryPrefix: prefixController.text.trim(),
+                          accessKey: accessKeyController.text.trim(),
+                          allowPublicRead: allowPublicRead,
+                          allowMultipart: allowMultipart,
+                          isPrimary: isPrimary,
+                          active: active,
+                        ));
+                      },
+                      child: const Text('创建'),
+                    ),
+                  ],
+                );
+              },
             );
-          },
-        );
         if (result == null) {
           return;
         }
@@ -2693,13 +2697,10 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       if (confirmed != true) {
         return;
       }
-      await runCredentialMutation(
-        credential.id,
-        () async {
-          await ossNotifier.deleteCredential(credentialId: credential.id);
-          return '已删除凭证「${credential.name}」';
-        },
-      );
+      await runCredentialMutation(credential.id, () async {
+        await ossNotifier.deleteCredential(credentialId: credential.id);
+        return '已删除凭证「${credential.name}」';
+      });
     }
 
     Future<void> createPolicy() async {
@@ -2712,106 +2713,111 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       final appliesToController = TextEditingController();
       var status = oss.AdminOssPolicyStatus.enabled;
       try {
-        final result = await showDialog<({
-          String name,
-          String description,
-          String appliesTo,
-          oss.AdminOssPolicyStatus status,
-        })>(
-          context: context,
-          builder: (dialogContext) {
-            return AlertDialog(
-              title: const Text('新增安全策略'),
-              content: StatefulBuilder(
-                builder: (context, setStateBuilder) {
-                  return SingleChildScrollView(
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextFormField(
-                            controller: nameController,
-                            decoration: const InputDecoration(
-                              labelText: '策略名称',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return '请输入策略名称';
-                              }
-                              return null;
-                            },
+        final result =
+            await showDialog<
+              ({
+                String name,
+                String description,
+                String appliesTo,
+                oss.AdminOssPolicyStatus status,
+              })
+            >(
+              context: context,
+              builder: (dialogContext) {
+                return AlertDialog(
+                  title: const Text('新增安全策略'),
+                  content: StatefulBuilder(
+                    builder: (context, setStateBuilder) {
+                      return SingleChildScrollView(
+                        child: Form(
+                          key: formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextFormField(
+                                controller: nameController,
+                                decoration: const InputDecoration(
+                                  labelText: '策略名称',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入策略名称';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: appliesToController,
+                                decoration: const InputDecoration(
+                                  labelText: '适用范围',
+                                  helperText: '例如：student_uploads',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入适用范围标识';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              TextFormField(
+                                controller: descriptionController,
+                                decoration: const InputDecoration(
+                                  labelText: '描述',
+                                  helperText: '可选，说明策略用途',
+                                ),
+                                maxLines: 3,
+                              ),
+                              const SizedBox(height: 12),
+                              DropdownButtonFormField<oss.AdminOssPolicyStatus>(
+                                initialValue: status,
+                                decoration: const InputDecoration(
+                                  labelText: '策略状态',
+                                ),
+                                items: oss.AdminOssPolicyStatus.values
+                                    .map(
+                                      (value) => DropdownMenuItem(
+                                        value: value,
+                                        child: Text(value.label),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setStateBuilder(() {
+                                      status = value;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
                           ),
-                          TextFormField(
-                            controller: appliesToController,
-                            decoration: const InputDecoration(
-                              labelText: '适用范围',
-                              helperText: '例如：student_uploads',
-                            ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return '请输入适用范围标识';
-                              }
-                              return null;
-                            },
-                          ),
-                          TextFormField(
-                            controller: descriptionController,
-                            decoration: const InputDecoration(
-                              labelText: '描述',
-                              helperText: '可选，说明策略用途',
-                            ),
-                            maxLines: 3,
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<oss.AdminOssPolicyStatus>(
-                            value: status,
-                            decoration: const InputDecoration(labelText: '策略状态'),
-                            items: oss.AdminOssPolicyStatus.values
-                                .map(
-                                  (value) => DropdownMenuItem(
-                                    value: value,
-                                    child: Text(value.label),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setStateBuilder(() {
-                                  status = value;
-                                });
-                              }
-                            },
-                          ),
-                        ],
-                      ),
+                        ),
+                      );
+                    },
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('取消'),
                     ),
-                  );
-                },
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: const Text('取消'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    if (!(formKey.currentState?.validate() ?? false)) {
-                      return;
-                    }
-                    Navigator.of(dialogContext).pop((
-                      name: nameController.text.trim(),
-                      description: descriptionController.text.trim(),
-                      appliesTo: appliesToController.text.trim(),
-                      status: status,
-                    ));
-                  },
-                  child: const Text('创建'),
-                ),
-              ],
+                    FilledButton(
+                      onPressed: () {
+                        if (!(formKey.currentState?.validate() ?? false)) {
+                          return;
+                        }
+                        Navigator.of(dialogContext).pop((
+                          name: nameController.text.trim(),
+                          description: descriptionController.text.trim(),
+                          appliesTo: appliesToController.text.trim(),
+                          status: status,
+                        ));
+                      },
+                      child: const Text('创建'),
+                    ),
+                  ],
+                );
+              },
             );
-          },
-        );
         if (result == null) {
           return;
         }
@@ -2862,13 +2868,10 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       if (confirmed != true) {
         return;
       }
-      await runPolicyMutation(
-        policy.id,
-        () async {
-          await ossNotifier.deletePolicy(policyId: policy.id);
-          return '已删除策略「${policy.name}」';
-        },
-      );
+      await runPolicyMutation(policy.id, () async {
+        await ossNotifier.deletePolicy(policyId: policy.id);
+        return '已删除策略「${policy.name}」';
+      });
     }
 
     Future<void> loadMoreAudits() async {
@@ -2892,10 +2895,10 @@ class AdminOssSettingsPage extends HookConsumerWidget {
 
     return ossState.when(
       data: (data) {
-  final credentials = data.credentials;
-  final policies = data.policies;
-  final logs = data.auditLogs;
-  final hasMoreLogs = data.hasMoreAuditLogs;
+        final credentials = data.credentials;
+        final policies = data.policies;
+        final logs = data.auditLogs;
+        final hasMoreLogs = data.hasMoreAuditLogs;
         return RefreshIndicator(
           onRefresh: () => ossNotifier.refresh(),
           child: ListView(
@@ -2928,18 +2931,19 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                     Align(
                       alignment: Alignment.centerRight,
                       child: FilledButton.icon(
-                        onPressed:
-                            creatingCredential.value ? null : createCredential,
+                        onPressed: creatingCredential.value
+                            ? null
+                            : createCredential,
                         icon: creatingCredential.value
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.add_circle_outline),
-                        label: Text(
-                          creatingCredential.value ? '创建中…' : '新增凭证',
-                        ),
+                        label: Text(creatingCredential.value ? '创建中…' : '新增凭证'),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -2954,247 +2958,241 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                         isMutating: isCredentialBusy(credential.id),
                         onCopyKey: () => copyCredential(credential),
                         onToggleActive: (value) =>
-                            runCredentialMutation(
-                              credential.id,
-                              () async {
-                                await ossNotifier.updateCredential(
-                                  credentialId: credential.id,
-                                  active: value,
-                                );
-                                return value
-                                    ? '凭证已启用'
-                                    : '凭证已停用';
-                              },
-                            ),
+                            runCredentialMutation(credential.id, () async {
+                              await ossNotifier.updateCredential(
+                                credentialId: credential.id,
+                                active: value,
+                              );
+                              return value ? '凭证已启用' : '凭证已停用';
+                            }),
                         onTogglePublicRead: (value) =>
-                            runCredentialMutation(
-                              credential.id,
-                              () async {
-                                await ossNotifier.updateCredential(
-                                  credentialId: credential.id,
-                                  allowPublicRead: value,
-                                );
-                                return value
-                                    ? '已允许公开只读访问'
-                                    : '已关闭公开只读访问';
-                              },
-                            ),
+                            runCredentialMutation(credential.id, () async {
+                              await ossNotifier.updateCredential(
+                                credentialId: credential.id,
+                                allowPublicRead: value,
+                              );
+                              return value ? '已允许公开只读访问' : '已关闭公开只读访问';
+                            }),
                         onToggleMultipart: (value) =>
-                            runCredentialMutation(
-                              credential.id,
-                              () async {
-                                await ossNotifier.updateCredential(
-                                  credentialId: credential.id,
-                                  allowMultipartUpload: value,
-                                );
-                                return value
-                                    ? '已开启分片上传'
-                                    : '已关闭分片上传';
-                              },
-                            ),
+                            runCredentialMutation(credential.id, () async {
+                              await ossNotifier.updateCredential(
+                                credentialId: credential.id,
+                                allowMultipartUpload: value,
+                              );
+                              return value ? '已开启分片上传' : '已关闭分片上传';
+                            }),
                         onSetPrimary: credential.isPrimary
                             ? null
                             : () => runCredentialMutation(
-                                  credential.id,
-                                  () async {
-                                    await ossNotifier.updateCredential(
-                                      credentialId: credential.id,
-                                      isPrimary: true,
-                                      active: true,
-                                    );
-                                    return '已设为主凭证，并保持启用状态';
-                                  },
-                                ),
+                                credential.id,
+                                () async {
+                                  await ossNotifier.updateCredential(
+                                    credentialId: credential.id,
+                                    isPrimary: true,
+                                    active: true,
+                                  );
+                                  return '已设为主凭证，并保持启用状态';
+                                },
+                              ),
                         onEdit: () async {
-                                final formKey = GlobalKey<FormState>();
-                                final nameController =
-                                    TextEditingController(text: credential.name);
-                                final endpointController = TextEditingController(
-                                  text: credential.endpoint,
-                                );
-                                final regionController =
-                                    TextEditingController(text: credential.region);
-                                final bucketController =
-                                    TextEditingController(text: credential.bucket);
-                                final prefixController = TextEditingController(
-                                  text: credential.directoryPrefix,
-                                );
-                                final accessKeyController =
-                                    TextEditingController(
-                                  text: credential.accessKeyMasked,
-                                );
-                                try {
-                                  final result = await showDialog<
-                                      ({
-                                        String name,
-                                        String endpoint,
-                                        String region,
-                                        String bucket,
-                                        String directoryPrefix,
-                                        String accessKeyMasked,
-                                      })>(
-                                    context: context,
-                                    builder: (dialogContext) {
-                                      return AlertDialog(
-                                        title: Text('编辑 ${credential.name}'),
-                                        content: SingleChildScrollView(
-                                          child: Form(
-                                            key: formKey,
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                TextFormField(
-                                                  controller: nameController,
-                                                  decoration: const InputDecoration(
-                                                    labelText: '名称',
-                                                    helperText: '仅用于管理端展示，建议包含用途说明',
-                                                  ),
-                                                  validator: (value) {
-                                                    if (value == null ||
-                                                        value.trim().isEmpty) {
-                                                      return '名称不能为空';
-                                                    }
-                                                    return null;
-                                                  },
+                          final formKey = GlobalKey<FormState>();
+                          final nameController = TextEditingController(
+                            text: credential.name,
+                          );
+                          final endpointController = TextEditingController(
+                            text: credential.endpoint,
+                          );
+                          final regionController = TextEditingController(
+                            text: credential.region,
+                          );
+                          final bucketController = TextEditingController(
+                            text: credential.bucket,
+                          );
+                          final prefixController = TextEditingController(
+                            text: credential.directoryPrefix,
+                          );
+                          final accessKeyController = TextEditingController(
+                            text: credential.accessKeyMasked,
+                          );
+                          try {
+                            final result =
+                                await showDialog<
+                                  ({
+                                    String name,
+                                    String endpoint,
+                                    String region,
+                                    String bucket,
+                                    String directoryPrefix,
+                                    String accessKeyMasked,
+                                  })
+                                >(
+                                  context: context,
+                                  builder: (dialogContext) {
+                                    return AlertDialog(
+                                      title: Text('编辑 ${credential.name}'),
+                                      content: SingleChildScrollView(
+                                        child: Form(
+                                          key: formKey,
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              TextFormField(
+                                                controller: nameController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: '名称',
+                                                      helperText:
+                                                          '仅用于管理端展示，建议包含用途说明',
+                                                    ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return '名称不能为空';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextFormField(
+                                                controller: endpointController,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Endpoint',
+                                                  helperText:
+                                                      '例如：oss-cn-hangzhou.aliyuncs.com',
                                                 ),
-                                                const SizedBox(height: 12),
-                                                TextFormField(
-                                                  controller: endpointController,
-                                                  decoration:
-                                                      const InputDecoration(
-                                                    labelText: 'Endpoint',
-                                                    helperText:
-                                                        '例如：oss-cn-hangzhou.aliyuncs.com',
-                                                  ),
-                                                  validator: (value) {
-                                                    if (value == null ||
-                                                        value.trim().isEmpty) {
-                                                      return 'Endpoint 不能为空';
-                                                    }
-                                                    return null;
-                                                  },
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return 'Endpoint 不能为空';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextFormField(
+                                                controller: regionController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: '区域',
+                                                      helperText: '例如：华东 1',
+                                                    ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return '区域不能为空';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextFormField(
+                                                controller: bucketController,
+                                                decoration:
+                                                    const InputDecoration(
+                                                      labelText: 'Bucket',
+                                                      helperText:
+                                                          '例如：learn-go-prod',
+                                                    ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return 'Bucket 不能为空';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextFormField(
+                                                controller: prefixController,
+                                                decoration: const InputDecoration(
+                                                  labelText: '目录前缀',
+                                                  helperText:
+                                                      '可留空，示例：prod/ 或 teacher/',
                                                 ),
-                                                const SizedBox(height: 12),
-                                                TextFormField(
-                                                  controller: regionController,
-                                                  decoration:
-                                                      const InputDecoration(
-                                                    labelText: '区域',
-                                                    helperText: '例如：华东 1',
-                                                  ),
-                                                  validator: (value) {
-                                                    if (value == null ||
-                                                        value.trim().isEmpty) {
-                                                      return '区域不能为空';
-                                                    }
-                                                    return null;
-                                                  },
+                                              ),
+                                              const SizedBox(height: 12),
+                                              TextFormField(
+                                                controller: accessKeyController,
+                                                decoration: const InputDecoration(
+                                                  labelText: '访问凭证标识',
+                                                  helperText:
+                                                      '仅展示已有凭证掩码，例如：LTAI****',
                                                 ),
-                                                const SizedBox(height: 12),
-                                                TextFormField(
-                                                  controller: bucketController,
-                                                  decoration:
-                                                      const InputDecoration(
-                                                    labelText: 'Bucket',
-                                                    helperText: '例如：learn-go-prod',
-                                                  ),
-                                                  validator: (value) {
-                                                    if (value == null ||
-                                                        value.trim().isEmpty) {
-                                                      return 'Bucket 不能为空';
-                                                    }
-                                                    return null;
-                                                  },
-                                                ),
-                                                const SizedBox(height: 12),
-                                                TextFormField(
-                                                  controller: prefixController,
-                                                  decoration:
-                                                      const InputDecoration(
-                                                    labelText: '目录前缀',
-                                                    helperText:
-                                                        '可留空，示例：prod/ 或 teacher/',
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 12),
-                                                TextFormField(
-                                                  controller: accessKeyController,
-                                                  decoration:
-                                                      const InputDecoration(
-                                                    labelText: '访问凭证标识',
-                                                    helperText:
-                                                        '仅展示已有凭证掩码，例如：LTAI****',
-                                                  ),
-                                                  validator: (value) {
-                                                    if (value == null ||
-                                                        value.trim().isEmpty) {
-                                                      return '访问凭证标识不能为空';
-                                                    }
-                                                    return null;
-                                                  },
-                                                ),
-                                              ],
-                                            ),
+                                                validator: (value) {
+                                                  if (value == null ||
+                                                      value.trim().isEmpty) {
+                                                    return '访问凭证标识不能为空';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(dialogContext).pop(),
-                                            child: const Text('取消'),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () {
-                                              if (!formKey.currentState!.validate()) {
-                                                return;
-                                              }
-                                              Navigator.of(dialogContext).pop((
-                                                name: nameController.text.trim(),
-                                                endpoint:
-                                                    endpointController.text.trim(),
-                                                region: regionController.text.trim(),
-                                                bucket: bucketController.text.trim(),
-                                                directoryPrefix:
-                                                    prefixController.text.trim(),
-                                                accessKeyMasked:
-                                                    accessKeyController.text.trim(),
-                                              ));
-                                            },
-                                            child: const Text('保存'),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-                                  if (result == null) {
-                                    return;
-                                  }
-                                  await runCredentialMutation(
-                                    credential.id,
-                                    () async {
-                                      final updated =
-                                          await ossNotifier.updateCredential(
-                                        credentialId: credential.id,
-                                        name: result.name,
-                                        endpoint: result.endpoint,
-                                        region: result.region,
-                                        bucket: result.bucket,
-                                        directoryPrefix: result.directoryPrefix,
-                                        accessKeyDisplay: result.accessKeyMasked,
-                                      );
-                                      return '已更新 ${updated.name} 的访问信息';
-                                    },
-                                  );
-                                } finally {
-                                  nameController.dispose();
-                                  endpointController.dispose();
-                                  regionController.dispose();
-                                  bucketController.dispose();
-                                  prefixController.dispose();
-                                  accessKeyController.dispose();
-                                }
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(dialogContext).pop(),
+                                          child: const Text('取消'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () {
+                                            if (!(formKey.currentState
+                                                    ?.validate() ??
+                                                false)) {
+                                              return;
+                                            }
+                                            Navigator.of(dialogContext).pop((
+                                              name: nameController.text.trim(),
+                                              endpoint: endpointController.text
+                                                  .trim(),
+                                              region: regionController.text
+                                                  .trim(),
+                                              bucket: bucketController.text
+                                                  .trim(),
+                                              directoryPrefix: prefixController
+                                                  .text
+                                                  .trim(),
+                                              accessKeyMasked:
+                                                  accessKeyController.text
+                                                      .trim(),
+                                            ));
+                                          },
+                                          child: const Text('保存'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                            if (result == null) {
+                              return;
+                            }
+                            await runCredentialMutation(
+                              credential.id,
+                              () async {
+                                final updated = await ossNotifier
+                                    .updateCredential(
+                                      credentialId: credential.id,
+                                      name: result.name,
+                                      endpoint: result.endpoint,
+                                      region: result.region,
+                                      bucket: result.bucket,
+                                      directoryPrefix: result.directoryPrefix,
+                                      accessKeyDisplay: result.accessKeyMasked,
+                                    );
+                                return '已更新 ${updated.name} 的访问信息';
                               },
-                            ),
+                            );
+                          } finally {
+                            nameController.dispose();
+                            endpointController.dispose();
+                            regionController.dispose();
+                            bucketController.dispose();
+                            prefixController.dispose();
+                            accessKeyController.dispose();
+                          }
+                        },
                         onDelete: credential.isPrimary
                             ? null
                             : () => confirmDeleteCredential(credential),
@@ -3217,12 +3215,12 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.add_task_outlined),
-                        label: Text(
-                          creatingPolicy.value ? '创建中…' : '新增策略',
-                        ),
+                        label: Text(creatingPolicy.value ? '创建中…' : '新增策略'),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -3237,17 +3235,15 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                         isMutating: isPolicyBusy(policy.id),
                         onStatusChanged: isPolicyBusy(policy.id)
                             ? null
-                            : (status) => runPolicyMutation(
-                                  policy.id,
-                                  () async {
-                                    final updated =
-                                        await ossNotifier.updatePolicyStatus(
-                                      policyId: policy.id,
-                                      status: status,
-                                    );
+                            : (status) =>
+                                  runPolicyMutation(policy.id, () async {
+                                    final updated = await ossNotifier
+                                        .updatePolicyStatus(
+                                          policyId: policy.id,
+                                          status: status,
+                                        );
                                     return '已更新 ${updated.name} 策略状态';
-                                  },
-                                ),
+                                  }),
                         onDelete: () => confirmDeletePolicy(policy),
                       ),
                   ],
@@ -3270,8 +3266,9 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                             Align(
                               alignment: Alignment.centerLeft,
                               child: TextButton.icon(
-                                onPressed:
-                                    auditBusy.value ? null : loadMoreAudits,
+                                onPressed: auditBusy.value
+                                    ? null
+                                    : loadMoreAudits,
                                 icon: auditBusy.value
                                     ? const SizedBox(
                                         width: 18,
@@ -3281,8 +3278,9 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                         ),
                                       )
                                     : const Icon(Icons.unfold_more_outlined),
-                                label:
-                                    Text(auditBusy.value ? '加载中…' : '加载更多记录'),
+                                label: Text(
+                                  auditBusy.value ? '加载中…' : '加载更多记录',
+                                ),
                               ),
                             )
                           else
