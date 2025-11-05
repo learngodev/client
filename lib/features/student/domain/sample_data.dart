@@ -57,28 +57,75 @@ class StudentScheduleItem {
 
 enum StudentReminderPriority { normal, high }
 
+extension StudentReminderPriorityX on StudentReminderPriority {
+  String get label {
+    return switch (this) {
+      StudentReminderPriority.normal => '普通',
+      StudentReminderPriority.high => '重要',
+    };
+  }
+}
+
 class StudentReminderItem {
   const StudentReminderItem({
+    required this.id,
     required this.title,
     required this.description,
     required this.timeLabel,
     required this.icon,
     this.priority = StudentReminderPriority.normal,
     this.route,
+    this.isCompleted = false,
   });
 
+  final String id;
   final String title;
   final String description;
   final String timeLabel;
   final IconData icon;
   final StudentReminderPriority priority;
   final String? route;
+  final bool isCompleted;
 
   Color badgeColor(ThemeData theme) {
     return priority == StudentReminderPriority.high
         ? theme.colorScheme.error
         : theme.colorScheme.primary;
   }
+
+  bool matches(String query) {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return true;
+    }
+    return title.toLowerCase().contains(normalized) ||
+        description.toLowerCase().contains(normalized) ||
+        timeLabel.toLowerCase().contains(normalized);
+  }
+
+  StudentReminderItem copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? timeLabel,
+    IconData? icon,
+    StudentReminderPriority? priority,
+    String? route,
+    bool? isCompleted,
+  }) {
+    return StudentReminderItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      timeLabel: timeLabel ?? this.timeLabel,
+      icon: icon ?? this.icon,
+      priority: priority ?? this.priority,
+      route: route ?? this.route,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
+  bool get isHighPriority => priority == StudentReminderPriority.high;
 }
 
 enum StudentAssignmentStatus { pending, submitted, graded }
@@ -140,6 +187,34 @@ class StudentAssignmentItem {
       StudentAssignmentStatus.graded => Icons.verified_outlined,
     };
   }
+
+  StudentAssignmentItem copyWith({
+    String? id,
+    String? title,
+    String? course,
+    String? teacher,
+    String? dueLabel,
+    StudentAssignmentStatus? status,
+    int? progress,
+    bool? allowResubmit,
+    bool? isOverdue,
+    String? scoreLabel,
+    String? feedback,
+  }) {
+    return StudentAssignmentItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      course: course ?? this.course,
+      teacher: teacher ?? this.teacher,
+      dueLabel: dueLabel ?? this.dueLabel,
+      status: status ?? this.status,
+      progress: progress ?? this.progress,
+      allowResubmit: allowResubmit ?? this.allowResubmit,
+      isOverdue: isOverdue ?? this.isOverdue,
+      scoreLabel: scoreLabel ?? this.scoreLabel,
+      feedback: feedback ?? this.feedback,
+    );
+  }
 }
 
 enum StudentExamStatus { upcoming, completed }
@@ -196,6 +271,24 @@ class StudentNoteItem {
   final List<String> tags;
   final bool pinned;
 
+  StudentNoteItem copyWith({
+    String? id,
+    String? title,
+    String? updatedAtLabel,
+    String? preview,
+    List<String>? tags,
+    bool? pinned,
+  }) {
+    return StudentNoteItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      updatedAtLabel: updatedAtLabel ?? this.updatedAtLabel,
+      preview: preview ?? this.preview,
+      tags: tags ?? this.tags,
+      pinned: pinned ?? this.pinned,
+    );
+  }
+
   bool matches(String query) {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) {
@@ -244,6 +337,24 @@ class StudentMessageItem {
   final String timeLabel;
   final StudentMessageCategory category;
   final int unreadCount;
+
+  bool get isUnread => unreadCount > 0;
+
+  StudentMessageItem copyWith({
+    String? sender,
+    String? preview,
+    String? timeLabel,
+    StudentMessageCategory? category,
+    int? unreadCount,
+  }) {
+    return StudentMessageItem(
+      sender: sender ?? this.sender,
+      preview: preview ?? this.preview,
+      timeLabel: timeLabel ?? this.timeLabel,
+      category: category ?? this.category,
+      unreadCount: unreadCount ?? this.unreadCount,
+    );
+  }
 
   String get initials {
     final trimmed = sender.trim();
@@ -358,6 +469,7 @@ final List<StudentScheduleItem> studentTodaySchedule = studentScheduleItems
 
 const List<StudentReminderItem> studentReminders = [
   StudentReminderItem(
+    id: 'reminder-001',
     title: '提交《程序设计》实验报告',
     description: '完成调试日志与截图说明，需上传 PDF 文件。',
     timeLabel: '截止 今日 23:00',
@@ -366,6 +478,7 @@ const List<StudentReminderItem> studentReminders = [
     route: '/student/assignments',
   ),
   StudentReminderItem(
+    id: 'reminder-002',
     title: '参加英语口语打卡',
     description: '完成本周第 3 次打卡，累计 5 次可获得额外加分。',
     timeLabel: '截止 明日 20:00',
@@ -373,6 +486,7 @@ const List<StudentReminderItem> studentReminders = [
     route: '/student/assignments',
   ),
   StudentReminderItem(
+    id: 'reminder-003',
     title: '复习线性代数章节 4-5',
     description: '考试重点包含特征值与特征向量，建议整理笔记。',
     timeLabel: '建议 今日 完成',
@@ -559,6 +673,12 @@ const List<StudentMessageItem> studentMessages = [
 ];
 
 const List<StudentQuickLink> studentQuickLinks = [
+  StudentQuickLink(
+    icon: Icons.alarm_on_outlined,
+    title: '今日提醒',
+    subtitle: '查看高优先级任务与待办事项',
+    route: '/student/reminders',
+  ),
   StudentQuickLink(
     icon: Icons.task_alt_outlined,
     title: '查看作业进度',

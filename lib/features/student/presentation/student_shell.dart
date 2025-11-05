@@ -5,12 +5,21 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 
-enum StudentSection { overview, schedule, assignments, exams, notes, messages }
+enum StudentSection {
+  overview,
+  reminders,
+  schedule,
+  assignments,
+  exams,
+  notes,
+  messages,
+}
 
 extension StudentSectionX on StudentSection {
   String get label {
     return switch (this) {
       StudentSection.overview => '概览',
+      StudentSection.reminders => '提醒',
       StudentSection.schedule => '课表',
       StudentSection.assignments => '作业',
       StudentSection.exams => '考试',
@@ -22,6 +31,7 @@ extension StudentSectionX on StudentSection {
   IconData get icon {
     return switch (this) {
       StudentSection.overview => Icons.dashboard_outlined,
+      StudentSection.reminders => Icons.alarm_on_outlined,
       StudentSection.schedule => Icons.event_available_outlined,
       StudentSection.assignments => Icons.task_alt_outlined,
       StudentSection.exams => Icons.timer_outlined,
@@ -33,6 +43,7 @@ extension StudentSectionX on StudentSection {
   String get path {
     return switch (this) {
       StudentSection.overview => '/student',
+      StudentSection.reminders => '/student/reminders',
       StudentSection.schedule => '/student/schedule',
       StudentSection.assignments => '/student/assignments',
       StudentSection.exams => '/student/exams',

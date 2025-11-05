@@ -154,6 +154,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const StudentSchedulePage(),
               ),
               GoRoute(
+                path: '/reminders',
+                name: 'studentReminders',
+                builder: (context, state) => const StudentRemindersPage(),
+              ),
+              GoRoute(
                 path: '/assignments',
                 name: 'studentAssignments',
                 builder: (context, state) => const StudentAssignmentsPage(),

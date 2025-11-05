@@ -1,418 +1,682 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../application/student_dashboard_controller.dart';
 import '../../domain/sample_data.dart' as student_data;
+import '../../domain/student_repository.dart';
 
-class StudentOverviewPage extends StatelessWidget {
+Widget _buildStudentDashboardPage(
+  WidgetRef ref,
+  AsyncValue<StudentDashboardData> dashboard,
+  Widget Function(StudentDashboardData data) builder,
+) {
+  return dashboard.when(
+    data: (data) => RefreshIndicator(
+      onRefresh: () => ref.read(studentDashboardProvider.notifier).refresh(),
+      child: builder(data),
+    ),
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (error, stack) => _DashboardErrorView(
+      onRetry: () => ref.read(studentDashboardProvider.notifier).refresh(),
+    ),
+  );
+}
+
+class StudentOverviewPage extends ConsumerWidget {
   const StudentOverviewPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final reminders = student_data.studentReminders;
-    final schedule = student_data.studentTodaySchedule;
-    final pendingAssignments = student_data.studentPendingAssignments;
-    final upcomingExams = student_data.studentUpcomingExams;
-    final insights = student_data.studentInsights;
-    final quickLinks = student_data.studentQuickLinks;
-    final messages = student_data.studentMessages.take(3).toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboard = ref.watch(studentDashboardProvider);
 
-    final stats = [
-      _OverviewStat(
-        icon: Icons.assignment_outlined,
-        label: '待提交作业',
-        value: '${pendingAssignments.length}',
-        color: theme.colorScheme.primary,
-        route: '/student/assignments',
-      ),
-      _OverviewStat(
-        icon: Icons.event_available_outlined,
-        label: '今日课时',
-        value: '${schedule.length}',
-        color: theme.colorScheme.secondary,
-        route: '/student/schedule',
-      ),
-      _OverviewStat(
-        icon: Icons.timer_outlined,
-        label: '最近考试',
-        value: upcomingExams.isEmpty
-            ? '暂无'
-            : upcomingExams.first.countdownLabel,
-        color: theme.colorScheme.tertiary,
-        route: '/student/exams',
-      ),
-    ];
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final controller = ref.read(studentDashboardProvider.notifier);
+      final pendingReminders = data.pendingReminders;
+      final completedReminders = data.completedReminders;
+      final schedule = data.todaySchedule;
+      final pendingAssignments = data.pendingAssignments;
+      final upcomingExams = data.upcomingExams;
+      final insights = data.insights;
+      final quickLinks = data.quickLinks;
+      final messages = data.messages.take(3).toList(growable: false);
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('学习概览', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: stats
-              .map((stat) => _OverviewStatCard(stat: stat))
-              .toList(growable: false),
+      final stats = [
+        _OverviewStat(
+          icon: Icons.alarm_on_outlined,
+          label: '待办提醒',
+          value: '${pendingReminders.length}',
+          color: theme.colorScheme.error,
+          route: '/student/reminders',
         ),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.flash_on_outlined,
-          title: '今日提醒',
-          description: '抓住重点任务，按时完成学习计划。',
+        _OverviewStat(
+          icon: Icons.assignment_outlined,
+          label: '待提交作业',
+          value: '${pendingAssignments.length}',
+          color: theme.colorScheme.primary,
+          route: '/student/assignments',
         ),
-        const SizedBox(height: 12),
-        if (reminders.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.check_circle_outline,
-            title: '暂无待办事项',
-            description: '保持良好节奏，继续加油。',
-          )
-        else
-          ...reminders.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Card(
-                elevation: 0,
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: item
-                        .badgeColor(theme)
-                        .withValues(alpha: 0.18),
-                    child: Icon(item.icon, color: item.badgeColor(theme)),
-                  ),
-                  title: Text(item.title),
-                  subtitle: Text('${item.description}\n${item.timeLabel}'),
-                  isThreeLine: true,
-                  trailing: item.route == null
-                      ? null
-                      : Icon(
-                          Icons.chevron_right,
-                          color: theme.colorScheme.primary,
-                        ),
-                  onTap: item.route == null
+        _OverviewStat(
+          icon: Icons.event_available_outlined,
+          label: '今日课时',
+          value: '${schedule.length}',
+          color: theme.colorScheme.secondary,
+          route: '/student/schedule',
+        ),
+        _OverviewStat(
+          icon: Icons.timer_outlined,
+          label: '最近考试',
+          value: upcomingExams.isEmpty
+              ? '暂无'
+              : upcomingExams.first.countdownLabel,
+          color: theme.colorScheme.tertiary,
+          route: '/student/exams',
+        ),
+      ];
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('学习概览', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [for (final stat in stats) _OverviewStatCard(stat: stat)],
+          ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.flash_on_outlined,
+            title: '今日提醒',
+            description: '抓住重点任务，按时完成学习计划。',
+          ),
+          const SizedBox(height: 12),
+          if (pendingReminders.isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: controller.markAllRemindersCompleted,
+                icon: const Icon(Icons.done_all_outlined),
+                label: Text('全部标记完成 (${pendingReminders.length})'),
+              ),
+            ),
+          if (pendingReminders.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.check_circle_outline,
+              title: '暂无待办事项',
+              description: '保持良好节奏，继续加油。',
+            )
+          else
+            for (final item in pendingReminders)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ReminderCard(
+                  reminder: item,
+                  onToggleCompleted: () =>
+                      controller.toggleReminderCompleted(item.id),
+                  onNavigate: item.route == null
                       ? null
                       : () => Navigator.of(context).pushNamed(item.route!),
                 ),
               ),
+          if (completedReminders.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _CompletedRemindersSection(
+              reminders: completedReminders,
+              onToggleCompleted: controller.toggleReminderCompleted,
             ),
+          ],
+          const SizedBox(height: 12),
+          const _ViewMoreButton(label: '查看提醒中心', route: '/student/reminders'),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.class_outlined,
+            title: '今日课表',
+            description: '合理安排时间，留意线上课程进入方式。',
           ),
-        const SizedBox(height: 12),
-        _ViewMoreButton(label: '查看全部作业', route: '/student/assignments'),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.class_outlined,
-          title: '今日课表',
-          description: '合理安排时间，留意线上课程进入方式。',
-        ),
-        const SizedBox(height: 12),
-        if (schedule.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.event_busy_outlined,
-            title: '今天没有课程',
-            description: '可以利用时间复习或提前完成作业。',
-          )
-        else
-          ...schedule.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ScheduleTile(item: item),
-            ),
-          ),
-        const SizedBox(height: 12),
-        _ViewMoreButton(label: '查看本周课表', route: '/student/schedule'),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.fact_check_outlined,
-          title: '作业进度',
-          description: '掌握作业完成情况，避免遗漏与逾期。',
-        ),
-        const SizedBox(height: 12),
-        ...pendingAssignments
-            .take(3)
-            .map(
-              (assignment) => Padding(
+          const SizedBox(height: 12),
+          if (schedule.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.event_busy_outlined,
+              title: '今天没有课程',
+              description: '可以利用时间复习或提前完成作业。',
+            )
+          else
+            for (final item in schedule)
+              Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _AssignmentCard(assignment: assignment),
+                child: _ScheduleTile(item: item),
+              ),
+          const SizedBox(height: 12),
+          const _ViewMoreButton(label: '查看本周课表', route: '/student/schedule'),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.fact_check_outlined,
+            title: '作业进度',
+            description: '掌握作业完成情况，避免遗漏与逾期。',
+          ),
+          const SizedBox(height: 12),
+          for (final assignment in pendingAssignments.take(3))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _AssignmentCard(
+                assignment: assignment,
+                onUpdateProgress: (value) =>
+                    controller.updateAssignmentProgress(assignment.id, value),
+                onSubmit: () => controller.submitAssignment(assignment.id),
+                onRequestResubmit: assignment.allowResubmit
+                    ? () => controller.requestAssignmentResubmission(
+                        assignment.id,
+                      )
+                    : null,
               ),
             ),
-        if (pendingAssignments.length > 3)
-          _ViewMoreButton(label: '查看更多作业', route: '/student/assignments'),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.lightbulb_outline,
-          title: '学习洞察',
-          description: '关注数据反馈，调整学习节奏。',
-        ),
-        const SizedBox(height: 12),
-        Card(
-          elevation: 0,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: insights
-                  .map(
-                    (insight) => Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _InsightTile(insight: insight),
+          if (pendingAssignments.length > 3)
+            const _ViewMoreButton(
+              label: '查看更多作业',
+              route: '/student/assignments',
+            ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.lightbulb_outline,
+            title: '学习洞察',
+            description: '关注数据反馈，调整学习节奏。',
+          ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var index = 0; index < insights.length; index++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index == insights.length - 1 ? 0 : 16,
+                      ),
+                      child: _InsightTile(insight: insights[index]),
                     ),
-                  )
-                  .toList(growable: false),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.rocket_launch_outlined,
-          title: '快捷入口',
-          description: '常用模块一键直达，提升办事效率。',
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: quickLinks
-              .map((link) => _QuickLinkCard(link: link))
-              .toList(growable: false),
-        ),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.chat_bubble_outline,
-          title: '近期消息',
-          description: '查看老师和同学的最新通知与沟通。',
-        ),
-        const SizedBox(height: 12),
-        ...messages.map(
-          (message) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _MessageTile(message: message),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.rocket_launch_outlined,
+            title: '快捷入口',
+            description: '常用模块一键直达，提升办事效率。',
           ),
-        ),
-        const SizedBox(height: 48),
-      ],
-    );
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final link in quickLinks) _QuickLinkCard(link: link),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.chat_bubble_outline,
+            title: '近期消息',
+            description: '查看老师和同学的最新通知与沟通。',
+          ),
+          const SizedBox(height: 12),
+          for (final message in messages)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _MessageTile(
+                message: message,
+                onMarkRead: message.unreadCount > 0
+                    ? () => controller.markMessageAsRead(message)
+                    : null,
+              ),
+            ),
+          const SizedBox(height: 48),
+        ],
+      );
+    });
   }
 }
 
-class StudentSchedulePage extends StatelessWidget {
-  const StudentSchedulePage({super.key});
+class StudentRemindersPage extends ConsumerStatefulWidget {
+  const StudentRemindersPage({super.key});
+
+  @override
+  ConsumerState<StudentRemindersPage> createState() =>
+      _StudentRemindersPageState();
+}
+
+class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
+  final TextEditingController _queryController = TextEditingController();
+  student_data.StudentReminderPriority? _priorityFilter;
+  bool _showCompleted = true;
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final grouped = <String, List<student_data.StudentScheduleItem>>{};
-    for (final item in student_data.studentScheduleItems) {
-      grouped
-          .putIfAbsent(
-            item.dayLabel,
-            () => <student_data.StudentScheduleItem>[],
-          )
-          .add(item);
-    }
+    final dashboard = ref.watch(studentDashboardProvider);
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('本周课表', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        ...grouped.entries.map(
-          (entry) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Card(
-              elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.today_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(entry.key, style: theme.textTheme.titleMedium),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...entry.value.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _ScheduleTile(item: item),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final controller = ref.read(studentDashboardProvider.notifier);
+      final query = _queryController.text;
+
+      Iterable<student_data.StudentReminderItem> reminders = data.reminders;
+      if (query.isNotEmpty) {
+        reminders = reminders.where((item) => item.matches(query));
+      }
+      if (_priorityFilter != null) {
+        reminders = reminders.where((item) => item.priority == _priorityFilter);
+      }
+
+      final pending = reminders
+          .where((item) => !item.isCompleted)
+          .toList(growable: false);
+      final completed = reminders
+          .where((item) => item.isCompleted)
+          .toList(growable: false);
+
+      final totalReminders = data.reminders.length;
+      final totalPending = data.pendingReminders.length;
+      final totalCompleted = data.completedReminders.length;
+      final totalHighPriorityPending = data.pendingHighPriorityReminders.length;
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('提醒中心', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(
+            '集中管理学习待办与提醒，支持关键字筛选与批量标记完成。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[700],
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          '如需调整课程，请联系辅导员或教务老师。',
-          style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-        ),
-        const SizedBox(height: 36),
-      ],
-    );
+          const SizedBox(height: 20),
+          TextField(
+            controller: _queryController,
+            decoration: InputDecoration(
+              labelText: '搜索提醒',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _queryController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: '清除',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() => _queryController.clear());
+                      },
+                    ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('全部优先级'),
+                selected: _priorityFilter == null,
+                onSelected: (value) {
+                  if (value) {
+                    setState(() => _priorityFilter = null);
+                  }
+                },
+              ),
+              for (final priority
+                  in student_data.StudentReminderPriority.values)
+                ChoiceChip(
+                  label: Text('${priority.label}优先'),
+                  selected: _priorityFilter == priority,
+                  onSelected: (value) {
+                    setState(() {
+                      _priorityFilter = value ? priority : null;
+                    });
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Chip(
+                avatar: const Icon(Icons.list_alt_outlined, size: 18),
+                label: Text('全部 $totalReminders'),
+              ),
+              Chip(
+                avatar: const Icon(Icons.pending_actions_outlined, size: 18),
+                label: Text('未完成 $totalPending'),
+              ),
+              Chip(
+                avatar: const Icon(Icons.check_circle_outline, size: 18),
+                label: Text('已完成 $totalCompleted'),
+              ),
+              Chip(
+                avatar: const Icon(Icons.priority_high_outlined, size: 18),
+                label: Text('重要待办 $totalHighPriorityPending'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('显示已完成提醒'),
+            value: _showCompleted,
+            onChanged: (value) => setState(() => _showCompleted = value),
+          ),
+          if (totalPending > 0) ...[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: controller.markAllRemindersCompleted,
+                icon: const Icon(Icons.done_all_outlined),
+                label: Text('全部标记完成 ($totalPending)'),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          if (pending.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.alarm_off_outlined,
+              title: '暂无符合条件的待办提醒',
+              description: '可以尝试调整筛选条件或添加新的学习计划。',
+            )
+          else
+            for (final reminder in pending)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ReminderCard(
+                  reminder: reminder,
+                  onToggleCompleted: () =>
+                      controller.toggleReminderCompleted(reminder.id),
+                  onNavigate: reminder.route == null
+                      ? null
+                      : () => Navigator.of(context).pushNamed(reminder.route!),
+                ),
+              ),
+          if (_showCompleted && completed.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _CompletedRemindersSection(
+              reminders: completed,
+              onToggleCompleted: controller.toggleReminderCompleted,
+            ),
+          ],
+          const SizedBox(height: 36),
+        ],
+      );
+    });
   }
 }
 
-class StudentAssignmentsPage extends StatefulWidget {
+class StudentSchedulePage extends ConsumerWidget {
+  const StudentSchedulePage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboard = ref.watch(studentDashboardProvider);
+
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final grouped = <String, List<student_data.StudentScheduleItem>>{};
+      for (final item in data.schedule) {
+        grouped
+            .putIfAbsent(
+              item.dayLabel,
+              () => <student_data.StudentScheduleItem>[],
+            )
+            .add(item);
+      }
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('本周课表', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          for (final entry in grouped.entries)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Card(
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.today_outlined,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(entry.key, style: theme.textTheme.titleMedium),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      for (final item in entry.value)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _ScheduleTile(item: item),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Text(
+            '如需调整课程，请联系辅导员或教务老师。',
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
+  }
+}
+
+class StudentAssignmentsPage extends ConsumerStatefulWidget {
   const StudentAssignmentsPage({super.key});
 
   @override
-  State<StudentAssignmentsPage> createState() => _StudentAssignmentsPageState();
+  ConsumerState<StudentAssignmentsPage> createState() =>
+      _StudentAssignmentsPageState();
 }
 
-class _StudentAssignmentsPageState extends State<StudentAssignmentsPage> {
+class _StudentAssignmentsPageState
+    extends ConsumerState<StudentAssignmentsPage> {
   student_data.StudentAssignmentStatus? _filter;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final assignments = student_data.studentAssignments;
-    final filtered = _filter == null
-        ? assignments
-        : assignments
-              .where((item) => item.status == _filter)
-              .toList(growable: false);
+    final dashboard = ref.watch(studentDashboardProvider);
+    final controller = ref.read(studentDashboardProvider.notifier);
 
-    final statusCounts = <student_data.StudentAssignmentStatus, int>{
-      for (final status in student_data.StudentAssignmentStatus.values)
-        status: assignments.where((item) => item.status == status).length,
-    };
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final assignments = data.assignments;
+      final filtered = _filter == null
+          ? assignments
+          : assignments
+                .where((item) => item.status == _filter)
+                .toList(growable: false);
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('作业中心', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        Text(
-          '掌握作业与实验进度，支持逾期补交和重新提交申请。',
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 24),
-        Wrap(
-          spacing: 8,
-          children: [
-            ChoiceChip(
-              label: const Text('全部'),
-              selected: _filter == null,
-              onSelected: (value) {
-                if (value) {
-                  setState(() => _filter = null);
-                }
-              },
+      final statusCounts = <student_data.StudentAssignmentStatus, int>{
+        for (final status in student_data.StudentAssignmentStatus.values)
+          status: assignments.where((item) => item.status == status).length,
+      };
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('作业中心', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(
+            '掌握作业与实验进度，支持逾期补交和重新提交申请。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[700],
             ),
-            ...student_data.StudentAssignmentStatus.values.map(
-              (status) => ChoiceChip(
-                label: Text('${status.label} · ${statusCounts[status] ?? 0}'),
-                selected: _filter == status,
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('全部'),
+                selected: _filter == null,
                 onSelected: (value) {
                   if (value) {
-                    setState(() => _filter = status);
-                  } else {
                     setState(() => _filter = null);
                   }
                 },
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (filtered.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.inbox_outlined,
-            title: '暂无匹配的作业',
-            description: '可以切换筛选条件或查看历史记录。',
-          )
-        else
-          ...filtered.map(
-            (assignment) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _AssignmentCard(assignment: assignment),
-            ),
+              for (final status in student_data.StudentAssignmentStatus.values)
+                ChoiceChip(
+                  label: Text('${status.label} · ${statusCounts[status] ?? 0}'),
+                  selected: _filter == status,
+                  onSelected: (value) {
+                    if (value) {
+                      setState(() => _filter = status);
+                    } else {
+                      setState(() => _filter = null);
+                    }
+                  },
+                ),
+            ],
           ),
-        const SizedBox(height: 36),
-      ],
-    );
+          const SizedBox(height: 16),
+          if (filtered.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.inbox_outlined,
+              title: '暂无匹配的作业',
+              description: '可以切换筛选条件或查看历史记录。',
+            )
+          else
+            for (final assignment in filtered)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _AssignmentCard(
+                  assignment: assignment,
+                  onUpdateProgress:
+                      assignment.status ==
+                          student_data.StudentAssignmentStatus.pending
+                      ? (value) => controller.updateAssignmentProgress(
+                          assignment.id,
+                          value,
+                        )
+                      : null,
+                  onSubmit:
+                      assignment.status ==
+                          student_data.StudentAssignmentStatus.pending
+                      ? () => controller.submitAssignment(assignment.id)
+                      : null,
+                  onRequestResubmit:
+                      assignment.allowResubmit &&
+                          assignment.status !=
+                              student_data.StudentAssignmentStatus.pending
+                      ? () => controller.requestAssignmentResubmission(
+                          assignment.id,
+                        )
+                      : null,
+                ),
+              ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
   }
 }
 
-class StudentExamsPage extends StatelessWidget {
+class StudentExamsPage extends ConsumerWidget {
   const StudentExamsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final upcoming = student_data.studentUpcomingExams;
-    final history = student_data.studentExamHistory;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboard = ref.watch(studentDashboardProvider);
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('考试安排', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        Text(
-          '关注考试倒计时与考场安排，提前确认准考证与座位号。',
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.alarm_on_outlined,
-          title: '即将开始',
-          description: '请在考前一日再次确认考试物品与行程。',
-        ),
-        const SizedBox(height: 12),
-        if (upcoming.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.sentiment_satisfied_alt_outlined,
-            title: '暂无近期考试',
-            description: '仍需保持复习节奏，巩固已学内容。',
-          )
-        else
-          ...upcoming.map(
-            (exam) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: _ExamCard(exam: exam),
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final upcoming = data.upcomingExams;
+      final history = data.examHistory;
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('考试安排', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(
+            '关注考试倒计时与考场安排，提前确认准考证与座位号。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[700],
             ),
           ),
-        const SizedBox(height: 24),
-        _SectionHeader(
-          icon: Icons.history_toggle_off,
-          title: '历史记录',
-          description: '查看已完成考试的成绩与通过情况。',
-        ),
-        const SizedBox(height: 12),
-        if (history.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.timelapse_outlined,
-            title: '暂无历史考试',
-            description: '完成首次考试后将自动记录成绩。',
-          )
-        else
-          ...history.map(
-            (exam) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _ExamHistoryTile(exam: exam),
-            ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.alarm_on_outlined,
+            title: '即将开始',
+            description: '请在考前一日再次确认考试物品与行程。',
           ),
-        const SizedBox(height: 36),
-      ],
-    );
+          const SizedBox(height: 12),
+          if (upcoming.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.sentiment_satisfied_alt_outlined,
+              title: '暂无近期考试',
+              description: '仍需保持复习节奏，巩固已学内容。',
+            )
+          else
+            for (final exam in upcoming)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _ExamCard(exam: exam),
+              ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.history_toggle_off,
+            title: '历史记录',
+            description: '查看已完成考试的成绩与通过情况。',
+          ),
+          const SizedBox(height: 12),
+          if (history.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.timelapse_outlined,
+              title: '暂无历史考试',
+              description: '完成首次考试后将自动记录成绩。',
+            )
+          else
+            for (final exam in history)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ExamHistoryTile(exam: exam),
+              ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
   }
 }
 
-class StudentNotesPage extends StatefulWidget {
+class StudentNotesPage extends ConsumerStatefulWidget {
   const StudentNotesPage({super.key});
 
   @override
-  State<StudentNotesPage> createState() => _StudentNotesPageState();
+  ConsumerState<StudentNotesPage> createState() => _StudentNotesPageState();
 }
 
-class _StudentNotesPageState extends State<StudentNotesPage> {
+class _StudentNotesPageState extends ConsumerState<StudentNotesPage> {
   final TextEditingController _queryController = TextEditingController();
   bool _onlyPinned = false;
 
@@ -424,147 +688,223 @@ class _StudentNotesPageState extends State<StudentNotesPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    var notes = student_data.studentNotes.where(
-      (note) => note.matches(_queryController.text),
-    );
-    if (_onlyPinned) {
-      notes = notes.where((note) => note.pinned);
-    }
-    final filtered = notes.toList(growable: false)
-      ..sort((a, b) {
-        if (a.pinned == b.pinned) {
-          return a.title.compareTo(b.title);
-        }
-        return a.pinned ? -1 : 1;
-      });
+    final dashboard = ref.watch(studentDashboardProvider);
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('随手笔记', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        Text(
-          '整理课堂重点，支持快速检索与云端同步。',
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _queryController,
-          decoration: InputDecoration(
-            labelText: '搜索笔记',
-            prefixIcon: const Icon(Icons.search),
-            suffixIcon: _queryController.text.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: '清除',
-                    icon: const Icon(Icons.clear),
-                    onPressed: () {
-                      setState(() => _queryController.clear());
-                    },
-                  ),
-          ),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('仅查看置顶笔记'),
-          value: _onlyPinned,
-          onChanged: (value) => setState(() => _onlyPinned = value),
-        ),
-        const SizedBox(height: 12),
-        if (filtered.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.note_alt_outlined,
-            title: '暂无符合条件的笔记',
-            description: '可以尝试修改检索词或添加新笔记。',
-          )
-        else
-          ...filtered.map(
-            (note) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _NoteCard(note: note),
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final controller = ref.read(studentDashboardProvider.notifier);
+      var notes = data.notes.where(
+        (note) => note.matches(_queryController.text),
+      );
+      if (_onlyPinned) {
+        notes = notes.where((note) => note.pinned);
+      }
+      final filtered = notes.toList(growable: false)
+        ..sort((a, b) {
+          if (a.pinned == b.pinned) {
+            return a.title.compareTo(b.title);
+          }
+          return a.pinned ? -1 : 1;
+        });
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('随手笔记', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(
+            '整理课堂重点，支持快速检索与云端同步。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[700],
             ),
           ),
-        const SizedBox(height: 36),
-      ],
-    );
+          const SizedBox(height: 16),
+          TextField(
+            controller: _queryController,
+            decoration: InputDecoration(
+              labelText: '搜索笔记',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _queryController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: '清除',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        setState(() => _queryController.clear());
+                      },
+                    ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('仅查看置顶笔记'),
+            value: _onlyPinned,
+            onChanged: (value) => setState(() => _onlyPinned = value),
+          ),
+          const SizedBox(height: 12),
+          if (filtered.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.note_alt_outlined,
+              title: '暂无符合条件的笔记',
+              description: '可以尝试修改检索词或添加新笔记。',
+            )
+          else
+            for (final note in filtered)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _NoteCard(
+                  note: note,
+                  onTogglePinned: () => controller.toggleNotePinned(note),
+                ),
+              ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
   }
 }
 
-class StudentMessagesPage extends StatefulWidget {
+class StudentMessagesPage extends ConsumerStatefulWidget {
   const StudentMessagesPage({super.key});
 
   @override
-  State<StudentMessagesPage> createState() => _StudentMessagesPageState();
+  ConsumerState<StudentMessagesPage> createState() =>
+      _StudentMessagesPageState();
 }
 
-class _StudentMessagesPageState extends State<StudentMessagesPage> {
+class _StudentMessagesPageState extends ConsumerState<StudentMessagesPage> {
   student_data.StudentMessageCategory? _filter;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final messages = student_data.studentMessages;
-    final filtered = _filter == null
-        ? messages
-        : messages.where((item) => item.category == _filter).toList();
+    final dashboard = ref.watch(studentDashboardProvider);
 
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('消息中心', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        Text(
-          '关注老师通知与同学交流，及时处理系统提醒。',
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          children: [
-            ChoiceChip(
-              label: const Text('全部'),
-              selected: _filter == null,
-              onSelected: (value) {
-                if (value) {
-                  setState(() => _filter = null);
-                }
-              },
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final controller = ref.read(studentDashboardProvider.notifier);
+      final messages = data.messages;
+      final filtered = _filter == null
+          ? messages
+          : messages
+                .where((item) => item.category == _filter)
+                .toList(growable: false);
+      final filteredUnread = filtered
+          .where((item) => item.unreadCount > 0)
+          .length;
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('消息中心', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(
+            '关注老师通知与同学交流，及时处理系统提醒。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[700],
             ),
-            ...student_data.StudentMessageCategory.values.map(
-              (category) => ChoiceChip(
-                label: Text(category.label),
-                avatar: Icon(category.icon, size: 18),
-                selected: _filter == category,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('全部'),
+                selected: _filter == null,
                 onSelected: (value) {
                   if (value) {
-                    setState(() => _filter = category);
-                  } else {
                     setState(() => _filter = null);
                   }
                 },
               ),
+              for (final category in student_data.StudentMessageCategory.values)
+                ChoiceChip(
+                  label: Text(category.label),
+                  avatar: Icon(category.icon, size: 18),
+                  selected: _filter == category,
+                  onSelected: (value) {
+                    if (value) {
+                      setState(() => _filter = category);
+                    } else {
+                      setState(() => _filter = null);
+                    }
+                  },
+                ),
+            ],
+          ),
+          if (filteredUnread > 0) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => controller.markMessagesAsRead(filtered),
+                icon: const Icon(Icons.done_all_outlined),
+                label: Text('标记当前为已读 ($filteredUnread)'),
+              ),
             ),
           ],
-        ),
-        const SizedBox(height: 16),
-        if (filtered.isEmpty)
-          const _IllustratedPlaceholder(
-            icon: Icons.mark_email_read_outlined,
-            title: '暂无未读消息',
-            description: '保持与老师和同学的沟通，学习更高效。',
-          )
-        else
-          ...filtered.map(
-            (message) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _MessageTile(message: message),
+          const SizedBox(height: 16),
+          if (filtered.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.mark_email_read_outlined,
+              title: '暂无未读消息',
+              description: '保持与老师和同学的沟通，学习更高效。',
+            )
+          else
+            for (final message in filtered)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _MessageTile(
+                  message: message,
+                  onMarkRead: message.unreadCount > 0
+                      ? () => controller.markMessageAsRead(message)
+                      : null,
+                ),
+              ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
+  }
+}
+
+class _DashboardErrorView extends StatelessWidget {
+  const _DashboardErrorView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.wifi_off_outlined,
+              size: 48,
+              color: theme.colorScheme.primary,
             ),
-          ),
-        const SizedBox(height: 36),
-      ],
+            const SizedBox(height: 16),
+            Text('数据加载失败', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              '请检查网络连接或稍后重试。',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: onRetry, child: const Text('重新加载')),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -664,6 +1004,105 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+class _ReminderCard extends StatelessWidget {
+  const _ReminderCard({
+    required this.reminder,
+    required this.onToggleCompleted,
+    this.onNavigate,
+  });
+
+  final student_data.StudentReminderItem reminder;
+  final VoidCallback onToggleCompleted;
+  final VoidCallback? onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final completed = reminder.isCompleted;
+    final accent = reminder.badgeColor(theme);
+    final titleStyle = completed
+        ? theme.textTheme.titleMedium?.copyWith(
+            decoration: TextDecoration.lineThrough,
+            color: Colors.grey[600],
+          )
+        : theme.textTheme.titleMedium;
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: completed ? Colors.grey[500] : Colors.grey[600],
+      decoration: completed ? TextDecoration.lineThrough : null,
+    );
+
+    return Card(
+      elevation: 0,
+      color: completed
+          ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+          : null,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: accent.withValues(alpha: 0.18),
+          child: Icon(reminder.icon, color: accent),
+        ),
+        title: Text(reminder.title, style: titleStyle),
+        subtitle: Text(
+          '${reminder.description}\n${reminder.timeLabel}',
+          style: subtitleStyle,
+        ),
+        isThreeLine: true,
+        trailing: Checkbox.adaptive(
+          value: reminder.isCompleted,
+          onChanged: (_) => onToggleCompleted(),
+        ),
+        onTap: reminder.route != null ? onNavigate : () => onToggleCompleted(),
+        onLongPress: onToggleCompleted,
+      ),
+    );
+  }
+}
+
+class _CompletedRemindersSection extends StatelessWidget {
+  const _CompletedRemindersSection({
+    required this.reminders,
+    required this.onToggleCompleted,
+  });
+
+  final List<student_data.StudentReminderItem> reminders;
+  final void Function(String reminderId) onToggleCompleted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (reminders.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 0,
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Icon(
+            Icons.check_circle_outline,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text('已完成提醒 (${reminders.length})'),
+          children: [
+            for (final reminder in reminders)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: _ReminderCard(
+                  reminder: reminder,
+                  onToggleCompleted: () => onToggleCompleted(reminder.id),
+                  onNavigate: reminder.route == null
+                      ? null
+                      : () => Navigator.of(context).pushNamed(reminder.route!),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ScheduleTile extends StatelessWidget {
   const _ScheduleTile({required this.item});
 
@@ -696,14 +1135,30 @@ class _ScheduleTile extends StatelessWidget {
 }
 
 class _AssignmentCard extends StatelessWidget {
-  const _AssignmentCard({required this.assignment});
+  const _AssignmentCard({
+    required this.assignment,
+    this.onUpdateProgress,
+    this.onSubmit,
+    this.onRequestResubmit,
+  });
 
   final student_data.StudentAssignmentItem assignment;
+  final ValueChanged<int>? onUpdateProgress;
+  final VoidCallback? onSubmit;
+  final VoidCallback? onRequestResubmit;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final accent = assignment.statusColor(theme);
+    final isPending =
+        assignment.status == student_data.StudentAssignmentStatus.pending;
+    final showProgressSlider = onUpdateProgress != null && isPending;
+    final showSubmit = onSubmit != null && isPending;
+    final showResubmit =
+        onRequestResubmit != null &&
+        assignment.allowResubmit &&
+        assignment.status != student_data.StudentAssignmentStatus.pending;
 
     return Card(
       elevation: 0,
@@ -784,6 +1239,47 @@ class _AssignmentCard extends StatelessWidget {
                 ),
               ),
             ],
+            if (showProgressSlider) ...[
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Slider.adaptive(
+                      value: assignment.progress.toDouble(),
+                      min: 0,
+                      max: 100,
+                      divisions: 20,
+                      label: '${assignment.progress}%',
+                      onChanged: (value) => onUpdateProgress!(value.round()),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('${assignment.progress}%'),
+                ],
+              ),
+            ],
+            if (showSubmit || showResubmit) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  if (showSubmit)
+                    FilledButton.icon(
+                      onPressed: onSubmit,
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      label: const Text('提交作业'),
+                    ),
+                  if (showResubmit)
+                    OutlinedButton.icon(
+                      onPressed: onRequestResubmit,
+                      icon: const Icon(Icons.refresh_outlined),
+                      label: const Text('重新提交申请'),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -858,9 +1354,10 @@ class _QuickLinkCard extends StatelessWidget {
 }
 
 class _MessageTile extends StatelessWidget {
-  const _MessageTile({required this.message});
+  const _MessageTile({required this.message, this.onMarkRead});
 
   final student_data.StudentMessageItem message;
+  final VoidCallback? onMarkRead;
 
   @override
   Widget build(BuildContext context) {
@@ -870,6 +1367,7 @@ class _MessageTile extends StatelessWidget {
     return Card(
       elevation: 0,
       child: ListTile(
+        onTap: hasUnread ? onMarkRead : null,
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.secondaryContainer,
           child: Text(
@@ -906,6 +1404,18 @@ class _MessageTile extends StatelessWidget {
                   ),
                 ),
               ),
+            if (hasUnread && onMarkRead != null) ...[
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: onMarkRead,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('标记已读'),
+              ),
+            ],
           ],
         ),
       ),
@@ -1011,9 +1521,10 @@ class _ExamHistoryTile extends StatelessWidget {
 }
 
 class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.note});
+  const _NoteCard({required this.note, this.onTogglePinned});
 
   final student_data.StudentNoteItem note;
+  final VoidCallback? onTogglePinned;
 
   @override
   Widget build(BuildContext context) {
@@ -1030,7 +1541,18 @@ class _NoteCard extends StatelessWidget {
                 Expanded(
                   child: Text(note.title, style: theme.textTheme.titleMedium),
                 ),
-                if (note.pinned)
+                if (onTogglePinned != null)
+                  IconButton(
+                    tooltip: note.pinned ? '取消置顶' : '置顶笔记',
+                    icon: Icon(
+                      note.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                      color: note.pinned
+                          ? theme.colorScheme.tertiary
+                          : theme.colorScheme.outline,
+                    ),
+                    onPressed: onTogglePinned,
+                  )
+                else if (note.pinned)
                   Icon(
                     Icons.push_pin_outlined,
                     color: theme.colorScheme.tertiary,
