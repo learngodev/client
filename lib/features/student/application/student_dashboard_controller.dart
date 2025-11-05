@@ -1,27 +1,33 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../data/student_repository.dart';
+import '../data/student_reminder_storage.dart';
 import '../domain/sample_data.dart'
     show
         StudentAssignmentItem,
         StudentAssignmentStatus,
         StudentMessageItem,
         StudentNoteItem,
-        StudentReminderItem;
+        StudentReminderItem,
+        StudentReminderPriority;
 import '../domain/student_repository.dart';
+
+final _uuid = Uuid();
 
 class StudentDashboardController
     extends AutoDisposeAsyncNotifier<StudentDashboardData> {
   @override
   Future<StudentDashboardData> build() async {
-    final repository = ref.watch(studentRepositoryProvider);
-    return repository.fetchDashboard();
+    return _loadDashboard(watch: true);
   }
 
   Future<void> refresh() async {
-    final repository = ref.read(studentRepositoryProvider);
     state = const AsyncLoading();
-    state = await AsyncValue.guard(repository.fetchDashboard);
+    state = await AsyncValue.guard(() => _loadDashboard());
   }
 
   void markMessageAsRead(StudentMessageItem message) {
@@ -103,15 +109,175 @@ class StudentDashboardController
     });
   }
 
-  void markAllRemindersCompleted() {
+  Future<bool> createCustomReminder({
+    required String title,
+    required String description,
+    required String timeLabel,
+    required IconData icon,
+    StudentReminderPriority priority = StudentReminderPriority.normal,
+    String? route,
+  }) async {
     final current = state.valueOrNull;
     if (current == null) {
-      return;
+      return false;
+    }
+
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      return false;
+    }
+
+    final trimmedDescription = description.trim();
+    final trimmedTimeLabel = timeLabel.trim();
+    final sanitizedTimeLabel = trimmedTimeLabel.isEmpty
+        ? '时间待定'
+        : trimmedTimeLabel;
+    final sanitizedRoute = route?.trim();
+
+    final reminder = StudentReminderItem(
+      id: 'custom-reminder-${_uuid.v4()}',
+      title: trimmedTitle,
+      description: trimmedDescription,
+      timeLabel: sanitizedTimeLabel,
+      icon: icon,
+      priority: priority,
+      route: sanitizedRoute?.isEmpty ?? true ? null : sanitizedRoute,
+      isCustom: true,
+    );
+
+    final nextReminders = current.reminders.toList(growable: true)
+      ..insert(0, reminder);
+
+    final previous = current;
+    final updated = current.copyWith(
+      reminders: List.unmodifiable(nextReminders),
+    );
+
+    state = AsyncValue.data(updated);
+
+    try {
+      await _persistCustomReminders(updated.reminders);
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Failed to save custom reminders: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      state = AsyncValue.data(previous);
+      return false;
+    }
+  }
+
+  Future<bool> deleteReminder(String reminderId) async {
+    final current = state.valueOrNull;
+    if (current == null) {
+      return false;
+    }
+
+    final index = current.reminders.indexWhere((item) => item.id == reminderId);
+    if (index == -1) {
+      return false;
+    }
+
+    final target = current.reminders[index];
+    if (!target.isCustom) {
+      return false;
+    }
+
+    final nextReminders = current.reminders.toList(growable: true)
+      ..removeAt(index);
+
+    final previous = current;
+    final updated = current.copyWith(
+      reminders: List.unmodifiable(nextReminders),
+    );
+
+    state = AsyncValue.data(updated);
+
+    try {
+      await _persistCustomReminders(updated.reminders);
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Failed to delete custom reminder: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      state = AsyncValue.data(previous);
+      return false;
+    }
+  }
+
+  Future<bool> editCustomReminder(
+    String reminderId, {
+    required String title,
+    required String description,
+    required String timeLabel,
+    required IconData icon,
+    StudentReminderPriority priority = StudentReminderPriority.normal,
+    String? route,
+  }) async {
+    final current = state.valueOrNull;
+    if (current == null) {
+      return false;
+    }
+
+    final index = current.reminders.indexWhere((item) => item.id == reminderId);
+    if (index == -1) {
+      return false;
+    }
+
+    final existing = current.reminders[index];
+    if (!existing.isCustom) {
+      return false;
+    }
+
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      return false;
+    }
+
+    final trimmedDescription = description.trim();
+    final trimmedTimeLabel = timeLabel.trim();
+    final sanitizedTimeLabel = trimmedTimeLabel.isEmpty
+        ? '时间待定'
+        : trimmedTimeLabel;
+    final sanitizedRoute = route?.trim();
+
+    final updated = existing.copyWith(
+      title: trimmedTitle,
+      description: trimmedDescription,
+      timeLabel: sanitizedTimeLabel,
+      icon: icon,
+      priority: priority,
+      route: sanitizedRoute?.isEmpty ?? true ? null : sanitizedRoute,
+    );
+
+    final nextReminders = current.reminders.toList(growable: true)
+      ..[index] = updated;
+
+    final previous = current;
+    final dashboardUpdated = current.copyWith(
+      reminders: List.unmodifiable(nextReminders),
+    );
+
+    state = AsyncValue.data(dashboardUpdated);
+
+    try {
+      await _persistCustomReminders(dashboardUpdated.reminders);
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Failed to edit custom reminder: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      state = AsyncValue.data(previous);
+      return false;
+    }
+  }
+
+  Future<bool> markAllRemindersCompleted() async {
+    final current = state.valueOrNull;
+    if (current == null) {
+      return false;
     }
 
     final hasPending = current.reminders.any((item) => !item.isCompleted);
     if (!hasPending) {
-      return;
+      return false;
     }
 
     final updated = current.reminders
@@ -120,9 +286,22 @@ class StudentDashboardController
         )
         .toList(growable: false);
 
-    state = AsyncValue.data(
-      current.copyWith(reminders: List.unmodifiable(updated)),
+    final previous = current;
+    final dashboardUpdated = current.copyWith(
+      reminders: List.unmodifiable(updated),
     );
+
+    state = AsyncValue.data(dashboardUpdated);
+
+    try {
+      await _persistCustomReminders(dashboardUpdated.reminders);
+      return true;
+    } catch (error, stackTrace) {
+      debugPrint('Failed to mark all reminders complete: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      state = AsyncValue.data(previous);
+      return false;
+    }
   }
 
   void _markMessagesAsRead(Iterable<StudentMessageItem> targets) {
@@ -216,10 +395,57 @@ class StudentDashboardController
     state = AsyncValue.data(
       current.copyWith(reminders: List.unmodifiable(nextReminders)),
     );
+
+    unawaited(_persistCustomReminders(nextReminders));
   }
 
   String _messageKey(StudentMessageItem item) {
     return '${item.sender}::${item.timeLabel}::${item.preview}::${item.category.name}';
+  }
+
+  Future<StudentDashboardData> _loadDashboard({bool watch = false}) async {
+    final repository = watch
+        ? ref.watch(studentRepositoryProvider)
+        : ref.read(studentRepositoryProvider);
+    final storage = watch
+        ? ref.watch(studentReminderStorageProvider)
+        : ref.read(studentReminderStorageProvider);
+
+    final base = await repository.fetchDashboard();
+    final custom = await storage.loadCustomReminders();
+    if (custom.isEmpty) {
+      return base;
+    }
+
+    final seenIds = <String>{};
+    final merged = <StudentReminderItem>[];
+
+    for (final reminder in base.reminders) {
+      if (seenIds.add(reminder.id)) {
+        merged.add(reminder);
+      }
+    }
+
+    for (final reminder in custom) {
+      final customReminder = reminder.copyWith(isCustom: true);
+      final isNew = seenIds.add(customReminder.id);
+      if (isNew) {
+        merged.add(customReminder);
+        continue;
+      }
+
+      final index = merged.indexWhere((item) => item.id == customReminder.id);
+      if (index != -1) {
+        merged[index] = customReminder;
+      }
+    }
+
+    return base.copyWith(reminders: List.unmodifiable(merged));
+  }
+
+  Future<void> _persistCustomReminders(List<StudentReminderItem> reminders) {
+    final storage = ref.read(studentReminderStorageProvider);
+    return storage.saveCustomReminders(reminders);
   }
 }
 

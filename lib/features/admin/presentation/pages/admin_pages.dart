@@ -230,6 +230,8 @@ class AdminAccountsPage extends HookConsumerWidget {
     final isRefreshing = useState<bool>(false);
     final loadMoreError = useState<String?>(null);
     final lastCompletedPageRef = useRef<int>(0);
+    final sortOption = useState(_AccountSortOption.nameAsc);
+    final exportingAccounts = useState<bool>(false);
 
     final authState = ref.watch(authStateProvider);
     final schoolId = authState.account?.schoolId ?? '';
@@ -266,6 +268,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                 final statusRaw = entry['status'] as String?;
                 final departmentRaw = entry['department'] as String?;
                 final classRaw = entry['class'] as String?;
+                final sortRaw = entry['sort'] as String?;
 
                 if (roleRaw != null) {
                   final matchedRole = _AccountRoleFilter.values.firstWhere(
@@ -296,6 +299,16 @@ class AdminAccountsPage extends HookConsumerWidget {
                 if (classRaw != null && classRaw.isNotEmpty) {
                   if (classFilter.value != classRaw) {
                     classFilter.value = classRaw;
+                  }
+                }
+
+                if (sortRaw != null) {
+                  final matchedSort = _AccountSortOption.values.firstWhere(
+                    (value) => value.name == sortRaw,
+                    orElse: () => _AccountSortOption.nameAsc,
+                  );
+                  if (sortOption.value != matchedSort) {
+                    sortOption.value = matchedSort;
                   }
                 }
               }
@@ -348,6 +361,7 @@ class AdminAccountsPage extends HookConsumerWidget {
               'status': statusFilter.value.name,
               'department': department.value,
               'class': classFilter.value,
+              'sort': sortOption.value.name,
             };
 
             await prefs.setString(_kAccountFilterPrefsKey, jsonEncode(payload));
@@ -364,6 +378,7 @@ class AdminAccountsPage extends HookConsumerWidget {
         statusFilter.value,
         department.value,
         classFilter.value,
+        sortOption.value,
         isFilterHydrated.value,
       ],
     );
@@ -424,7 +439,7 @@ class AdminAccountsPage extends HookConsumerWidget {
     }
 
     final filterKey =
-        '$schoolId|${selectedRole?.apiValue ?? 'all'}|${selectedStatus?.apiValue ?? 'all'}|${department.value}|${classFilter.value}|${debouncedQuery.value}';
+        '$schoolId|${selectedRole?.apiValue ?? 'all'}|${selectedStatus?.apiValue ?? 'all'}|${department.value}|${classFilter.value}|${debouncedQuery.value}|${sortOption.value.name}';
     final previousFilterKey = usePrevious(filterKey);
     final filtersChanged =
         previousFilterKey != null && previousFilterKey != filterKey;
@@ -678,13 +693,16 @@ class AdminAccountsPage extends HookConsumerWidget {
           matchesQuery;
     }).toList();
 
+    filtered.sort((a, b) => _compareAccounts(a, b, sortOption.value));
+
     final metrics = _AccountMetrics.fromAccounts(filtered);
     final hasActiveFilters =
         role.value != _AccountRoleFilter.all ||
         statusFilter.value != _AccountStatusFilter.all ||
         department.value != _kAllDepartments ||
         classFilter.value != _kAllClasses ||
-        debouncedQuery.value.isNotEmpty;
+        debouncedQuery.value.isNotEmpty ||
+        sortOption.value != _AccountSortOption.nameAsc;
 
     final dropdownEntries = <DropdownMenuEntry<String>>[
       const DropdownMenuEntry<String>(value: _kAllDepartments, label: '全部院系'),
@@ -849,6 +867,59 @@ class AdminAccountsPage extends HookConsumerWidget {
       }
     }
 
+    Future<void> exportAccountsToClipboard(List<AdminAccount> accounts) async {
+      if (exportingAccounts.value) {
+        return;
+      }
+      if (accounts.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('当前没有可导出的账号。')));
+        return;
+      }
+      exportingAccounts.value = true;
+      try {
+        final buffer = StringBuffer();
+        buffer.writeln('姓名,角色,状态,院系,班级,学号/工号,邮箱,手机号,最近活跃,创建时间');
+        final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
+        for (final account in accounts) {
+          final lastActive = account.lastActiveAt ?? account.createdAt;
+          final row = [
+            account.name,
+            account.role.label,
+            account.status.label,
+            account.department?.trim() ?? '',
+            account.className?.trim() ?? '',
+            account.identifier,
+            account.email,
+            account.phone?.trim() ?? '',
+            dateFormat.format(lastActive.toLocal()),
+            dateFormat.format(account.createdAt.toLocal()),
+          ];
+          buffer.writeln(row.map(_escapeCsvField).join(','));
+        }
+        await Clipboard.setData(ClipboardData(text: buffer.toString()));
+        if (!context.mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('账号列表已复制为 CSV，可直接粘贴到表格工具中。')),
+        );
+      } catch (error) {
+        if (!context.mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('导出失败：$error'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } finally {
+        exportingAccounts.value = false;
+      }
+    }
+
     void resetFilters() {
       FocusScope.of(context).unfocus();
       if (role.value != _AccountRoleFilter.all) {
@@ -862,6 +933,9 @@ class AdminAccountsPage extends HookConsumerWidget {
       }
       if (classFilter.value != _kAllClasses) {
         classFilter.value = _kAllClasses;
+      }
+      if (sortOption.value != _AccountSortOption.nameAsc) {
+        sortOption.value = _AccountSortOption.nameAsc;
       }
       if (queryController.text.isNotEmpty) {
         queryController.clear();
@@ -1012,6 +1086,16 @@ class AdminAccountsPage extends HookConsumerWidget {
                             classFilter.value = _kAllClasses;
                           },
                         ),
+                      if (sortOption.value != _AccountSortOption.nameAsc)
+                        FilterChip(
+                          label: Text(
+                            '排序：${_accountSortOptionLabel(sortOption.value)}',
+                          ),
+                          onSelected: (_) {},
+                          onDeleted: () {
+                            sortOption.value = _AccountSortOption.nameAsc;
+                          },
+                        ),
                       if (debouncedQuery.value.isNotEmpty)
                         FilterChip(
                           label: Text('关键词：${debouncedQuery.value}'),
@@ -1101,6 +1185,26 @@ class AdminAccountsPage extends HookConsumerWidget {
                       ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final option in _AccountSortOption.values)
+                      ChoiceChip(
+                        label: Text(_accountSortOptionLabel(option)),
+                        avatar: sortOption.value == option
+                            ? const Icon(Icons.check, size: 16)
+                            : null,
+                        selected: sortOption.value == option,
+                        onSelected: (selected) {
+                          if (selected) {
+                            sortOption.value = option;
+                          }
+                        },
+                      ),
+                  ],
+                ),
                 if (department.value == _kAllDepartments ||
                     department.value == _kNoDepartment) ...[
                   const SizedBox(height: 12),
@@ -1165,6 +1269,25 @@ class AdminAccountsPage extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (filtered.isNotEmpty) ...[
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      icon: exportingAccounts.value
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.download_outlined),
+                      label: Text(exportingAccounts.value ? '导出中…' : '导出列表'),
+                      onPressed: exportingAccounts.value
+                          ? null
+                          : () => exportAccountsToClipboard(filtered),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 if (filtered.isEmpty)
                   _EmptyPlaceholder(
                     title: '暂无账号',
@@ -4096,6 +4219,48 @@ class _AccountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    void showSnack(String message) {
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) {
+        return;
+      }
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+        );
+    }
+
+    Future<void> handleAction(_AccountTileAction action) async {
+      switch (action) {
+        case _AccountTileAction.viewDetails:
+          onOpenDetails();
+          return;
+        case _AccountTileAction.copyIdentifier:
+          HapticFeedback.selectionClick();
+          await Clipboard.setData(ClipboardData(text: account.identifier));
+          showSnack('账号 ID 已复制：${account.identifier}');
+          return;
+        case _AccountTileAction.copyEmail:
+          if (account.email.isEmpty) {
+            return;
+          }
+          HapticFeedback.selectionClick();
+          await Clipboard.setData(ClipboardData(text: account.email));
+          showSnack('邮箱地址已复制：${account.email}');
+          return;
+        case _AccountTileAction.copyPhone:
+          final phone = account.phone?.trim();
+          if (phone == null || phone.isEmpty) {
+            return;
+          }
+          HapticFeedback.selectionClick();
+          await Clipboard.setData(ClipboardData(text: phone));
+          showSnack('联系电话已复制：$phone');
+          return;
+      }
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -4192,9 +4357,65 @@ class _AccountTile extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
+              PopupMenuButton<_AccountTileAction>(
                 tooltip: '更多操作',
-                onPressed: onOpenDetails,
+                onSelected: (action) {
+                  unawaited(handleAction(action));
+                },
+                itemBuilder: (menuContext) {
+                  final items = <PopupMenuEntry<_AccountTileAction>>[
+                    PopupMenuItem<_AccountTileAction>(
+                      value: _AccountTileAction.viewDetails,
+                      child: Row(
+                        children: const [
+                          Icon(Icons.visibility_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('查看详情'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<_AccountTileAction>(
+                      value: _AccountTileAction.copyIdentifier,
+                      child: Row(
+                        children: const [
+                          Icon(Icons.badge_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('复制账号 ID'),
+                        ],
+                      ),
+                    ),
+                  ];
+                  if (account.email.isNotEmpty) {
+                    items.add(
+                      PopupMenuItem<_AccountTileAction>(
+                        value: _AccountTileAction.copyEmail,
+                        child: Row(
+                          children: const [
+                            Icon(Icons.email_outlined, size: 20),
+                            SizedBox(width: 12),
+                            Text('复制邮箱'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  final phone = account.phone?.trim();
+                  if (phone != null && phone.isNotEmpty) {
+                    items.add(
+                      PopupMenuItem<_AccountTileAction>(
+                        value: _AccountTileAction.copyPhone,
+                        child: Row(
+                          children: const [
+                            Icon(Icons.phone_outlined, size: 20),
+                            SizedBox(width: 12),
+                            Text('复制电话'),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return items;
+                },
                 icon: const Icon(Icons.more_vert),
               ),
             ],
@@ -4204,6 +4425,8 @@ class _AccountTile extends StatelessWidget {
     );
   }
 }
+
+enum _AccountTileAction { viewDetails, copyIdentifier, copyEmail, copyPhone }
 
 class _AccountDetailSheet extends HookConsumerWidget {
   const _AccountDetailSheet({
@@ -4888,6 +5111,65 @@ String _accountStatusFilterLabel(_AccountStatusFilter f) {
     _AccountStatusFilter.locked => '已锁定',
     _AccountStatusFilter.pendingReset => '待重置密码',
   };
+}
+
+enum _AccountSortOption { nameAsc, lastActiveDesc, createdDesc }
+
+String _accountSortOptionLabel(_AccountSortOption option) {
+  return switch (option) {
+    _AccountSortOption.nameAsc => '按姓名',
+    _AccountSortOption.lastActiveDesc => '最近活跃',
+    _AccountSortOption.createdDesc => '最新创建',
+  };
+}
+
+int _compareAccounts(
+  AdminAccount a,
+  AdminAccount b,
+  _AccountSortOption option,
+) {
+  int compareByName() {
+    final nameOrder = a.name.compareTo(b.name);
+    if (nameOrder != 0) {
+      return nameOrder;
+    }
+    return a.identifier.compareTo(b.identifier);
+  }
+
+  switch (option) {
+    case _AccountSortOption.nameAsc:
+      return compareByName();
+    case _AccountSortOption.lastActiveDesc:
+      final aTime = a.lastActiveAt ?? a.createdAt;
+      final bTime = b.lastActiveAt ?? b.createdAt;
+      final activityOrder = bTime.compareTo(aTime);
+      if (activityOrder != 0) {
+        return activityOrder;
+      }
+      return compareByName();
+    case _AccountSortOption.createdDesc:
+      final createdOrder = b.createdAt.compareTo(a.createdAt);
+      if (createdOrder != 0) {
+        return createdOrder;
+      }
+      return compareByName();
+  }
+}
+
+String _escapeCsvField(String value) {
+  if (value.isEmpty) {
+    return '';
+  }
+  final needsEscaping =
+      value.contains(',') ||
+      value.contains('\n') ||
+      value.contains('\r') ||
+      value.contains('"');
+  if (!needsEscaping) {
+    return value;
+  }
+  final escaped = value.replaceAll('"', '""');
+  return '"$escaped"';
 }
 
 class _OssCredentialTile extends StatelessWidget {

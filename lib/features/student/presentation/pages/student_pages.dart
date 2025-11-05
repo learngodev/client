@@ -5,75 +5,43 @@ import '../../application/student_dashboard_controller.dart';
 import '../../domain/sample_data.dart' as student_data;
 import '../../domain/student_repository.dart';
 
-Widget _buildStudentDashboardPage(
-  WidgetRef ref,
-  AsyncValue<StudentDashboardData> dashboard,
-  Widget Function(StudentDashboardData data) builder,
-) {
-  return dashboard.when(
-    data: (data) => RefreshIndicator(
-      onRefresh: () => ref.read(studentDashboardProvider.notifier).refresh(),
-      child: builder(data),
-    ),
-    loading: () => const Center(child: CircularProgressIndicator()),
-    error: (error, stack) => _DashboardErrorView(
-      onRetry: () => ref.read(studentDashboardProvider.notifier).refresh(),
-    ),
-  );
-}
+mixin ReminderActionMixin<T extends ConsumerStatefulWidget>
+  on ConsumerState<T> {
+  bool _reminderActionInProgress = false;
 
-class StudentOverviewPage extends ConsumerWidget {
-  const StudentOverviewPage({super.key});
+  bool get reminderActionInProgress => _reminderActionInProgress;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dashboard = ref.watch(studentDashboardProvider);
+  Future<bool> performReminderAction(Future<bool> Function() operation) async {
+    if (!mounted || _reminderActionInProgress) {
+      return false;
+    }
 
-    return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final controller = ref.read(studentDashboardProvider.notifier);
-      final pendingReminders = data.pendingReminders;
-      final completedReminders = data.completedReminders;
-      final schedule = data.todaySchedule;
-      final pendingAssignments = data.pendingAssignments;
-      final upcomingExams = data.upcomingExams;
-      final insights = data.insights;
-      final quickLinks = data.quickLinks;
-      final messages = data.messages.take(3).toList(growable: false);
-
-      final stats = [
-        _OverviewStat(
-          icon: Icons.alarm_on_outlined,
-          label: '待办提醒',
-          value: '${pendingReminders.length}',
-          color: theme.colorScheme.error,
-          route: '/student/reminders',
-        ),
-        _OverviewStat(
-          icon: Icons.assignment_outlined,
-          label: '待提交作业',
-          value: '${pendingAssignments.length}',
-          color: theme.colorScheme.primary,
-          route: '/student/assignments',
-        ),
-        _OverviewStat(
-          icon: Icons.event_available_outlined,
-          label: '今日课时',
-          value: '${schedule.length}',
-          color: theme.colorScheme.secondary,
-          route: '/student/schedule',
-        ),
-        _OverviewStat(
-          icon: Icons.timer_outlined,
-          label: '最近考试',
-          value: upcomingExams.isEmpty
-              ? '暂无'
+    setState(() => _reminderActionInProgress = true);
+    try {
+      return await operation();
+    } finally {
+      if (mounted) {
+        setState(() => _reminderActionInProgress = false);
+      }
+    }
+  }
+          SnackBar(
+            content: Text(message),
+            backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+          ),
+        );
+      }
+          if (success) {
+            showReminderSnack('已删除提醒 "${reminder.title}"');
+          } else {
+            showReminderSnack('删除提醒失败，请稍后再试', error: true);
+          }
+        }
               : upcomingExams.first.countdownLabel,
           color: theme.colorScheme.tertiary,
           route: '/student/exams',
         ),
       ];
-
       return ListView(
         padding: const EdgeInsets.all(24),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -96,11 +64,29 @@ class StudentOverviewPage extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: controller.markAllRemindersCompleted,
+                onPressed: reminderActionInProgress
+                    ? null
+                    : () async {
+                        final success = await performReminderAction(
+                          () => controller.markAllRemindersCompleted(),
+                        );
+                        if (!mounted) {
+                          return;
+                        }
+                        if (success) {
+                          showReminderSnack('已将全部提醒标记为完成');
+                        } else {
+                          showReminderSnack('批量标记失败，请稍后再试', error: true);
+                        }
+                      },
                 icon: const Icon(Icons.done_all_outlined),
                 label: Text('全部标记完成 (${pendingReminders.length})'),
               ),
             ),
+          if (reminderActionInProgress) ...[
+            const SizedBox(height: 4),
+            const LinearProgressIndicator(),
+          ],
           if (pendingReminders.isEmpty)
             const _IllustratedPlaceholder(
               icon: Icons.check_circle_outline,
@@ -118,6 +104,12 @@ class StudentOverviewPage extends ConsumerWidget {
                   onNavigate: item.route == null
                       ? null
                       : () => Navigator.of(context).pushNamed(item.route!),
+                  onDelete: item.isCustom && !reminderActionInProgress
+                      ? () => _confirmDeleteReminder(item)
+                      : null,
+                  onEdit: item.isCustom && !reminderActionInProgress
+                      ? () => _openEditReminder(item)
+                      : null,
                 ),
               ),
           if (completedReminders.isNotEmpty) ...[
@@ -125,6 +117,16 @@ class StudentOverviewPage extends ConsumerWidget {
             _CompletedRemindersSection(
               reminders: completedReminders,
               onToggleCompleted: controller.toggleReminderCompleted,
+              onDelete: (reminder) {
+                if (reminder.isCustom && !reminderActionInProgress) {
+                  _confirmDeleteReminder(reminder);
+                }
+              },
+              onEdit: (reminder) {
+                if (reminder.isCustom && !reminderActionInProgress) {
+                  _openEditReminder(reminder);
+                }
+              },
             ),
           ],
           const SizedBox(height: 12),
@@ -252,6 +254,177 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
   final TextEditingController _queryController = TextEditingController();
   student_data.StudentReminderPriority? _priorityFilter;
   bool _showCompleted = true;
+  bool _reminderActionInProgress = false;
+
+  void _showReminderSnackBar(String message, {bool error = false}) {
+    if (!mounted) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
+  }
+
+  Future<bool> _performReminderAction(Future<bool> Function() operation) async {
+    if (!mounted) {
+      return false;
+    }
+    if (_reminderActionInProgress) {
+      return false;
+    }
+    setState(() => _reminderActionInProgress = true);
+    try {
+      return await operation();
+    } finally {
+      if (mounted) {
+        setState(() => _reminderActionInProgress = false);
+      }
+    }
+  }
+
+  Future<void> _openCreateReminderSheet(BuildContext context) async {
+    if (_reminderActionInProgress) {
+      return;
+    }
+    final result = await showModalBottomSheet<_ReminderFormData>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) => const _ReminderEditorSheet(),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    final notifier = ref.read(studentDashboardProvider.notifier);
+    final success = await performReminderAction(
+      () => notifier.createCustomReminder(
+        title: result.title,
+        description: result.description,
+        timeLabel: result.timeLabel,
+        icon: result.icon,
+        priority: result.priority,
+        route: result.route,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      showReminderSnack('已添加提醒 "${result.title}"');
+    } else {
+      showReminderSnack('保存提醒失败，请稍后再试', error: true);
+    }
+  }
+
+  Future<void> _openEditReminderSheet(
+    BuildContext context,
+    student_data.StudentReminderItem reminder,
+  ) async {
+    if (!reminder.isCustom) {
+      return;
+    }
+    if (_reminderActionInProgress) {
+      return;
+    }
+
+    final result = await showModalBottomSheet<_ReminderFormData>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) => _ReminderEditorSheet(
+        initialData: _ReminderFormData(
+          title: reminder.title,
+          description: reminder.description,
+          timeLabel: reminder.timeLabel,
+          priority: reminder.priority,
+          icon: reminder.icon,
+          route: reminder.route,
+        ),
+        isEditing: true,
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    final notifier = ref.read(studentDashboardProvider.notifier);
+    final success = await performReminderAction(
+      () => notifier.editCustomReminder(
+        reminder.id,
+        title: result.title,
+        description: result.description,
+        timeLabel: result.timeLabel,
+        icon: result.icon,
+        priority: result.priority,
+        route: result.route,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      showReminderSnack('已更新提醒 "${result.title}"');
+    } else {
+      showReminderSnack('更新提醒失败，请稍后再试', error: true);
+    }
+  }
+
+  Future<void> _confirmDeleteReminder(
+    BuildContext context,
+    student_data.StudentReminderItem reminder,
+  ) async {
+    final controller = ref.read(studentDashboardProvider.notifier);
+    if (_reminderActionInProgress) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除提醒'),
+        content: Text('确定删除“${reminder.title}”吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (confirmed == true) {
+      final success = await performReminderAction(
+        () => controller.deleteReminder(reminder.id),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (success) {
+        showReminderSnack('已删除提醒 "${reminder.title}"');
+      } else {
+        showReminderSnack('删除提醒失败，请稍后再试', error: true);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -374,12 +547,41 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
             value: _showCompleted,
             onChanged: (value) => setState(() => _showCompleted = value),
           ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: _isActionInProgress
+                  ? null
+                  : () => _openCreateReminderSheet(context),
+              icon: const Icon(Icons.add),
+              label: const Text('新建自定义提醒'),
+            ),
+          ),
+          if (_isActionInProgress) ...[
+            const SizedBox(height: 4),
+            const LinearProgressIndicator(),
+          ],
           if (totalPending > 0) ...[
             const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: controller.markAllRemindersCompleted,
+                onPressed: _isActionInProgress
+                    ? null
+                    : () async {
+                        final success = await _performReminderAction(
+                          () => controller.markAllRemindersCompleted(),
+                        );
+                        if (!mounted) {
+                          return;
+                        }
+                        if (success) {
+                          _showReminderSnackBar('已将全部提醒标记为完成');
+                        } else {
+                          _showReminderSnackBar('批量标记失败，请稍后再试', error: true);
+                        }
+                      },
                 icon: const Icon(Icons.done_all_outlined),
                 label: Text('全部标记完成 ($totalPending)'),
               ),
@@ -403,6 +605,12 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
                   onNavigate: reminder.route == null
                       ? null
                       : () => Navigator.of(context).pushNamed(reminder.route!),
+                  onDelete: reminder.isCustom && !_isActionInProgress
+                      ? () => _confirmDeleteReminder(context, reminder)
+                      : null,
+                  onEdit: reminder.isCustom && !_isActionInProgress
+                      ? () => _openEditReminderSheet(context, reminder)
+                      : null,
                 ),
               ),
           if (_showCompleted && completed.isNotEmpty) ...[
@@ -410,6 +618,16 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
             _CompletedRemindersSection(
               reminders: completed,
               onToggleCompleted: controller.toggleReminderCompleted,
+              onDelete: (reminder) {
+                if (reminder.isCustom && !_isActionInProgress) {
+                  _confirmDeleteReminder(context, reminder);
+                }
+              },
+              onEdit: (reminder) {
+                if (reminder.isCustom && !_isActionInProgress) {
+                  _openEditReminderSheet(context, reminder);
+                }
+              },
             ),
           ],
           const SizedBox(height: 36),
@@ -1009,17 +1227,25 @@ class _ReminderCard extends StatelessWidget {
     required this.reminder,
     required this.onToggleCompleted,
     this.onNavigate,
+    this.onDelete,
+    this.onEdit,
   });
 
   final student_data.StudentReminderItem reminder;
   final VoidCallback onToggleCompleted;
   final VoidCallback? onNavigate;
+  final VoidCallback? onDelete;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final completed = reminder.isCompleted;
     final accent = reminder.badgeColor(theme);
+    final description = reminder.description.trim();
+    final subtitleText = description.isEmpty
+        ? reminder.timeLabel
+        : '$description\n${reminder.timeLabel}';
     final titleStyle = completed
         ? theme.textTheme.titleMedium?.copyWith(
             decoration: TextDecoration.lineThrough,
@@ -1042,14 +1268,31 @@ class _ReminderCard extends StatelessWidget {
           child: Icon(reminder.icon, color: accent),
         ),
         title: Text(reminder.title, style: titleStyle),
-        subtitle: Text(
-          '${reminder.description}\n${reminder.timeLabel}',
-          style: subtitleStyle,
-        ),
-        isThreeLine: true,
-        trailing: Checkbox.adaptive(
-          value: reminder.isCompleted,
-          onChanged: (_) => onToggleCompleted(),
+        subtitle: Text(subtitleText, style: subtitleStyle),
+        isThreeLine: description.isNotEmpty,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox.adaptive(
+              value: reminder.isCompleted,
+              onChanged: (_) => onToggleCompleted(),
+            ),
+            if (reminder.isCustom && (onEdit != null || onDelete != null)) ...[
+              const SizedBox(width: 4),
+              if (onEdit != null)
+                IconButton(
+                  tooltip: '编辑提醒',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
+                ),
+              if (onDelete != null)
+                IconButton(
+                  tooltip: '删除提醒',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: onDelete,
+                ),
+            ],
+          ],
         ),
         onTap: reminder.route != null ? onNavigate : () => onToggleCompleted(),
         onLongPress: onToggleCompleted,
@@ -1062,10 +1305,14 @@ class _CompletedRemindersSection extends StatelessWidget {
   const _CompletedRemindersSection({
     required this.reminders,
     required this.onToggleCompleted,
+    this.onDelete,
+    this.onEdit,
   });
 
   final List<student_data.StudentReminderItem> reminders;
   final void Function(String reminderId) onToggleCompleted;
+  final void Function(student_data.StudentReminderItem reminder)? onDelete;
+  final void Function(student_data.StudentReminderItem reminder)? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -1094,8 +1341,243 @@ class _CompletedRemindersSection extends StatelessWidget {
                   onNavigate: reminder.route == null
                       ? null
                       : () => Navigator.of(context).pushNamed(reminder.route!),
+                  onDelete: onDelete == null ? null : () => onDelete!(reminder),
+                  onEdit: onEdit == null ? null : () => onEdit!(reminder),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReminderFormData {
+  const _ReminderFormData({
+    required this.title,
+    required this.description,
+    required this.timeLabel,
+    required this.priority,
+    required this.icon,
+    this.route,
+  });
+
+  final String title;
+  final String description;
+  final String timeLabel;
+  final student_data.StudentReminderPriority priority;
+  final IconData icon;
+  final String? route;
+}
+
+class _ReminderIconOption {
+  const _ReminderIconOption(this.icon, this.label);
+
+  final IconData icon;
+  final String label;
+}
+
+const List<_ReminderIconOption> _reminderIconOptions = <_ReminderIconOption>[
+  _ReminderIconOption(Icons.alarm_on_outlined, '默认'),
+  _ReminderIconOption(Icons.task_alt_outlined, '作业'),
+  _ReminderIconOption(Icons.menu_book_outlined, '复习'),
+  _ReminderIconOption(Icons.lightbulb_outline, '想法'),
+  _ReminderIconOption(Icons.event_available_outlined, '日程'),
+  _ReminderIconOption(Icons.school_outlined, '课程'),
+];
+
+class _ReminderEditorSheet extends StatefulWidget {
+  const _ReminderEditorSheet({this.initialData, this.isEditing = false});
+
+  final _ReminderFormData? initialData;
+  final bool isEditing;
+
+  @override
+  State<_ReminderEditorSheet> createState() => _ReminderEditorSheetState();
+}
+
+class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _timeLabelController = TextEditingController();
+  final _routeController = TextEditingController();
+  student_data.StudentReminderPriority _priority =
+      student_data.StudentReminderPriority.normal;
+  IconData _selectedIcon = _reminderIconOptions.first.icon;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialData;
+    if (initial != null) {
+      _titleController.text = initial.title;
+      _descriptionController.text = initial.description;
+      _timeLabelController.text = initial.timeLabel;
+      _routeController.text = initial.route ?? '';
+      _priority = initial.priority;
+      _selectedIcon = initial.icon;
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _timeLabelController.dispose();
+    _routeController.dispose();
+    super.dispose();
+  }
+
+  void _handleSubmit() {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final trimmedRoute = _routeController.text.trim();
+
+    Navigator.of(context).pop(
+      _ReminderFormData(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        timeLabel: _timeLabelController.text.trim(),
+        priority: _priority,
+        icon: _selectedIcon,
+        route: trimmedRoute.isEmpty ? null : trimmedRoute,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomInset),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.isEditing ? '编辑提醒' : '新建自定义提醒',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: '关闭',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: '标题',
+                hintText: '例如：提交实验报告',
+              ),
+              autofocus: true,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '请输入标题';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: '描述',
+                hintText: '补充说明或提醒内容（可选）',
+              ),
+              minLines: 2,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _timeLabelController,
+              decoration: const InputDecoration(
+                labelText: '时间说明',
+                hintText: '例如：截止 周五 18:00',
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return '请填写时间说明';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _routeController,
+              decoration: const InputDecoration(
+                labelText: '跳转路由（可选）',
+                hintText: '例如：/student/assignments',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('优先级', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final priority
+                    in student_data.StudentReminderPriority.values)
+                  ChoiceChip(
+                    label: Text(priority.label),
+                    selected: _priority == priority,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _priority = priority);
+                      }
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text('图标', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final option in _reminderIconOptions)
+                  ChoiceChip(
+                    avatar: Icon(option.icon, size: 18),
+                    label: Text(option.label),
+                    selected: _selectedIcon == option.icon,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() => _selectedIcon = option.icon);
+                      }
+                    },
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('取消'),
+                ),
+                const SizedBox(width: 12),
+                FilledButton(
+                  onPressed: _handleSubmit,
+                  child: Text(widget.isEditing ? '更新' : '保存'),
+                ),
+              ],
+            ),
           ],
         ),
       ),

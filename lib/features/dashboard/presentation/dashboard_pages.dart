@@ -354,27 +354,6 @@ class TeacherDashboardPage extends HookConsumerWidget {
   }
 }
 
-class StudentDashboardPage extends HookConsumerWidget {
-  const StudentDashboardPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final account = ref.watch(authStateProvider).account;
-    return _DashboardScaffold(
-      title: '学生空间',
-      subtitle: '欢迎 ${account?.displayName ?? ''}',
-      actions: [
-        IconButton(
-          tooltip: '退出登录',
-          onPressed: ref.read(authStateProvider.notifier).signOut,
-          icon: const Icon(Icons.logout),
-        ),
-      ],
-      child: const Center(child: Text('学生端功能模块待实现')),
-    );
-  }
-}
-
 class _DashboardScaffold extends StatelessWidget {
   const _DashboardScaffold({
     required this.title,

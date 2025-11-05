@@ -76,6 +76,7 @@ class StudentReminderItem {
     this.priority = StudentReminderPriority.normal,
     this.route,
     this.isCompleted = false,
+    this.isCustom = false,
   });
 
   final String id;
@@ -86,6 +87,7 @@ class StudentReminderItem {
   final StudentReminderPriority priority;
   final String? route;
   final bool isCompleted;
+  final bool isCustom;
 
   Color badgeColor(ThemeData theme) {
     return priority == StudentReminderPriority.high
@@ -112,6 +114,7 @@ class StudentReminderItem {
     StudentReminderPriority? priority,
     String? route,
     bool? isCompleted,
+    bool? isCustom,
   }) {
     return StudentReminderItem(
       id: id ?? this.id,
@@ -122,6 +125,49 @@ class StudentReminderItem {
       priority: priority ?? this.priority,
       route: route ?? this.route,
       isCompleted: isCompleted ?? this.isCompleted,
+      isCustom: isCustom ?? this.isCustom,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'timeLabel': timeLabel,
+      'iconCodePoint': icon.codePoint,
+      'iconFontFamily': icon.fontFamily,
+      'iconFontPackage': icon.fontPackage,
+      'priority': priority.name,
+      'route': route,
+      'isCompleted': isCompleted,
+      'isCustom': isCustom,
+    };
+  }
+
+  factory StudentReminderItem.fromJson(Map<String, dynamic> json) {
+    final priorityName = json['priority'] as String?;
+    final priority = StudentReminderPriority.values.firstWhere(
+      (value) => value.name == priorityName,
+      orElse: () => StudentReminderPriority.normal,
+    );
+    final codePoint = json['iconCodePoint'] as int?;
+    final fontFamily = json['iconFontFamily'] as String?;
+    final fontPackage = json['iconFontPackage'] as String?;
+    final icon = codePoint == null
+        ? Icons.alarm_on_outlined
+        : IconData(codePoint, fontFamily: fontFamily, fontPackage: fontPackage);
+
+    return StudentReminderItem(
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      timeLabel: json['timeLabel'] as String? ?? '',
+      icon: icon,
+      priority: priority,
+      route: json['route'] as String?,
+      isCompleted: json['isCompleted'] as bool? ?? false,
+      isCustom: json['isCustom'] as bool? ?? false,
     );
   }
 
