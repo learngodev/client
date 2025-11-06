@@ -261,3 +261,123 @@ class AdminAccountPage {
     );
   }
 }
+
+class AdminAccountInvite {
+  const AdminAccountInvite({
+    required this.id,
+    required this.email,
+    required this.role,
+    this.invitedBy,
+    this.createdAt,
+    this.expiresAt,
+    this.invitationUrl,
+  });
+
+  final String id;
+  final String email;
+  final AdminAccountRole role;
+  final String? invitedBy;
+  final DateTime? createdAt;
+  final DateTime? expiresAt;
+  final String? invitationUrl;
+
+  String get roleLabel => role.label;
+
+  String get invitedByLabel {
+    final value = invitedBy?.trim() ?? '';
+    if (value.isEmpty) {
+      return '系统管理员';
+    }
+    return value;
+  }
+
+  String get createdAtLabel => _formatDate(createdAt);
+
+  String get expiresAtLabel => _formatDate(expiresAt);
+
+  bool get isExpired {
+    final expiry = expiresAt;
+    if (expiry == null) {
+      return false;
+    }
+    return expiry.isBefore(DateTime.now());
+  }
+
+  AdminAccountInvite copyWith({
+    String? id,
+    String? email,
+    AdminAccountRole? role,
+    String? invitedBy,
+    DateTime? createdAt,
+    DateTime? expiresAt,
+    String? invitationUrl,
+  }) {
+    return AdminAccountInvite(
+      id: id ?? this.id,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      invitedBy: invitedBy ?? this.invitedBy,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      invitationUrl: invitationUrl ?? this.invitationUrl,
+    );
+  }
+
+  factory AdminAccountInvite.fromJson(Map<String, dynamic> json) {
+    final roleValue = (json['role'] ?? '').toString().toLowerCase();
+    final invitedByValue = json['invited_by'] ??
+        json['invited_by_name'] ??
+        json['invitedBy'] ??
+        json['inviter'];
+    final invitationUrlValue = json['invitation_url'] ??
+        json['invite_url'] ??
+        json['url'] ??
+        json['link'];
+
+    return AdminAccountInvite(
+      id: (json['id'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      role: AdminAccountRoleX.fromApiValue(roleValue),
+      invitedBy: invitedByValue == null
+          ? null
+          : invitedByValue.toString().trim().isEmpty
+              ? null
+              : invitedByValue.toString().trim(),
+      createdAt: _parseDateTime(json['created_at'] ?? json['createdAt']),
+      expiresAt: _parseDateTime(json['expires_at'] ?? json['expiresAt']),
+      invitationUrl: invitationUrlValue == null
+          ? null
+          : invitationUrlValue.toString().trim().isEmpty
+              ? null
+              : invitationUrlValue.toString().trim(),
+    );
+  }
+
+  static DateTime? _parseDateTime(dynamic raw) {
+    if (raw is DateTime) {
+      return raw.toLocal();
+    }
+    if (raw is String && raw.isNotEmpty) {
+      return DateTime.tryParse(raw)?.toLocal();
+    }
+    if (raw is int) {
+      final normalized = raw < 1000000000000 ? raw * 1000 : raw;
+      return DateTime.fromMillisecondsSinceEpoch(normalized, isUtc: true)
+          .toLocal();
+    }
+    if (raw is num) {
+      final value = raw.toInt();
+      final normalized = value < 1000000000000 ? value * 1000 : value;
+      return DateTime.fromMillisecondsSinceEpoch(normalized, isUtc: true)
+          .toLocal();
+    }
+    return null;
+  }
+
+  static String _formatDate(DateTime? value) {
+    if (value == null) {
+      return '未设置';
+    }
+    return DateFormat('MM-dd HH:mm').format(value.toLocal());
+  }
+}

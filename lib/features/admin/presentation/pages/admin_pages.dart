@@ -476,10 +476,9 @@ class AdminAccountsPage extends HookConsumerWidget {
     }, [filterKey]);
 
     final accountsState = ref.watch(adminAccountListProvider(request));
-    final invitesState = useState<List<admin_data.AdminAccountInvite>>(
-      admin_data.adminAccountInvites.map((invite) => invite).toList(),
-    );
-    final invites = invitesState.value;
+    final invitesState = ref.watch(adminAccountInvitesProvider);
+    final inviteBusyIds = useState<Set<String>>(<String>{});
+    final invites = invitesState.valueOrNull ?? const <AdminAccountInvite>[];
     final scrollController = useScrollController();
 
     useEffect(() {
@@ -841,9 +840,10 @@ class AdminAccountsPage extends HookConsumerWidget {
         classScope: classScope,
       );
       try {
-        final _ = await ref.refresh(
-          adminAccountListProvider(refreshRequest).future,
-        );
+        await Future.wait([
+          ref.refresh(adminAccountListProvider(refreshRequest).future),
+          ref.read(adminAccountInvitesProvider.notifier).refresh(),
+        ]);
       } catch (_) {
         // 错误由 accountsState 的 error 分支统一处理。
       }
@@ -960,7 +960,11 @@ class AdminAccountsPage extends HookConsumerWidget {
       );
     }
 
-    void showInviteSnack(String message, {bool error = false}) {
+    void showInviteSnack(
+      String message, {
+      bool error = false,
+      SnackBarAction? action,
+    }) {
       if (!context.mounted) {
         return;
       }
@@ -971,29 +975,359 @@ class AdminAccountsPage extends HookConsumerWidget {
           content: Text(message),
           behavior: SnackBarBehavior.floating,
           backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+          action: action,
         ),
       );
     }
 
-    Future<void> copyInviteLink(admin_data.AdminAccountInvite invite) async {
-      await Clipboard.setData(ClipboardData(text: invite.invitationUrl));
-      showInviteSnack('邀请链接已复制，可直接发送给 ${invite.email}');
+    bool isInviteBusy(String id) => inviteBusyIds.value.contains(id);
+
+    void setInviteBusy(String id, bool busy) {
+      final current = inviteBusyIds.value;
+      if (busy) {
+        if (current.contains(id)) {
+          return;
+        }
+        inviteBusyIds.value = {...current, id};
+      } else {
+        if (!current.contains(id)) {
+          return;
+        }
+        final next = {...current}..remove(id);
+        inviteBusyIds.value = next;
+      }
     }
 
-    Future<void> resendInvite(admin_data.AdminAccountInvite invite) async {
-      showInviteSnack('已重新发送邀请邮件至 ${invite.email}');
+    String inviteErrorMessage(Object error) {
+      if (error is AppException) {
+        return error.message;
+      }
+      if (error is StateError) {
+        return error.message;
+      }
+      return error.toString();
     }
 
-    Future<void> revokeInvite(admin_data.AdminAccountInvite invite) async {
-      if (!context.mounted) {
+    Future<AdminAccountInvite?> showCreateInviteDialog() async {
+      final emailController = TextEditingController();
+      final noteController = TextEditingController();
+      var selectedRole = AdminAccountRole.teacher;
+      String? selectedDepartmentForInvite = selectedDepartmentId;
+      String? selectedClassForInvite =
+          selectedDepartmentForInvite == selectedDepartmentId
+              ? selectedClassId
+              : null;
+      var submitting = false;
+      String? emailError;
+      String? formError;
+    const String noDepartmentValue = '__invite_department_none__';
+    const String noClassValue = '__invite_class_none__';
+    var selectedDepartmentMenuValue =
+      selectedDepartmentForInvite ?? noDepartmentValue;
+    var selectedClassMenuValue =
+      selectedClassForInvite ?? noClassValue;
+
+      final invite = await showDialog<AdminAccountInvite>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setState) {
+              final departmentEntries = <DropdownMenuEntry<String>>[
+                const DropdownMenuEntry<String>(
+                  value: noDepartmentValue,
+                  label: '不指定院系',
+                ),
+                for (final entry in sortedDepartmentEntries)
+                  DropdownMenuEntry<String>(
+                    value: entry.key,
+                    label: entry.value,
+                  ),
+              ];
+              final availableClassesMap =
+                  selectedDepartmentForInvite == null
+                      ? const <String, String>{}
+                      : classLabelsByDepartment[
+                              selectedDepartmentForInvite] ??
+                          const <String, String>{};
+              final classEntries = <DropdownMenuEntry<String>>[
+                const DropdownMenuEntry<String>(
+                  value: noClassValue,
+                  label: '不指定班级',
+                ),
+                for (final entry in availableClassesMap.entries)
+                  DropdownMenuEntry<String>(
+                    value: entry.key,
+                    label: entry.value,
+                  ),
+              ];
+
+              return AlertDialog(
+                title: const Text('发起账号邀请'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: emailController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          labelText: '受邀邮箱',
+                          hintText: 'example@school.edu',
+                          errorText: emailError,
+                          prefixIcon: const Icon(Icons.email_outlined),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        onChanged: (_) {
+                          if (emailError != null || formError != null) {
+                            setState(() {
+                              emailError = null;
+                              formError = null;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '邀请身份',
+                        style: Theme.of(dialogCtx).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      SegmentedButton<AdminAccountRole>(
+                        segments: [
+                          for (final roleOption in AdminAccountRole.values)
+                            ButtonSegment<AdminAccountRole>(
+                              value: roleOption,
+                              label: Text(roleOption.label),
+                              icon: Icon(roleOption.icon),
+                            ),
+                        ],
+                        selected: <AdminAccountRole>{selectedRole},
+                        onSelectionChanged: submitting
+                            ? null
+                            : (selection) {
+                                if (selection.isEmpty) {
+                                  return;
+                                }
+                                setState(() {
+                                  selectedRole = selection.first;
+                                });
+                              },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownMenu<String>(
+                        enabled: !submitting,
+                        initialSelection: selectedDepartmentMenuValue,
+                        label: const Text('所属院系（可选）'),
+                        leadingIcon:
+                            const Icon(Icons.account_tree_outlined),
+                        dropdownMenuEntries: departmentEntries,
+                        onSelected: submitting
+                            ? null
+                            : (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                setState(() {
+                                  selectedDepartmentMenuValue = value;
+                                  selectedDepartmentForInvite =
+                                      value == noDepartmentValue
+                                          ? null
+                                          : value;
+                                  if (selectedDepartmentForInvite == null) {
+                                    selectedClassForInvite = null;
+                                    selectedClassMenuValue = noClassValue;
+                                  } else {
+                                    final available =
+                                        classLabelsByDepartment[
+                                              selectedDepartmentForInvite] ??
+                                            const <String, String>{};
+                                    if (selectedClassForInvite != null &&
+                                        !available.containsKey(
+                                          selectedClassForInvite,
+                                        )) {
+                                      selectedClassForInvite = null;
+                                      selectedClassMenuValue = noClassValue;
+                                    }
+                                  }
+                                });
+                              },
+                      ),
+                      if (selectedDepartmentForInvite != null) ...[
+                        const SizedBox(height: 12),
+                        DropdownMenu<String>(
+                          enabled: !submitting,
+                          initialSelection: selectedClassMenuValue,
+                          label: const Text('所属班级（可选）'),
+                          leadingIcon: const Icon(Icons.groups_outlined),
+                          dropdownMenuEntries: classEntries,
+                          onSelected: submitting
+                              ? null
+                              : (value) {
+                                  if (value == null) {
+                                    return;
+                                  }
+                                  setState(() {
+                                    selectedClassMenuValue = value;
+                                    selectedClassForInvite =
+                                        value == noClassValue ? null : value;
+                                  });
+                                },
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: noteController,
+                        decoration: const InputDecoration(
+                          labelText: '附加说明（可选）',
+                          hintText: '备注将附在邀请邮件中',
+                          prefixIcon: Icon(Icons.sticky_note_2_outlined),
+                        ),
+                        maxLines: 2,
+                        textInputAction: TextInputAction.newline,
+                        onChanged: (_) {
+                          if (formError != null) {
+                            setState(() {
+                              formError = null;
+                            });
+                          }
+                        },
+                      ),
+                      if (formError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          formError!,
+                          style: Theme.of(dialogCtx)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: Theme.of(dialogCtx)
+                                    .colorScheme
+                                    .error,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () {
+                            Navigator.of(dialogCtx).pop();
+                          },
+                    child: const Text('取消'),
+                  ),
+                  FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            FocusScope.of(dialogCtx).unfocus();
+                            final email = emailController.text.trim();
+                            final note = noteController.text.trim();
+                            final emailValid = RegExp(
+                              r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                            ).hasMatch(email);
+                            if (!emailValid) {
+                              setState(() {
+                                emailError = '请输入有效的邮箱地址';
+                              });
+                              return;
+                            }
+                            setState(() {
+                              submitting = true;
+                              emailError = null;
+                              formError = null;
+                            });
+                            final navigator = Navigator.of(dialogCtx);
+                            try {
+                              final invite = await ref
+                                  .read(
+                                    adminAccountInvitesProvider.notifier,
+                                  )
+                                  .createInvite(
+                                    email: email,
+                                    role: selectedRole,
+                                    departmentId: selectedDepartmentForInvite,
+                                    classId: selectedClassForInvite,
+                                    note: note.isEmpty ? null : note,
+                                  );
+                              if (!navigator.mounted) {
+                                return;
+                              }
+                              if (navigator.canPop()) {
+                                navigator.pop(invite);
+                              }
+                            } catch (error) {
+                              setState(() {
+                                submitting = false;
+                                formError = inviteErrorMessage(error);
+                              });
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('发送邀请'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      emailController.dispose();
+      noteController.dispose();
+      return invite;
+    }
+
+    Future<void> copyInviteLink(AdminAccountInvite invite) async {
+      final url = invite.invitationUrl;
+      if (url == null || url.isEmpty) {
+        showInviteSnack('未找到可用的邀请链接', error: true);
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: url));
+      showInviteSnack('邀请链接已复制，可直接分享给 ${invite.email}');
+    }
+
+    Future<void> resendInvite(AdminAccountInvite invite) async {
+      if (isInviteBusy(invite.id)) {
+        return;
+      }
+      setInviteBusy(invite.id, true);
+      try {
+        await ref
+            .read(adminAccountInvitesProvider.notifier)
+            .resendInvite(invite.id);
+        showInviteSnack('邀请邮件已重新发送至 ${invite.email}');
+      } catch (error) {
+        showInviteSnack(
+          '重新发送邀请失败：${inviteErrorMessage(error)}',
+          error: true,
+        );
+      } finally {
+        setInviteBusy(invite.id, false);
+      }
+    }
+
+    Future<void> revokeInvite(AdminAccountInvite invite) async {
+      if (!context.mounted || isInviteBusy(invite.id)) {
         return;
       }
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) {
           return AlertDialog(
-            title: const Text('撤销邀请'),
-            content: Text('确认要撤销发给 ${invite.email} 的邀请吗？'),
+            title: const Text('撤销账号邀请'),
+            content: Text('确认要撤销发送给 ${invite.email} 的账号邀请吗？'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -1010,11 +1344,40 @@ class AdminAccountsPage extends HookConsumerWidget {
       if (confirmed != true) {
         return;
       }
-      invitesState.value = [
-        for (final existing in invitesState.value)
-          if (existing.id != invite.id) existing,
-      ];
-      showInviteSnack('已撤销邀请');
+      setInviteBusy(invite.id, true);
+      try {
+        await ref
+            .read(adminAccountInvitesProvider.notifier)
+            .revokeInvite(invite.id);
+        showInviteSnack('邀请已撤销');
+      } catch (error) {
+        showInviteSnack(
+          '撤销邀请操作失败：${inviteErrorMessage(error)}',
+          error: true,
+        );
+      } finally {
+        setInviteBusy(invite.id, false);
+      }
+    }
+
+    Future<void> handleCreateInvite() async {
+      final invite = await showCreateInviteDialog();
+      if (invite == null || !context.mounted) {
+        return;
+      }
+      SnackBarAction? action;
+      if ((invite.invitationUrl ?? '').isNotEmpty) {
+        action = SnackBarAction(
+          label: '复制链接',
+          onPressed: () {
+            unawaited(copyInviteLink(invite));
+          },
+        );
+      }
+      showInviteSnack(
+        '账号邀请已发送至 ${invite.email}',
+        action: action,
+      );
     }
 
     return RefreshIndicator(
@@ -1333,20 +1696,57 @@ class AdminAccountsPage extends HookConsumerWidget {
               ],
             ),
           ),
-          if (invites.isNotEmpty) ...[
+          if (invitesState.isLoading ||
+              invitesState.hasError ||
+              invites.isNotEmpty) ...[
             const SizedBox(height: 16),
             _AccountSectionCard(
               icon: Icons.mark_email_unread_outlined,
-              title: '待处理邀请',
+              title: '待处理账号邀请',
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final invite in invites)
-                    _AccountInviteTile(
-                      invite: invite,
-                      onCopyLink: () => copyInviteLink(invite),
-                      onResend: () => resendInvite(invite),
-                      onRevoke: () => revokeInvite(invite),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.person_add_alt_1_outlined),
+                      label: const Text('发起账号邀请'),
+                      onPressed: handleCreateInvite,
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  invitesState.when(
+                    data: (items) {
+                      if (items.isEmpty) {
+                        return const _EmptyPlaceholder(
+                          title: '暂无待处理邀请',
+                          description: '当前没有新的账号邀请。',
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (final invite in items)
+                            _AccountInviteTile(
+                              invite: invite,
+                              busy: isInviteBusy(invite.id),
+                              onCopyLink: () => copyInviteLink(invite),
+                              onResend: () => resendInvite(invite),
+                              onRevoke: () => revokeInvite(invite),
+                            ),
+                        ],
+                      );
+                    },
+                    error: (error, _) => _ErrorPlaceholder(
+                      message: inviteErrorMessage(error),
+                      onRetry: () => ref
+                          .read(adminAccountInvitesProvider.notifier)
+                          .refresh(),
+                    ),
+                    loading: () => const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -4991,12 +5391,14 @@ class _AccountMetricCard extends StatelessWidget {
 class _AccountInviteTile extends StatelessWidget {
   const _AccountInviteTile({
     required this.invite,
+    required this.busy,
     required this.onCopyLink,
     required this.onResend,
     required this.onRevoke,
   });
 
-  final admin_data.AdminAccountInvite invite;
+  final AdminAccountInvite invite;
+  final bool busy;
   final VoidCallback onCopyLink;
   final VoidCallback onResend;
   final VoidCallback onRevoke;
@@ -5004,6 +5406,14 @@ class _AccountInviteTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final expiryStyle = invite.isExpired
+        ? theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+          )
+        : theme.textTheme.bodySmall;
+  final expiryLabel = invite.isExpired
+    ? '该邀请已于 ${invite.expiresAtLabel} 过期'
+    : '邀请有效期至 ${invite.expiresAtLabel}';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -5024,7 +5434,7 @@ class _AccountInviteTile extends StatelessWidget {
                     Text(invite.email, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 4),
                     Text(
-                      '由 ${invite.invitedBy} 邀请 · 创建时间：${invite.createdAtLabel}',
+                      '创建人：${invite.invitedByLabel} · 创建时间：${invite.createdAtLabel}',
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -5047,10 +5457,7 @@ class _AccountInviteTile extends StatelessWidget {
                 color: theme.colorScheme.outline,
               ),
               const SizedBox(width: 6),
-              Text(
-                '有效期至 ${invite.expiresAtLabel}',
-                style: theme.textTheme.bodySmall,
-              ),
+              Text(expiryLabel, style: expiryStyle),
             ],
           ),
           const SizedBox(height: 12),
@@ -5063,21 +5470,30 @@ class _AccountInviteTile extends StatelessWidget {
                 TextButton.icon(
                   icon: const Icon(Icons.link_outlined),
                   label: const Text('复制邀请链接'),
-                  onPressed: onCopyLink,
+                  onPressed: busy ? null : onCopyLink,
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.send_outlined),
-                  label: const Text('重新发送'),
-                  onPressed: onResend,
+                  label: const Text('重新发送邀请'),
+                  onPressed: busy ? null : onResend,
                 ),
                 TextButton.icon(
                   icon: const Icon(Icons.close_outlined),
                   label: const Text('撤销邀请'),
-                  onPressed: onRevoke,
+                  onPressed: busy ? null : onRevoke,
                   style: TextButton.styleFrom(
                     foregroundColor: theme.colorScheme.error,
                   ),
                 ),
+                if (busy)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
               ],
             ),
           ),

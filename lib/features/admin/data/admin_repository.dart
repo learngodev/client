@@ -171,6 +171,175 @@ class AdminRepository {
     }
   }
 
+  Future<List<AdminAccountInvite>> fetchAccountInvites({
+    required String schoolId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/invites',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取邀请列表');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取邀请列表失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final invites = _extractMapList(data, nestedKey: 'invites')
+          .map(AdminAccountInvite.fromJson)
+          .where((invite) => invite.id.isNotEmpty)
+          .toList();
+      return invites;
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminAccountInvite> createAccountInvite({
+    required String schoolId,
+    required String email,
+    required AdminAccountRole role,
+    String? departmentId,
+    String? classId,
+    String? note,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/invites',
+        data: <String, dynamic>{
+          'school_id': schoolId,
+          'email': email,
+          'role': role.apiValue,
+          if (departmentId != null && departmentId.isNotEmpty)
+            'department_id': departmentId,
+          if (classId != null && classId.isNotEmpty) 'class_id': classId,
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('创建邀请失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '创建邀请失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final inviteMap = _extractInviteMap(data);
+      if (inviteMap == null) {
+        throw const AppException('创建邀请返回数据异常');
+      }
+      return AdminAccountInvite.fromJson(inviteMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminAccountInvite?> resendAccountInvite({
+    required String schoolId,
+    required String inviteId,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/invites/$inviteId/resend',
+        data: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('重新发送邀请失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '重新发送邀请失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final inviteMap = _extractInviteMap(data);
+      if (inviteMap == null) {
+        return null;
+      }
+      return AdminAccountInvite.fromJson(inviteMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> revokeAccountInvite({
+    required String schoolId,
+    required String inviteId,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/invites/$inviteId',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('撤销邀请失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '撤销邀请失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
   Future<void> resetAccountPassword({
     required String schoolId,
     required String accountId,
@@ -974,6 +1143,19 @@ class AdminRepository {
       }
     }
     return <Map<String, dynamic>>[];
+  }
+
+  Map<String, dynamic>? _extractInviteMap(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final invite = data['invite'];
+      if (invite is Map<String, dynamic>) {
+        return invite;
+      }
+      if (data.containsKey('id')) {
+        return data;
+      }
+    }
+    return null;
   }
 }
 
