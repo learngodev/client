@@ -15,7 +15,7 @@ import '../../data/admin_repository.dart';
 import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../domain/oss.dart' as oss;
-import '../../domain/sample_data.dart' as admin_data;
+import '../../domain/system_settings.dart' as system;
 
 int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
   final nameCompare = a.department.name.toLowerCase().compareTo(
@@ -531,7 +531,7 @@ class AdminAccountsPage extends HookConsumerWidget {
             requestedPage.value = previousPage;
           }
         },
-        loading: () {},
+        loading: () => null,
       );
       return null;
     }, [accountsState, effectivePage]);
@@ -1015,17 +1015,16 @@ class AdminAccountsPage extends HookConsumerWidget {
       String? selectedDepartmentForInvite = selectedDepartmentId;
       String? selectedClassForInvite =
           selectedDepartmentForInvite == selectedDepartmentId
-              ? selectedClassId
-              : null;
+          ? selectedClassId
+          : null;
       var submitting = false;
       String? emailError;
       String? formError;
-    const String noDepartmentValue = '__invite_department_none__';
-    const String noClassValue = '__invite_class_none__';
-    var selectedDepartmentMenuValue =
-      selectedDepartmentForInvite ?? noDepartmentValue;
-    var selectedClassMenuValue =
-      selectedClassForInvite ?? noClassValue;
+      const String noDepartmentValue = '__invite_department_none__';
+      const String noClassValue = '__invite_class_none__';
+      var selectedDepartmentMenuValue =
+          selectedDepartmentForInvite ?? noDepartmentValue;
+      var selectedClassMenuValue = selectedClassForInvite ?? noClassValue;
 
       final invite = await showDialog<AdminAccountInvite>(
         context: context,
@@ -1044,12 +1043,10 @@ class AdminAccountsPage extends HookConsumerWidget {
                     label: entry.value,
                   ),
               ];
-              final availableClassesMap =
-                  selectedDepartmentForInvite == null
-                      ? const <String, String>{}
-                      : classLabelsByDepartment[
-                              selectedDepartmentForInvite] ??
-                          const <String, String>{};
+              final availableClassesMap = selectedDepartmentForInvite == null
+                  ? const <String, String>{}
+                  : classLabelsByDepartment[selectedDepartmentForInvite] ??
+                        const <String, String>{};
               final classEntries = <DropdownMenuEntry<String>>[
                 const DropdownMenuEntry<String>(
                   value: noClassValue,
@@ -1121,8 +1118,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                         enabled: !submitting,
                         initialSelection: selectedDepartmentMenuValue,
                         label: const Text('所属院系（可选）'),
-                        leadingIcon:
-                            const Icon(Icons.account_tree_outlined),
+                        leadingIcon: const Icon(Icons.account_tree_outlined),
                         dropdownMenuEntries: departmentEntries,
                         onSelected: submitting
                             ? null
@@ -1133,17 +1129,14 @@ class AdminAccountsPage extends HookConsumerWidget {
                                 setState(() {
                                   selectedDepartmentMenuValue = value;
                                   selectedDepartmentForInvite =
-                                      value == noDepartmentValue
-                                          ? null
-                                          : value;
+                                      value == noDepartmentValue ? null : value;
                                   if (selectedDepartmentForInvite == null) {
                                     selectedClassForInvite = null;
                                     selectedClassMenuValue = noClassValue;
                                   } else {
                                     final available =
-                                        classLabelsByDepartment[
-                                              selectedDepartmentForInvite] ??
-                                            const <String, String>{};
+                                        classLabelsByDepartment[selectedDepartmentForInvite] ??
+                                        const <String, String>{};
                                     if (selectedClassForInvite != null &&
                                         !available.containsKey(
                                           selectedClassForInvite,
@@ -1199,13 +1192,9 @@ class AdminAccountsPage extends HookConsumerWidget {
                         const SizedBox(height: 12),
                         Text(
                           formError!,
-                          style: Theme.of(dialogCtx)
-                              .textTheme
-                              .bodySmall
+                          style: Theme.of(dialogCtx).textTheme.bodySmall
                               ?.copyWith(
-                                color: Theme.of(dialogCtx)
-                                    .colorScheme
-                                    .error,
+                                color: Theme.of(dialogCtx).colorScheme.error,
                               ),
                         ),
                       ],
@@ -1225,7 +1214,6 @@ class AdminAccountsPage extends HookConsumerWidget {
                     onPressed: submitting
                         ? null
                         : () async {
-                            FocusScope.of(dialogCtx).unfocus();
                             final email = emailController.text.trim();
                             final note = noteController.text.trim();
                             final emailValid = RegExp(
@@ -1245,9 +1233,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                             final navigator = Navigator.of(dialogCtx);
                             try {
                               final invite = await ref
-                                  .read(
-                                    adminAccountInvitesProvider.notifier,
-                                  )
+                                  .read(adminAccountInvitesProvider.notifier)
                                   .createInvite(
                                     email: email,
                                     role: selectedRole,
@@ -1309,10 +1295,7 @@ class AdminAccountsPage extends HookConsumerWidget {
             .resendInvite(invite.id);
         showInviteSnack('邀请邮件已重新发送至 ${invite.email}');
       } catch (error) {
-        showInviteSnack(
-          '重新发送邀请失败：${inviteErrorMessage(error)}',
-          error: true,
-        );
+        showInviteSnack('重新发送邀请失败：${inviteErrorMessage(error)}', error: true);
       } finally {
         setInviteBusy(invite.id, false);
       }
@@ -1351,10 +1334,7 @@ class AdminAccountsPage extends HookConsumerWidget {
             .revokeInvite(invite.id);
         showInviteSnack('邀请已撤销');
       } catch (error) {
-        showInviteSnack(
-          '撤销邀请操作失败：${inviteErrorMessage(error)}',
-          error: true,
-        );
+        showInviteSnack('撤销邀请操作失败：${inviteErrorMessage(error)}', error: true);
       } finally {
         setInviteBusy(invite.id, false);
       }
@@ -1374,10 +1354,7 @@ class AdminAccountsPage extends HookConsumerWidget {
           },
         );
       }
-      showInviteSnack(
-        '账号邀请已发送至 ${invite.email}',
-        action: action,
-      );
+      showInviteSnack('账号邀请已发送至 ${invite.email}', action: action);
     }
 
     return RefreshIndicator(
@@ -1415,7 +1392,7 @@ class AdminAccountsPage extends HookConsumerWidget {
                       if (role.value != _AccountRoleFilter.all)
                         FilterChip(
                           label: Text(
-                            '角色：${_accountRoleFilterLabel(role.value)}',
+                            '身份：${_accountRoleFilterLabel(role.value)}',
                           ),
                           onSelected: (_) {},
                           onDeleted: () {
@@ -3840,19 +3817,16 @@ class AdminSystemSettingsPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final switchesState = useState<List<admin_data.AdminSystemSwitch>>(
-      admin_data.adminSystemSwitches.map((s) => s).toList(),
-    );
-    final parametersState = useState<List<admin_data.AdminSystemParameter>>(
-      admin_data.adminSystemParameters.map((p) => p).toList(),
-    );
-    final broadcastsState = useState<List<admin_data.AdminSystemBroadcast>>(
-      admin_data.adminSystemBroadcasts.map((b) => b).toList(),
-    );
-    final audits = admin_data.adminSystemAuditLogs;
+    final systemState = ref.watch(adminSystemSettingsProvider);
+    final notifier = ref.read(adminSystemSettingsProvider.notifier);
+    final switchBusy = useState<String?>(null);
+    final parameterBusy = useState<String?>(null);
+    final broadcastBusy = useState<String?>(null);
 
     void showSnack(String message) {
-      if (!context.mounted) return;
+      if (!context.mounted) {
+        return;
+      }
       final messenger = ScaffoldMessenger.of(context);
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
@@ -3860,163 +3834,221 @@ class AdminSystemSettingsPage extends HookConsumerWidget {
       );
     }
 
-    void toggleSystemSwitch(String id, bool value) {
-      final nowLabel = DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now());
-      switchesState.value = switchesState.value.map((item) {
-        if (item.id == id) {
-          return item.copyWith(
-            enabled: value,
-            lastUpdatedLabel: '最近更新：$nowLabel · 由 系统管理员',
-          );
-        }
-        return item;
-      }).toList();
-      final target = switchesState.value.firstWhere((item) => item.id == id);
-      showSnack(value ? '已启用「${target.title}」' : '已停用「${target.title}」');
+    String formatError(Object error) {
+      if (error is AppException) {
+        return error.message;
+      }
+      if (error is StateError) {
+        return error.message;
+      }
+      return error.toString();
     }
 
-    Future<void> editParameter(
-      admin_data.AdminSystemParameter parameter,
-    ) async {
-      if (parameter.locked) {
-        showSnack('参数 ${parameter.key} 已锁定，无法修改');
-        return;
-      }
-      final controller = TextEditingController(text: parameter.value);
-      final result = await showDialog<String>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: Text('编辑 ${parameter.key}'),
-            content: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                labelText: '新的参数值',
-                helperText: parameter.description,
+    return systemState.when(
+      data: (data) {
+        final switches = data.switches;
+        final parameters = data.parameters;
+        final broadcasts = data.broadcasts;
+        final audits = data.auditLogs;
+
+        Future<void> toggleSystemSwitch(
+          system.AdminSystemSwitch item,
+          bool value,
+        ) async {
+          if (switchBusy.value == item.id) {
+            return;
+          }
+          switchBusy.value = item.id;
+          try {
+            await notifier.setSwitchEnabled(switchId: item.id, enabled: value);
+            showSnack(value ? '已启用「${item.title}」' : '已停用「${item.title}」');
+          } catch (error) {
+            showSnack('操作失败：${formatError(error)}');
+          } finally {
+            switchBusy.value = null;
+          }
+        }
+
+        Future<void> editParameter(
+          system.AdminSystemParameter parameter,
+        ) async {
+          if (parameter.locked) {
+            showSnack('参数 ${parameter.key} 已锁定，无法修改');
+            return;
+          }
+          final controller = TextEditingController(text: parameter.value);
+          final result = await showDialog<String>(
+            context: context,
+            builder: (dialogContext) {
+              return AlertDialog(
+                title: Text('编辑 ${parameter.key}'),
+                content: TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    labelText: '新的参数值',
+                    helperText: parameter.description,
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(),
+                    child: const Text('取消'),
+                  ),
+                  FilledButton(
+                    onPressed: () =>
+                        Navigator.of(dialogContext).pop(controller.text.trim()),
+                    child: const Text('保存'),
+                  ),
+                ],
+              );
+            },
+          );
+          final normalized = result?.trim();
+          if (normalized == null || normalized.isEmpty) {
+            return;
+          }
+          if (normalized == parameter.value) {
+            showSnack('参数 ${parameter.key} 未发生变化');
+            return;
+          }
+          parameterBusy.value = parameter.id;
+          try {
+            await notifier.updateParameterValue(
+              parameterId: parameter.id,
+              value: normalized,
+            );
+            showSnack('参数 ${parameter.key} 已更新');
+          } catch (error) {
+            showSnack('操作失败：${formatError(error)}');
+          } finally {
+            parameterBusy.value = null;
+          }
+        }
+
+        Future<void> toggleBroadcastPinned(
+          system.AdminSystemBroadcast item,
+        ) async {
+          if (broadcastBusy.value == item.id) {
+            return;
+          }
+          broadcastBusy.value = item.id;
+          try {
+            await notifier.updateBroadcast(
+              broadcastId: item.id,
+              pinned: !item.pinned,
+            );
+            showSnack(
+              !item.pinned ? '已置顶「${item.title}」' : '已取消置顶「${item.title}」',
+            );
+          } catch (error) {
+            showSnack('操作失败：${formatError(error)}');
+          } finally {
+            broadcastBusy.value = null;
+          }
+        }
+
+        Future<void> updateBroadcastStatus(
+          system.AdminSystemBroadcast item,
+          system.AdminSystemBroadcastStatus status,
+        ) async {
+          if (broadcastBusy.value == item.id) {
+            return;
+          }
+          broadcastBusy.value = item.id;
+          try {
+            await notifier.updateBroadcast(
+              broadcastId: item.id,
+              status: status,
+            );
+            showSnack('已更新公告「${item.title}」状态');
+          } catch (error) {
+            showSnack('操作失败：${formatError(error)}');
+          } finally {
+            broadcastBusy.value = null;
+          }
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Text('系统设置', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            _AccountSectionCard(
+              icon: Icons.toggle_on_outlined,
+              title: '系统开关',
+              child: Column(
+                children: [
+                  for (final item in switches)
+                    _SystemSwitchTile(
+                      item: item,
+                      isBusy: switchBusy.value == item.id,
+                      onToggle: (value) =>
+                          unawaited(toggleSystemSwitch(item, value)),
+                    ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('取消'),
+            const SizedBox(height: 12),
+            _AccountSectionCard(
+              icon: Icons.settings_applications_outlined,
+              title: '平台参数',
+              child: Column(
+                children: [
+                  for (final parameter in parameters)
+                    _SystemParameterTile(
+                      item: parameter,
+                      isBusy: parameterBusy.value == parameter.id,
+                      onEdit: () => unawaited(editParameter(parameter)),
+                    ),
+                ],
               ),
-              FilledButton(
-                onPressed: () =>
-                    Navigator.of(dialogContext).pop(controller.text.trim()),
-                child: const Text('保存'),
+            ),
+            const SizedBox(height: 12),
+            _AccountSectionCard(
+              icon: Icons.campaign_outlined,
+              title: '通知广播',
+              child: Column(
+                children: [
+                  for (final broadcast in broadcasts)
+                    _SystemBroadcastTile(
+                      item: broadcast,
+                      isBusy: broadcastBusy.value == broadcast.id,
+                      onTogglePinned: () =>
+                          unawaited(toggleBroadcastPinned(broadcast)),
+                      onStatusChanged: (status) =>
+                          unawaited(updateBroadcastStatus(broadcast, status)),
+                    ),
+                ],
               ),
-            ],
-          );
+            ),
+            const SizedBox(height: 12),
+            _AccountSectionCard(
+              icon: Icons.rule_outlined,
+              title: '审计记录',
+              child: Column(
+                children: [
+                  for (final audit in audits) _SystemAuditTile(item: audit),
+                  if (audits.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: _EmptyPlaceholder(
+                        title: '暂无审计记录',
+                        description: '所有系统操作都会记录在此处，便于追踪。',
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _ErrorPlaceholder(
+        message: formatError(error),
+        onRetry: () {
+          unawaited(notifier.refresh());
         },
-      );
-      final normalized = result?.trim();
-      if (normalized == null || normalized.isEmpty) {
-        return;
-      }
-      final nowLabel = DateFormat('MM-dd HH:mm').format(DateTime.now());
-      parametersState.value = parametersState.value.map((item) {
-        if (item.id == parameter.id) {
-          return item.copyWith(
-            value: normalized,
-            lastUpdatedLabel: '更新于 $nowLabel',
-          );
-        }
-        return item;
-      }).toList();
-      showSnack('参数 ${parameter.key} 已更新');
-    }
-
-    void toggleBroadcastPinned(String id) {
-      broadcastsState.value = broadcastsState.value.map((item) {
-        if (item.id == id) {
-          return item.copyWith(pinned: !item.pinned);
-        }
-        return item;
-      }).toList();
-    }
-
-    void updateBroadcastStatus(
-      String id,
-      admin_data.AdminSystemBroadcastStatus status,
-    ) {
-      final nowLabel = DateFormat('MM-dd HH:mm').format(DateTime.now());
-      admin_data.AdminSystemBroadcast? affected;
-      broadcastsState.value = broadcastsState.value.map((item) {
-        if (item.id == id) {
-          affected = item;
-          return item.copyWith(
-            status: status,
-            scheduleLabel: status == admin_data.AdminSystemBroadcastStatus.sent
-                ? '发送时间：$nowLabel'
-                : item.scheduleLabel,
-          );
-        }
-        return item;
-      }).toList();
-      if (affected != null) {
-        showSnack('已更新公告「${affected!.title}」状态');
-      }
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text('系统设置', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.toggle_on_outlined,
-          title: '系统开关',
-          child: Column(
-            children: [
-              for (final item in switchesState.value)
-                _SystemSwitchTile(
-                  item: item,
-                  onToggle: (value) => toggleSystemSwitch(item.id, value),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.settings_applications_outlined,
-          title: '平台参数',
-          child: Column(
-            children: [
-              for (final parameter in parametersState.value)
-                _SystemParameterTile(
-                  item: parameter,
-                  onEdit: () => editParameter(parameter),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.campaign_outlined,
-          title: '通知广播',
-          child: Column(
-            children: [
-              for (final broadcast in broadcastsState.value)
-                _SystemBroadcastTile(
-                  item: broadcast,
-                  onTogglePinned: () => toggleBroadcastPinned(broadcast.id),
-                  onStatusChanged: (status) =>
-                      updateBroadcastStatus(broadcast.id, status),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _AccountSectionCard(
-          icon: Icons.rule_outlined,
-          title: '审计记录',
-          child: Column(
-            children: [
-              for (final audit in audits) _SystemAuditTile(item: audit),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -5407,13 +5439,11 @@ class _AccountInviteTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final expiryStyle = invite.isExpired
-        ? theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.error,
-          )
+        ? theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)
         : theme.textTheme.bodySmall;
-  final expiryLabel = invite.isExpired
-    ? '该邀请已于 ${invite.expiresAtLabel} 过期'
-    : '邀请有效期至 ${invite.expiresAtLabel}';
+    final expiryLabel = invite.isExpired
+        ? '该邀请已于 ${invite.expiresAtLabel} 过期'
+        : '邀请有效期至 ${invite.expiresAtLabel}';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -5878,10 +5908,15 @@ class _OssAuditTile extends StatelessWidget {
 }
 
 class _SystemSwitchTile extends StatelessWidget {
-  const _SystemSwitchTile({required this.item, required this.onToggle});
+  const _SystemSwitchTile({
+    required this.item,
+    required this.onToggle,
+    this.isBusy = false,
+  });
 
-  final admin_data.AdminSystemSwitch item;
+  final system.AdminSystemSwitch item;
   final ValueChanged<bool> onToggle;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -5930,7 +5965,24 @@ class _SystemSwitchTile extends StatelessWidget {
               ],
             ),
           ),
-          Switch.adaptive(value: item.enabled, onChanged: onToggle),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: isBusy ? 0.4 : 1,
+                child: Switch.adaptive(
+                  value: item.enabled,
+                  onChanged: isBusy ? null : onToggle,
+                ),
+              ),
+              if (isBusy)
+                const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -5938,10 +5990,15 @@ class _SystemSwitchTile extends StatelessWidget {
 }
 
 class _SystemParameterTile extends StatelessWidget {
-  const _SystemParameterTile({required this.item, required this.onEdit});
+  const _SystemParameterTile({
+    required this.item,
+    required this.onEdit,
+    this.isBusy = false,
+  });
 
-  final admin_data.AdminSystemParameter item;
+  final system.AdminSystemParameter item;
   final VoidCallback onEdit;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -5961,11 +6018,18 @@ class _SystemParameterTile extends StatelessWidget {
               Expanded(
                 child: Text(item.key, style: theme.textTheme.titleMedium),
               ),
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: item.locked ? '参数已锁定' : '编辑参数',
-                onPressed: item.locked ? null : onEdit,
-              ),
+              if (isBusy)
+                const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: item.locked ? '参数已锁定' : '编辑参数',
+                  onPressed: item.locked ? null : onEdit,
+                ),
             ],
           ),
           const SizedBox(height: 4),
@@ -5998,11 +6062,13 @@ class _SystemBroadcastTile extends StatelessWidget {
     required this.item,
     required this.onTogglePinned,
     required this.onStatusChanged,
+    this.isBusy = false,
   });
 
-  final admin_data.AdminSystemBroadcast item;
+  final system.AdminSystemBroadcast item;
   final VoidCallback onTogglePinned;
-  final ValueChanged<admin_data.AdminSystemBroadcastStatus> onStatusChanged;
+  final ValueChanged<system.AdminSystemBroadcastStatus> onStatusChanged;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -6036,8 +6102,14 @@ class _SystemBroadcastTile extends StatelessWidget {
                   item.pinned ? Icons.push_pin : Icons.push_pin_outlined,
                 ),
                 tooltip: item.pinned ? '取消置顶' : '置顶公告',
-                onPressed: onTogglePinned,
+                onPressed: isBusy ? null : onTogglePinned,
               ),
+              if (isBusy)
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -6061,19 +6133,22 @@ class _SystemBroadcastTile extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              DropdownButton<admin_data.AdminSystemBroadcastStatus>(
+              DropdownButton<system.AdminSystemBroadcastStatus>(
                 value: item.status,
-                onChanged: (value) {
-                  if (value != null) {
-                    onStatusChanged(value);
-                  }
-                },
-                items: admin_data.AdminSystemBroadcastStatus.values
+                onChanged: isBusy
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          onStatusChanged(value);
+                        }
+                      },
+                items: system.AdminSystemBroadcastStatus.values
                     .map(
                       (status) =>
-                          DropdownMenuItem<
-                            admin_data.AdminSystemBroadcastStatus
-                          >(value: status, child: Text(status.label)),
+                          DropdownMenuItem<system.AdminSystemBroadcastStatus>(
+                            value: status,
+                            child: Text(status.label),
+                          ),
                     )
                     .toList(),
               ),
@@ -6096,7 +6171,7 @@ class _SystemBroadcastTile extends StatelessWidget {
 
 class _SystemAuditTile extends StatelessWidget {
   const _SystemAuditTile({required this.item});
-  final admin_data.AdminSystemAuditLog item;
+  final system.AdminSystemAuditLog item;
   @override
   Widget build(BuildContext context) {
     return ListTile(

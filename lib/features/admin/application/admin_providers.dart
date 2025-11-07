@@ -9,6 +9,7 @@ import '../data/admin_repository.dart';
 import '../domain/accounts.dart';
 import '../domain/models.dart';
 import '../domain/oss.dart' as oss;
+import '../domain/system_settings.dart';
 
 int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
   final nameCompare = a.department.name.toLowerCase().compareTo(
@@ -215,9 +216,7 @@ class AdminAccountInvitesNotifier
     state = AsyncData(_sortInvites(next));
   }
 
-  List<AdminAccountInvite> _sortInvites(
-    List<AdminAccountInvite> invites,
-  ) {
+  List<AdminAccountInvite> _sortInvites(List<AdminAccountInvite> invites) {
     final sorted = [...invites];
     sorted.sort((a, b) {
       final left = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -225,6 +224,197 @@ class AdminAccountInvitesNotifier
       return right.compareTo(left);
     });
     return sorted;
+  }
+}
+
+class AdminSystemSettingsState {
+  const AdminSystemSettingsState({
+    required this.switches,
+    required this.parameters,
+    required this.broadcasts,
+    required this.auditLogs,
+  });
+
+  const AdminSystemSettingsState.empty()
+    : switches = const <AdminSystemSwitch>[],
+      parameters = const <AdminSystemParameter>[],
+      broadcasts = const <AdminSystemBroadcast>[],
+      auditLogs = const <AdminSystemAuditLog>[];
+
+  final List<AdminSystemSwitch> switches;
+  final List<AdminSystemParameter> parameters;
+  final List<AdminSystemBroadcast> broadcasts;
+  final List<AdminSystemAuditLog> auditLogs;
+
+  AdminSystemSettingsState copyWith({
+    List<AdminSystemSwitch>? switches,
+    List<AdminSystemParameter>? parameters,
+    List<AdminSystemBroadcast>? broadcasts,
+    List<AdminSystemAuditLog>? auditLogs,
+  }) {
+    return AdminSystemSettingsState(
+      switches: switches ?? this.switches,
+      parameters: parameters ?? this.parameters,
+      broadcasts: broadcasts ?? this.broadcasts,
+      auditLogs: auditLogs ?? this.auditLogs,
+    );
+  }
+}
+
+class AdminSystemSettingsNotifier
+    extends AsyncNotifier<AdminSystemSettingsState> {
+  @override
+  Future<AdminSystemSettingsState> build() async {
+    final authState = ref.watch(authStateProvider);
+    if (!authState.isAuthenticated) {
+      return const AdminSystemSettingsState.empty();
+    }
+    final schoolId = authState.account?.schoolId ?? '';
+    if (schoolId.isEmpty) {
+      throw StateError('缺少学校信息，请重新登录后再试。');
+    }
+    final repository = ref.watch(adminRepositoryProvider);
+    final switches = await repository.fetchSystemSwitches(schoolId: schoolId);
+    final parameters = await repository.fetchSystemParameters(
+      schoolId: schoolId,
+    );
+    final broadcasts = await repository.fetchSystemBroadcasts(
+      schoolId: schoolId,
+    );
+    final auditLogs = await repository.fetchSystemAuditLogs(
+      schoolId: schoolId,
+      limit: 50,
+    );
+    return AdminSystemSettingsState(
+      switches: List.unmodifiable(switches),
+      parameters: List.unmodifiable(parameters),
+      broadcasts: List.unmodifiable(broadcasts),
+      auditLogs: List.unmodifiable(auditLogs),
+    );
+  }
+
+  Future<void> refresh() async {
+    final schoolId = _requireSchoolId();
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(adminRepositoryProvider);
+      final switches = await repository.fetchSystemSwitches(schoolId: schoolId);
+      final parameters = await repository.fetchSystemParameters(
+        schoolId: schoolId,
+      );
+      final broadcasts = await repository.fetchSystemBroadcasts(
+        schoolId: schoolId,
+      );
+      final auditLogs = await repository.fetchSystemAuditLogs(
+        schoolId: schoolId,
+        limit: 50,
+      );
+      return AdminSystemSettingsState(
+        switches: List.unmodifiable(switches),
+        parameters: List.unmodifiable(parameters),
+        broadcasts: List.unmodifiable(broadcasts),
+        auditLogs: List.unmodifiable(auditLogs),
+      );
+    });
+  }
+
+  Future<AdminSystemSwitch> setSwitchEnabled({
+    required String switchId,
+    required bool enabled,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final updated = await repository.updateSystemSwitch(
+      schoolId: schoolId,
+      switchId: switchId,
+      enabled: enabled,
+    );
+    _updateState((current) {
+      final switches = current.switches
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList(growable: false);
+      return current.copyWith(switches: List.unmodifiable(switches));
+    });
+    await _refreshAuditLogs(schoolId);
+    return updated;
+  }
+
+  Future<AdminSystemParameter> updateParameterValue({
+    required String parameterId,
+    required String value,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final updated = await repository.updateSystemParameter(
+      schoolId: schoolId,
+      parameterId: parameterId,
+      value: value,
+    );
+    _updateState((current) {
+      final parameters = current.parameters
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList(growable: false);
+      return current.copyWith(parameters: List.unmodifiable(parameters));
+    });
+    await _refreshAuditLogs(schoolId);
+    return updated;
+  }
+
+  Future<AdminSystemBroadcast> updateBroadcast({
+    required String broadcastId,
+    AdminSystemBroadcastStatus? status,
+    bool? pinned,
+  }) async {
+    final schoolId = _requireSchoolId();
+    final repository = ref.read(adminRepositoryProvider);
+    final updated = await repository.updateSystemBroadcast(
+      schoolId: schoolId,
+      broadcastId: broadcastId,
+      status: status,
+      pinned: pinned,
+    );
+    _updateState((current) {
+      final broadcasts = current.broadcasts
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList(growable: false);
+      return current.copyWith(broadcasts: List.unmodifiable(broadcasts));
+    });
+    await _refreshAuditLogs(schoolId);
+    return updated;
+  }
+
+  String _requireSchoolId() {
+    final authState = ref.read(authStateProvider);
+    if (!authState.isAuthenticated) {
+      throw StateError('当前登录状态已失效，请重新登录。');
+    }
+    final schoolId = authState.account?.schoolId ?? '';
+    if (schoolId.isEmpty) {
+      throw StateError('缺少学校信息，请重新登录后再试。');
+    }
+    return schoolId;
+  }
+
+  void _updateState(
+    AdminSystemSettingsState Function(AdminSystemSettingsState) transform,
+  ) {
+    final current = state.asData?.value;
+    if (current == null) {
+      return;
+    }
+    final next = transform(current);
+    state = AsyncData(next);
+  }
+
+  Future<void> _refreshAuditLogs(String schoolId) async {
+    final repository = ref.read(adminRepositoryProvider);
+    final logs = await repository.fetchSystemAuditLogs(
+      schoolId: schoolId,
+      limit: 50,
+    );
+    _updateState((current) {
+      return current.copyWith(auditLogs: List.unmodifiable(logs));
+    });
   }
 }
 
@@ -836,10 +1026,7 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
   Future<void> deletePolicy({required String policyId}) async {
     final schoolId = _requireSchoolId();
     final repository = ref.read(adminRepositoryProvider);
-    await repository.deleteOssPolicy(
-      schoolId: schoolId,
-      policyId: policyId,
-    );
+    await repository.deleteOssPolicy(schoolId: schoolId, policyId: policyId);
 
     state = state.whenData((current) {
       final updated = current.policies
@@ -884,7 +1071,11 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
     }
     final schoolId = _requireSchoolId();
     final nextLimit = limit ?? (_auditLimit + _defaultAuditLimit);
-    await _refreshAuditLogs(schoolId: schoolId, limit: nextLimit, replaceLimit: true);
+    await _refreshAuditLogs(
+      schoolId: schoolId,
+      limit: nextLimit,
+      replaceLimit: true,
+    );
   }
 
   Future<void> _refreshAuditLogs({
@@ -903,10 +1094,8 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
       }
       final hasMore = logs.length >= limit;
       state = state.whenData(
-        (current) => current.copyWith(
-          auditLogs: logs,
-          hasMoreAuditLogs: hasMore,
-        ),
+        (current) =>
+            current.copyWith(auditLogs: logs, hasMoreAuditLogs: hasMore),
       );
     } catch (_) {
       // 忽略日志刷新失败，避免影响主流程。
@@ -921,9 +1110,7 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
     final credentialsFuture = repository.fetchOssCredentials(
       schoolId: schoolId,
     );
-    final policiesFuture = repository.fetchOssPolicies(
-      schoolId: schoolId,
-    );
+    final policiesFuture = repository.fetchOssPolicies(schoolId: schoolId);
     final logsFuture = repository.fetchOssAuditLogs(
       schoolId: schoolId,
       limit: limit,
@@ -956,10 +1143,9 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
   }
 }
 
-final adminOssProvider =
-    AsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
-      AdminOssNotifier.new,
-    );
+final adminOssProvider = AsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
+  AdminOssNotifier.new,
+);
 
 final adminExpandedDepartmentsProvider =
     StateNotifierProvider<AdminExpandedDepartmentsNotifier, Set<String>>(
@@ -977,10 +1163,17 @@ final adminDepartmentTreeProvider =
       AdminDepartmentTreeNotifier.new,
     );
 
-final adminAccountInvitesProvider = AsyncNotifierProvider<
-  AdminAccountInvitesNotifier,
-  List<AdminAccountInvite>
->(AdminAccountInvitesNotifier.new);
+final adminAccountInvitesProvider =
+    AsyncNotifierProvider<
+      AdminAccountInvitesNotifier,
+      List<AdminAccountInvite>
+    >(AdminAccountInvitesNotifier.new);
+
+final adminSystemSettingsProvider =
+    AsyncNotifierProvider<
+      AdminSystemSettingsNotifier,
+      AdminSystemSettingsState
+    >(AdminSystemSettingsNotifier.new);
 
 final adminAccountListProvider = FutureProvider.autoDispose
     .family<AdminAccountPage, AdminAccountListRequest>((ref, request) async {

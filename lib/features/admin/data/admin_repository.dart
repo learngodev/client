@@ -6,6 +6,7 @@ import '../../../core/network/dio_provider.dart';
 import '../domain/accounts.dart';
 import '../domain/models.dart';
 import '../domain/oss.dart';
+import '../domain/system_settings.dart';
 
 class AdminRepository {
   const AdminRepository(this._dio);
@@ -493,6 +494,297 @@ class AdminRepository {
           .map(AdminOssAuditLog.fromJson)
           .where((item) => item.id.isNotEmpty)
           .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<AdminSystemSwitch>> fetchSystemSwitches({
+    required String schoolId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/system/switches',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取系统开关列表');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取系统开关失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return _extractMapList(data, nestedKey: 'switches')
+          .map(AdminSystemSwitch.fromJson)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminSystemSwitch> updateSystemSwitch({
+    required String schoolId,
+    required String switchId,
+    required bool enabled,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/system/switches/$switchId',
+        data: {'school_id': schoolId, 'enabled': enabled},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('更新系统开关失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新系统开关失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final switchMap = _extractNestedMap(data, key: 'switch');
+      if (switchMap == null) {
+        throw const AppException('更新系统开关返回数据异常');
+      }
+      return AdminSystemSwitch.fromJson(switchMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<AdminSystemParameter>> fetchSystemParameters({
+    required String schoolId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/system/parameters',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取系统参数列表');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取系统参数失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return _extractMapList(data, nestedKey: 'parameters')
+          .map(AdminSystemParameter.fromJson)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminSystemParameter> updateSystemParameter({
+    required String schoolId,
+    required String parameterId,
+    required String value,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/system/parameters/$parameterId',
+        data: {'school_id': schoolId, 'value': value},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('更新系统参数失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新系统参数失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final parameterMap = _extractNestedMap(data, key: 'parameter');
+      if (parameterMap == null) {
+        throw const AppException('更新系统参数返回数据异常');
+      }
+      return AdminSystemParameter.fromJson(parameterMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<AdminSystemBroadcast>> fetchSystemBroadcasts({
+    required String schoolId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/system/broadcasts',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取通知广播列表');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取通知广播失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return _extractMapList(data, nestedKey: 'broadcasts')
+          .map(AdminSystemBroadcast.fromJson)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AdminSystemBroadcast> updateSystemBroadcast({
+    required String schoolId,
+    required String broadcastId,
+    AdminSystemBroadcastStatus? status,
+    bool? pinned,
+  }) async {
+    final payload = <String, dynamic>{'school_id': schoolId};
+    if (status != null) {
+      payload['status'] = status.name;
+    }
+    if (pinned != null) {
+      payload['pinned'] = pinned;
+    }
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/system/broadcasts/$broadcastId',
+        data: payload,
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('更新通知广播失败：服务无响应');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新通知广播失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final broadcastMap = _extractNestedMap(data, key: 'broadcast');
+      if (broadcastMap == null) {
+        throw const AppException('更新通知广播返回数据异常');
+      }
+      return AdminSystemBroadcast.fromJson(broadcastMap);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<AdminSystemAuditLog>> fetchSystemAuditLogs({
+    required String schoolId,
+    int limit = 50,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/system/audit_logs',
+        queryParameters: {'school_id': schoolId, 'limit': limit},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取系统审计记录');
+      }
+      if (!(body['success'] as bool? ?? false)) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取系统审计记录失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return _extractMapList(
+        data,
+        nestedKey: 'logs',
+      ).map(AdminSystemAuditLog.fromJson).toList();
     } on DioException catch (error) {
       final body = error.response?.data;
       String? message;
@@ -1154,6 +1446,17 @@ class AdminRepository {
       if (data.containsKey('id')) {
         return data;
       }
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? _extractNestedMap(dynamic data, {required String key}) {
+    if (data is Map<String, dynamic>) {
+      final nested = data[key];
+      if (nested is Map<String, dynamic>) {
+        return nested;
+      }
+      return data;
     }
     return null;
   }
