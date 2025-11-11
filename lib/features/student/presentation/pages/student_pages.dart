@@ -5,11 +5,31 @@ import '../../application/student_dashboard_controller.dart';
 import '../../domain/sample_data.dart' as student_data;
 import '../../domain/student_repository.dart';
 
+typedef _DashboardBuilder = Widget Function(StudentDashboardData data);
+
 mixin ReminderActionMixin<T extends ConsumerStatefulWidget>
-  on ConsumerState<T> {
+    on ConsumerState<T> {
   bool _reminderActionInProgress = false;
 
   bool get reminderActionInProgress => _reminderActionInProgress;
+
+  StudentDashboardController get dashboardController {
+    return ref.read(studentDashboardProvider.notifier);
+  }
+
+  void showReminderSnack(String message, {bool error = false}) {
+    if (!mounted) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
+  }
 
   Future<bool> performReminderAction(Future<bool> Function() operation) async {
     if (!mounted || _reminderActionInProgress) {
@@ -25,23 +45,185 @@ mixin ReminderActionMixin<T extends ConsumerStatefulWidget>
       }
     }
   }
-          SnackBar(
-            content: Text(message),
-            backgroundColor: error ? Theme.of(context).colorScheme.error : null,
+}
+
+Widget _buildStudentDashboardPage(
+  WidgetRef ref,
+  AsyncValue<StudentDashboardData> dashboard,
+  _DashboardBuilder builder,
+) {
+  final controller = ref.read(studentDashboardProvider.notifier);
+  return dashboard.when(
+    data: (data) {
+      return RefreshIndicator(
+        onRefresh: controller.refresh,
+        child: builder(data),
+      );
+    },
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (error, stackTrace) => _DashboardErrorView(
+      onRetry: controller.refresh,
+    ),
+  );
+}
+
+class StudentOverviewPage extends ConsumerStatefulWidget {
+  const StudentOverviewPage({super.key});
+
+  @override
+  ConsumerState<StudentOverviewPage> createState() =>
+      _StudentOverviewPageState();
+}
+
+class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
+    with ReminderActionMixin<StudentOverviewPage> {
+  Future<void> _confirmDeleteReminder(
+    student_data.StudentReminderItem reminder,
+  ) async {
+    if (reminderActionInProgress) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除提醒'),
+        content: Text('确定删除“${reminder.title}”吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    final success = await performReminderAction(
+      () => dashboardController.deleteReminder(reminder.id),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      showReminderSnack('已删除提醒 "${reminder.title}"');
+    } else {
+      showReminderSnack('删除提醒失败，请稍后再试', error: true);
+    }
+  }
+
+  Future<void> _openEditReminder(
+    student_data.StudentReminderItem reminder,
+  ) async {
+    if (!reminder.isCustom || reminderActionInProgress) {
+      return;
+    }
+
+    final result = await showModalBottomSheet<_ReminderFormData>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) => _ReminderEditorSheet(
+        initialData: _ReminderFormData(
+          title: reminder.title,
+          description: reminder.description,
+          timeLabel: reminder.timeLabel,
+          priority: reminder.priority,
+          icon: reminder.icon,
+          route: reminder.route,
+        ),
+        isEditing: true,
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    final success = await performReminderAction(
+      () => dashboardController.editCustomReminder(
+        reminder.id,
+        title: result.title,
+        description: result.description,
+        timeLabel: result.timeLabel,
+        icon: result.icon,
+        priority: result.priority,
+        route: result.route,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      showReminderSnack('已更新提醒 "${result.title}"');
+    } else {
+      showReminderSnack('更新提醒失败，请稍后再试', error: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboard = ref.watch(studentDashboardProvider);
+
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final controller = dashboardController;
+      final pendingReminders = data.pendingReminders;
+      final completedReminders = data.completedReminders;
+      final upcomingExams = data.upcomingExams;
+      final schedule = data.todaySchedule;
+      final pendingAssignments = data.pendingAssignments;
+      final insights = data.insights;
+      final quickLinks = data.quickLinks;
+      final messages = data.messages;
+
+      final stats = <_OverviewStat>[
+        _OverviewStat(
+          icon: Icons.flash_on_outlined,
+          label: '待办提醒',
+          value: '${pendingReminders.length}',
+          color: theme.colorScheme.primary,
+          route: '/student/reminders',
+        ),
+        _OverviewStat(
+          icon: Icons.class_outlined,
+          label: '今日课程',
+          value: '${schedule.length}',
+          color: theme.colorScheme.secondary,
+          route: '/student/schedule',
+        ),
+        _OverviewStat(
+          icon: Icons.fact_check_outlined,
+          label: '待完成作业',
+          value: '${pendingAssignments.length}',
+          color: theme.colorScheme.tertiary,
+          route: '/student/assignments',
+        ),
+      ];
+
+      if (upcomingExams.isNotEmpty) {
+        stats.add(
+          _OverviewStat(
+            icon: Icons.timer_outlined,
+            label: '最近考试',
+            value: upcomingExams.first.countdownLabel,
+            color: theme.colorScheme.error,
+            route: '/student/exams',
           ),
         );
       }
-          if (success) {
-            showReminderSnack('已删除提醒 "${reminder.title}"');
-          } else {
-            showReminderSnack('删除提醒失败，请稍后再试', error: true);
-          }
-        }
-              : upcomingExams.first.countdownLabel,
-          color: theme.colorScheme.tertiary,
-          route: '/student/exams',
-        ),
-      ];
+
       return ListView(
         padding: const EdgeInsets.all(24),
         physics: const AlwaysScrollableScrollPhysics(),
@@ -250,45 +432,15 @@ class StudentRemindersPage extends ConsumerStatefulWidget {
       _StudentRemindersPageState();
 }
 
-class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
+class _StudentRemindersPageState
+    extends ConsumerState<StudentRemindersPage>
+    with ReminderActionMixin<StudentRemindersPage> {
   final TextEditingController _queryController = TextEditingController();
   student_data.StudentReminderPriority? _priorityFilter;
   bool _showCompleted = true;
-  bool _reminderActionInProgress = false;
-
-  void _showReminderSnackBar(String message, {bool error = false}) {
-    if (!mounted) {
-      return;
-    }
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: error ? Theme.of(context).colorScheme.error : null,
-      ),
-    );
-  }
-
-  Future<bool> _performReminderAction(Future<bool> Function() operation) async {
-    if (!mounted) {
-      return false;
-    }
-    if (_reminderActionInProgress) {
-      return false;
-    }
-    setState(() => _reminderActionInProgress = true);
-    try {
-      return await operation();
-    } finally {
-      if (mounted) {
-        setState(() => _reminderActionInProgress = false);
-      }
-    }
-  }
 
   Future<void> _openCreateReminderSheet(BuildContext context) async {
-    if (_reminderActionInProgress) {
+    if (reminderActionInProgress) {
       return;
     }
     final result = await showModalBottomSheet<_ReminderFormData>(
@@ -332,7 +484,7 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
     if (!reminder.isCustom) {
       return;
     }
-    if (_reminderActionInProgress) {
+    if (reminderActionInProgress) {
       return;
     }
 
@@ -386,7 +538,7 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
     student_data.StudentReminderItem reminder,
   ) async {
     final controller = ref.read(studentDashboardProvider.notifier);
-    if (_reminderActionInProgress) {
+    if (reminderActionInProgress) {
       return;
     }
     final confirmed = await showDialog<bool>(
@@ -551,14 +703,14 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton.icon(
-              onPressed: _isActionInProgress
+              onPressed: reminderActionInProgress
                   ? null
                   : () => _openCreateReminderSheet(context),
               icon: const Icon(Icons.add),
               label: const Text('新建自定义提醒'),
             ),
           ),
-          if (_isActionInProgress) ...[
+          if (reminderActionInProgress) ...[
             const SizedBox(height: 4),
             const LinearProgressIndicator(),
           ],
@@ -567,19 +719,19 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: _isActionInProgress
+                onPressed: reminderActionInProgress
                     ? null
                     : () async {
-                        final success = await _performReminderAction(
+                        final success = await performReminderAction(
                           () => controller.markAllRemindersCompleted(),
                         );
                         if (!mounted) {
                           return;
                         }
                         if (success) {
-                          _showReminderSnackBar('已将全部提醒标记为完成');
+                          showReminderSnack('已将全部提醒标记为完成');
                         } else {
-                          _showReminderSnackBar('批量标记失败，请稍后再试', error: true);
+                          showReminderSnack('批量标记失败，请稍后再试', error: true);
                         }
                       },
                 icon: const Icon(Icons.done_all_outlined),
@@ -605,10 +757,10 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
                   onNavigate: reminder.route == null
                       ? null
                       : () => Navigator.of(context).pushNamed(reminder.route!),
-                  onDelete: reminder.isCustom && !_isActionInProgress
+                  onDelete: reminder.isCustom && !reminderActionInProgress
                       ? () => _confirmDeleteReminder(context, reminder)
                       : null,
-                  onEdit: reminder.isCustom && !_isActionInProgress
+                  onEdit: reminder.isCustom && !reminderActionInProgress
                       ? () => _openEditReminderSheet(context, reminder)
                       : null,
                 ),
@@ -619,12 +771,12 @@ class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage> {
               reminders: completed,
               onToggleCompleted: controller.toggleReminderCompleted,
               onDelete: (reminder) {
-                if (reminder.isCustom && !_isActionInProgress) {
+                if (reminder.isCustom && !reminderActionInProgress) {
                   _confirmDeleteReminder(context, reminder);
                 }
               },
               onEdit: (reminder) {
-                if (reminder.isCustom && !_isActionInProgress) {
+                if (reminder.isCustom && !reminderActionInProgress) {
                   _openEditReminderSheet(context, reminder);
                 }
               },

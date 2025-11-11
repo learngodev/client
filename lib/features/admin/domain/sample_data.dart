@@ -92,44 +92,6 @@ class AdminAccountItem {
   }
 }
 
-class AdminAccountInvite {
-  const AdminAccountInvite({
-    required this.id,
-    required this.email,
-    required this.role,
-    required this.invitedBy,
-    required this.createdAtLabel,
-    required this.expiresAtLabel,
-    required this.invitationUrl,
-  });
-
-  final String id;
-  final String email;
-  final AdminAccountRole role;
-  final String invitedBy;
-  final String createdAtLabel;
-  final String expiresAtLabel;
-  final String invitationUrl;
-
-  String get roleLabel => role.label;
-
-  AdminAccountInvite copyWith({
-    String? createdAtLabel,
-    String? expiresAtLabel,
-    String? invitationUrl,
-  }) {
-    return AdminAccountInvite(
-      id: id,
-      email: email,
-      role: role,
-      invitedBy: invitedBy,
-      createdAtLabel: createdAtLabel ?? this.createdAtLabel,
-      expiresAtLabel: expiresAtLabel ?? this.expiresAtLabel,
-      invitationUrl: invitationUrl ?? this.invitationUrl,
-    );
-  }
-}
-
 const List<AdminAccountItem> adminAccountItems = [
   AdminAccountItem(
     id: 'T-1001',
@@ -200,27 +162,6 @@ const List<AdminAccountItem> adminAccountItems = [
     requiresPasswordReset: true,
     lastActiveLabel: '3 天前',
     note: '第一次登录需重置密码',
-  ),
-];
-
-const List<AdminAccountInvite> adminAccountInvites = [
-  AdminAccountInvite(
-    id: 'invite-1',
-    email: 'newteacher@school.edu.cn',
-    role: AdminAccountRole.teacher,
-    invitedBy: '系统管理员',
-    createdAtLabel: '10-20 09:10',
-    expiresAtLabel: '10-27 09:10',
-    invitationUrl: 'https://admin.learn-go.dev/invite/invite-1',
-  ),
-  AdminAccountInvite(
-    id: 'invite-2',
-    email: 'intern2023@school.edu.cn',
-    role: AdminAccountRole.student,
-    invitedBy: '张老师',
-    createdAtLabel: '10-18 14:25',
-    expiresAtLabel: '10-25 14:25',
-    invitationUrl: 'https://admin.learn-go.dev/invite/invite-2',
   ),
 ];
 
