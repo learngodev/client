@@ -63,9 +63,11 @@ class StudentApiRepository implements StudentRepository {
       insights: _buildInsights(
         usage: aiUsage,
         drafts: noteResult.draftCount,
-        pendingAssignments: assignments.where(
-          (item) => item.status == sample.StudentAssignmentStatus.pending,
-        ).length,
+        pendingAssignments: assignments
+            .where(
+              (item) => item.status == sample.StudentAssignmentStatus.pending,
+            )
+            .length,
       ),
     );
   }
@@ -154,6 +156,9 @@ class StudentApiRepository implements StudentRepository {
 
       return List.unmodifiable(records.map((record) => record.item));
     } on DioException catch (error) {
+      if (error.response?.statusCode == 401) {
+        return [];
+      }
       throw _asAppException(error, '无法获取消息列表');
     }
   }
@@ -211,8 +216,10 @@ class StudentApiRepository implements StudentRepository {
               isOverdue: isOverdue,
             ),
             status: status,
-            progress:
-                _guessAssignmentProgress(status: status, isOverdue: isOverdue),
+            progress: _guessAssignmentProgress(
+              status: status,
+              isOverdue: isOverdue,
+            ),
             allowResubmit: raw['allow_resubmit'] == true,
             isOverdue: isOverdue,
             scoreLabel: _buildScoreLabel(raw['score']),
@@ -246,7 +253,8 @@ class StudentApiRepository implements StudentRepository {
           continue;
         }
 
-        final startAt = _parseDateTime(raw['start_at']) ?? _parseDateTime(raw['due_at']);
+        final startAt =
+            _parseDateTime(raw['start_at']) ?? _parseDateTime(raw['due_at']);
         final endAt = _parseDateTime(raw['due_at']) ?? startAt;
         final status = (endAt ?? startAt)?.isBefore(now) == true
             ? sample.StudentExamStatus.completed
@@ -278,8 +286,14 @@ class StudentApiRepository implements StudentRepository {
   Future<List<sample.StudentScheduleItem>> _fetchSchedule() async {
     try {
       final now = _clock();
-      final start = DateTime(now.year, now.month, now.day);
-      final end = start.add(const Duration(days: 3));
+      // Calculate the start of the current week (Monday)
+      final start = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - 1));
+      // Fetch 7 days (Monday to Sunday)
+      final end = start.add(const Duration(days: 7));
       final response = await _dio.get<Map<String, dynamic>>(
         '/api/v1/student/schedule',
         queryParameters: {
@@ -297,7 +311,8 @@ class StudentApiRepository implements StudentRepository {
         if (startsAt == null) {
           continue;
         }
-        final endsAt = _parseDateTime(raw['ends_at']) ??
+        final endsAt =
+            _parseDateTime(raw['ends_at']) ??
             startsAt.add(const Duration(hours: 1));
 
         items.add(
@@ -426,7 +441,8 @@ class StudentApiRepository implements StudentRepository {
         sample.StudentReminderItem(
           id: 'exam-${upcomingExam.id}',
           title: '考试临近：${upcomingExam.course}',
-          description: '时间：${upcomingExam.dateLabel} · ${upcomingExam.timeRange}',
+          description:
+              '时间：${upcomingExam.dateLabel} · ${upcomingExam.timeRange}',
           timeLabel: upcomingExam.countdownLabel,
           icon: Icons.timer_outlined,
           priority: sample.StudentReminderPriority.normal,
@@ -495,16 +511,12 @@ class StudentApiRepository implements StudentRepository {
   }) {
     if (usage == null) {
       return [
-        ...sample.studentInsights.where(
-          (item) => item.label != '作业进度',
-        ),
+        ...sample.studentInsights.where((item) => item.label != '作业进度'),
         sample.StudentInsightItem(
           label: '作业进度',
           value: pendingAssignments > 0 ? '待完成 $pendingAssignments 项' : '全部完成',
           progress: pendingAssignments > 0 ? 0.4 : 0.95,
-          hint: pendingAssignments > 0
-              ? '集中时间完成作业即可提升进度。'
-              : '继续保持，高效完成学习任务。',
+          hint: pendingAssignments > 0 ? '集中时间完成作业即可提升进度。' : '继续保持，高效完成学习任务。',
           isAlert: pendingAssignments > 3,
         ),
       ];
@@ -547,12 +559,9 @@ class StudentApiRepository implements StudentRepository {
       ),
       sample.StudentInsightItem(
         label: '作业进度',
-        value:
-            pendingAssignments > 0 ? '待完成 $pendingAssignments 项' : '全部完成',
+        value: pendingAssignments > 0 ? '待完成 $pendingAssignments 项' : '全部完成',
         progress: pendingAssignments > 0 ? 0.4 : 0.95,
-        hint: pendingAssignments > 0
-            ? '根据截止时间优先完成紧急作业。'
-            : '所有作业已完成，继续关注新任务。',
+        hint: pendingAssignments > 0 ? '根据截止时间优先完成紧急作业。' : '所有作业已完成，继续关注新任务。',
         isAlert: pendingAssignments > 3,
       ),
     ];
@@ -950,10 +959,12 @@ class StudentApiRepository implements StudentRepository {
     if (normalizedCourse.contains('实验') || normalizedSource.contains('lab')) {
       return sample.StudentScheduleType.lab;
     }
-    if (normalizedSource.contains('activity') || normalizedCourse.contains('讲座')) {
+    if (normalizedSource.contains('activity') ||
+        normalizedCourse.contains('讲座')) {
       return sample.StudentScheduleType.activity;
     }
-    if (normalizedSource.contains('elective') || normalizedCourse.contains('选修')) {
+    if (normalizedSource.contains('elective') ||
+        normalizedCourse.contains('选修')) {
       return sample.StudentScheduleType.elective;
     }
     return sample.StudentScheduleType.mandatory;

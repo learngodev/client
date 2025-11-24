@@ -5,25 +5,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 
-enum StudentSection {
-  overview,
-  reminders,
-  schedule,
-  assignments,
-  exams,
-  notes,
-  messages,
-}
+enum StudentSection { overview, schedule, messages }
 
 extension StudentSectionX on StudentSection {
   String get label {
     return switch (this) {
       StudentSection.overview => '概览',
-      StudentSection.reminders => '提醒',
       StudentSection.schedule => '课表',
-      StudentSection.assignments => '作业',
-      StudentSection.exams => '考试',
-      StudentSection.notes => '笔记',
       StudentSection.messages => '消息',
     };
   }
@@ -31,11 +19,7 @@ extension StudentSectionX on StudentSection {
   IconData get icon {
     return switch (this) {
       StudentSection.overview => Icons.dashboard_outlined,
-      StudentSection.reminders => Icons.alarm_on_outlined,
       StudentSection.schedule => Icons.event_available_outlined,
-      StudentSection.assignments => Icons.task_alt_outlined,
-      StudentSection.exams => Icons.timer_outlined,
-      StudentSection.notes => Icons.sticky_note_2_outlined,
       StudentSection.messages => Icons.chat_outlined,
     };
   }
@@ -43,11 +27,7 @@ extension StudentSectionX on StudentSection {
   String get path {
     return switch (this) {
       StudentSection.overview => '/student',
-      StudentSection.reminders => '/student/reminders',
       StudentSection.schedule => '/student/schedule',
-      StudentSection.assignments => '/student/assignments',
-      StudentSection.exams => '/student/exams',
-      StudentSection.notes => '/student/notes',
       StudentSection.messages => '/student/messages',
     };
   }
@@ -73,12 +53,18 @@ class StudentShell extends HookConsumerWidget {
         .toList();
 
     final location = state.matchedLocation;
-    final currentSection = StudentSection.values.firstWhere(
-      (section) =>
-          location == section.path || location.startsWith(section.path),
-      orElse: () => StudentSection.overview,
-    );
-    final currentIndex = StudentSection.values.indexOf(currentSection);
+
+    // Find the section with the longest path that matches the current location.
+    // This handles cases where one path is a prefix of another (e.g. /student vs /student/messages).
+    final bestMatch = StudentSection.values
+        .where((s) => location == s.path || location.startsWith('${s.path}/'))
+        .fold<StudentSection>(StudentSection.overview, (prev, curr) {
+          return curr.path.length > prev.path.length ? curr : prev;
+        });
+
+    final currentIndex = StudentSection.values.indexOf(bestMatch);
+
+    final isSubPage = !StudentSection.values.any((s) => s.path == location);
 
     return AdaptiveNavigationScaffold(
       destinations: destinations,
@@ -89,6 +75,13 @@ class StudentShell extends HookConsumerWidget {
           context.go(target);
         }
       },
+      appBarLeading: isSubPage
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.go('/student'),
+              tooltip: '返回概览',
+            )
+          : null,
       appBarTitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -98,7 +91,7 @@ class StudentShell extends HookConsumerWidget {
               '${account.displayName} · ${account.identifier}',
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: Colors.white70),
+              ).textTheme.labelSmall?.copyWith(color: Colors.black87),
             ),
         ],
       ),

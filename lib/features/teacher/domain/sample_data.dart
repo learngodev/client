@@ -234,7 +234,7 @@ const List<TeacherTaskItem> teacherPendingTasks = [
     deadlineLabel: '截止：今日 18:00',
     icon: Icons.fact_check_outlined,
     category: TeacherTaskCategory.grading,
-    route: '/teacher/assignments',
+    route: '/teacher/assignments/grading',
   ),
   TeacherTaskItem(
     title: '确认课表调课申请',
@@ -244,6 +244,14 @@ const List<TeacherTaskItem> teacherPendingTasks = [
     category: TeacherTaskCategory.schedule,
     route: '/teacher/schedule',
     status: TeacherTaskStatus.inProgress,
+  ),
+  TeacherTaskItem(
+    title: '上周作业批改完成',
+    subtitle: '已完成所有班级的作业批改',
+    deadlineLabel: '完成于：昨日 16:00',
+    icon: Icons.done_all,
+    category: TeacherTaskCategory.grading,
+    status: TeacherTaskStatus.completed,
   ),
   TeacherTaskItem(
     title: '准备周五课程资料',

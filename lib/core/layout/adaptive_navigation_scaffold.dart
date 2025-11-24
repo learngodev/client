@@ -21,6 +21,7 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
     required this.child,
     this.appBarTitle,
     this.appBarActions,
+    this.appBarLeading,
     this.fab,
   });
 
@@ -30,6 +31,7 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
   final Widget child;
   final Widget? appBarTitle;
   final List<Widget>? appBarActions;
+  final Widget? appBarLeading;
   final Widget? fab;
 
   @override
@@ -60,7 +62,11 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: appBarTitle, actions: appBarActions),
+      appBar: AppBar(
+        title: appBarTitle,
+        actions: appBarActions,
+        leading: appBarLeading,
+      ),
       body: Row(
         children: [
           NavigationRail(
@@ -92,7 +98,11 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: appBarTitle, actions: appBarActions),
+      appBar: AppBar(
+        title: appBarTitle,
+        actions: appBarActions,
+        leading: appBarLeading,
+      ),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,

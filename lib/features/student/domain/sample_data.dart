@@ -419,13 +419,25 @@ class StudentMessageItem {
     if (trimmed.isEmpty) {
       return '?';
     }
-    final codeUnits = trimmed.runes.toList();
-    final first = String.fromCharCode(codeUnits.first);
-    if (codeUnits.length == 1) {
-      return first;
+
+    // Check if it contains Chinese characters
+    final isChinese = RegExp(r'[\u4e00-\u9fa5]').hasMatch(trimmed);
+
+    if (isChinese) {
+      if (trimmed.length <= 2) {
+        return trimmed;
+      }
+      return trimmed.substring(trimmed.length - 2);
     }
-    final last = String.fromCharCode(codeUnits.last);
-    return '$first$last';
+
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length == 1) {
+      final name = parts[0];
+      if (name.length <= 2) return name;
+      return name.substring(0, 2).toUpperCase();
+    }
+
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
   }
 }
 

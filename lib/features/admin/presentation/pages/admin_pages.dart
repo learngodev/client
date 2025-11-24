@@ -73,132 +73,136 @@ class AdminOverviewPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tree = ref.watch(adminDepartmentTreeProvider);
 
-    return tree.when(
-      data: (nodes) {
-        final metrics = AdminDepartmentMetrics.fromNodes(nodes);
-        final notifier = ref.read(adminDepartmentTreeProvider.notifier);
-        final emptyDepartments = [
-          for (final node in nodes)
-            if (node.classes.isEmpty) node.department.name,
-        ];
-        final quickChecks = <_QuickCheckItem>[];
-        if (metrics.departmentCount == 0) {
-          quickChecks.add(
-            _QuickCheckItem(
-              icon: Icons.corporate_fare_outlined,
-              title: '尚未创建院系',
-              description: '创建院系后即可录入班级与账号信息。',
-              severity: _QuickCheckSeverity.warning,
-            ),
-          );
-        } else if (metrics.emptyDepartmentCount > 0) {
-          final previewNames = emptyDepartments.take(3).join('、');
-          final detail = emptyDepartments.length > 3
-              ? '$previewNames 等 ${metrics.emptyDepartmentCount} 个院系待补充班级。'
-              : '$previewNames 缺少班级配置，建议尽快补充。';
-          quickChecks.add(
-            _QuickCheckItem(
-              icon: Icons.warning_amber_outlined,
-              title: '${metrics.emptyDepartmentCount} 个院系未配置班级',
-              description: detail.isEmpty ? '存在未配置班级的院系，建议补充班级信息。' : detail,
-              severity: _QuickCheckSeverity.warning,
-            ),
-          );
-        } else {
-          quickChecks.add(
-            _QuickCheckItem(
-              icon: Icons.task_alt_outlined,
-              title: '所有院系均已配置班级',
-              description: '班级结构完整，可进行账号分配。',
-              severity: _QuickCheckSeverity.success,
-            ),
-          );
-        }
-
-        if (metrics.classCount == 0 && metrics.departmentCount > 0) {
-          quickChecks.add(
-            const _QuickCheckItem(
-              icon: Icons.class_outlined,
-              title: '院系已创建但尚无班级',
-              description: '为院系添加至少一个班级后，学生账号才能正确分配。',
-              severity: _QuickCheckSeverity.info,
-            ),
-          );
-        }
-
-        return ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Text('学校概览', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('刷新院系数据'),
-                onPressed: () async {
-                  try {
-                    await notifier.refresh();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('院系数据已刷新')));
-                    }
-                  } catch (error) {
-                    if (!context.mounted) {
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('刷新失败：$error'),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.errorContainer,
-                      ),
-                    );
-                  }
-                },
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: tree.when(
+        data: (nodes) {
+          final metrics = AdminDepartmentMetrics.fromNodes(nodes);
+          final notifier = ref.read(adminDepartmentTreeProvider.notifier);
+          final emptyDepartments = [
+            for (final node in nodes)
+              if (node.classes.isEmpty) node.department.name,
+          ];
+          final quickChecks = <_QuickCheckItem>[];
+          if (metrics.departmentCount == 0) {
+            quickChecks.add(
+              _QuickCheckItem(
+                icon: Icons.corporate_fare_outlined,
+                title: '尚未创建院系',
+                description: '创建院系后即可录入班级与账号信息。',
+                severity: _QuickCheckSeverity.warning,
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _AdminStatsCard(
-                  icon: Icons.apartment,
-                  title: '院系总数',
-                  value: metrics.departmentCount.toString(),
-                  subtitle: '当前已创建的院系数量。',
-                  color: Theme.of(context).colorScheme.primary,
+            );
+          } else if (metrics.emptyDepartmentCount > 0) {
+            final previewNames = emptyDepartments.take(3).join('、');
+            final detail = emptyDepartments.length > 3
+                ? '$previewNames 等 ${metrics.emptyDepartmentCount} 个院系待补充班级。'
+                : '$previewNames 缺少班级配置，建议尽快补充。';
+            quickChecks.add(
+              _QuickCheckItem(
+                icon: Icons.warning_amber_outlined,
+                title: '${metrics.emptyDepartmentCount} 个院系未配置班级',
+                description: detail.isEmpty ? '存在未配置班级的院系，建议补充班级信息。' : detail,
+                severity: _QuickCheckSeverity.warning,
+              ),
+            );
+          } else {
+            quickChecks.add(
+              _QuickCheckItem(
+                icon: Icons.task_alt_outlined,
+                title: '所有院系均已配置班级',
+                description: '班级结构完整，可进行账号分配。',
+                severity: _QuickCheckSeverity.success,
+              ),
+            );
+          }
+
+          if (metrics.classCount == 0 && metrics.departmentCount > 0) {
+            quickChecks.add(
+              const _QuickCheckItem(
+                icon: Icons.class_outlined,
+                title: '院系已创建但尚无班级',
+                description: '为院系添加至少一个班级后，学生账号才能正确分配。',
+                severity: _QuickCheckSeverity.info,
+              ),
+            );
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Text('学校概览', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('刷新院系数据'),
+                  onPressed: () async {
+                    try {
+                      await notifier.refresh();
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('院系数据已刷新')),
+                        );
+                      }
+                    } catch (error) {
+                      if (!context.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('刷新失败：$error'),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.errorContainer,
+                        ),
+                      );
+                    }
+                  },
                 ),
-                _AdminStatsCard(
-                  icon: Icons.class_outlined,
-                  title: '班级总数',
-                  value: metrics.classCount.toString(),
-                  subtitle: '所有院系下的班级合计。',
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-                _AdminStatsCard(
-                  icon: Icons.pending_actions_outlined,
-                  title: '未配置班级的院系',
-                  value: metrics.emptyDepartmentCount.toString(),
-                  subtitle: '需要补充班级信息的院系数。',
-                  color: Theme.of(context).colorScheme.tertiary,
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            _AccountSectionCard(
-              icon: Icons.analytics_outlined,
-              title: '快速检查',
-              child: _QuickCheckList(items: quickChecks),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorPlaceholder(message: e.toString(), onRetry: () {}),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _AdminStatsCard(
+                    icon: Icons.apartment,
+                    title: '院系总数',
+                    value: metrics.departmentCount.toString(),
+                    subtitle: '当前已创建的院系数量。',
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  _AdminStatsCard(
+                    icon: Icons.class_outlined,
+                    title: '班级总数',
+                    value: metrics.classCount.toString(),
+                    subtitle: '所有院系下的班级合计。',
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                  _AdminStatsCard(
+                    icon: Icons.pending_actions_outlined,
+                    title: '未配置班级的院系',
+                    value: metrics.emptyDepartmentCount.toString(),
+                    subtitle: '需要补充班级信息的院系数。',
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _AccountSectionCard(
+                icon: Icons.analytics_outlined,
+                title: '快速检查',
+                child: _QuickCheckList(items: quickChecks),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) =>
+            _ErrorPlaceholder(message: e.toString(), onRetry: () {}),
+      ),
     );
   }
 }
@@ -961,336 +965,343 @@ class AdminAccountsPage extends HookConsumerWidget {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: handleRefresh,
-      child: ListView(
-        controller: scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text('账号管理', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          _AccountSectionCard(
-            icon: Icons.insights_outlined,
-            title: '筛选结果概览',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  hasActiveFilters
-                      ? '共筛选到 ${metrics.total} 个账号'
-                      : '系统共包含 $totalAvailable 个账号',
-                ),
-                if (filterNotices.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _FilterNoticeGroup(notices: filterNotices),
-                ],
-                const SizedBox(height: 12),
-                _AccountMetricsGrid(metrics: metrics),
-                if (metrics.total > 0) ...[
-                  const SizedBox(height: 12),
-                  _AccountInsightsPanel(metrics: metrics, accounts: filtered),
-                ],
-                if (hasActiveFilters) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (role.value != _AccountRoleFilter.all)
-                        FilterChip(
-                          label: Text(
-                            '身份：${_accountRoleFilterLabel(role.value)}',
-                          ),
-                          onSelected: (_) {},
-                          onDeleted: () {
-                            role.value = _AccountRoleFilter.all;
-                          },
-                        ),
-                      if (statusFilter.value != _AccountStatusFilter.all)
-                        FilterChip(
-                          label: Text(
-                            '状态：${_accountStatusFilterLabel(statusFilter.value)}',
-                          ),
-                          onSelected: (_) {},
-                          onDeleted: () {
-                            statusFilter.value = _AccountStatusFilter.all;
-                          },
-                        ),
-                      if (department.value != _kAllDepartments)
-                        FilterChip(
-                          label: Text('院系：$departmentChipLabel'),
-                          onSelected: (_) {},
-                          onDeleted: () {
-                            department.value = _kAllDepartments;
-                            classFilter.value = _kAllClasses;
-                          },
-                        ),
-                      if (classFilter.value != _kAllClasses)
-                        FilterChip(
-                          label: Text('班级：$classChipLabel'),
-                          onSelected: (_) {},
-                          onDeleted: () {
-                            classFilter.value = _kAllClasses;
-                          },
-                        ),
-                      if (sortOption.value != _AccountSortOption.nameAsc)
-                        FilterChip(
-                          label: Text(
-                            '排序：${_accountSortOptionLabel(sortOption.value)}',
-                          ),
-                          onSelected: (_) {},
-                          onDeleted: () {
-                            sortOption.value = _AccountSortOption.nameAsc;
-                          },
-                        ),
-                      if (debouncedQuery.value.isNotEmpty)
-                        FilterChip(
-                          label: Text('关键词：${debouncedQuery.value}'),
-                          onSelected: (_) {},
-                          onDeleted: () {
-                            queryController.clear();
-                            debouncedQuery.value = '';
-                          },
-                        ),
-                    ],
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: RefreshIndicator(
+        onRefresh: handleRefresh,
+        child: ListView(
+          controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text('账号管理', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 12),
+            _AccountSectionCard(
+              icon: Icons.insights_outlined,
+              title: '筛选结果概览',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasActiveFilters
+                        ? '共筛选到 ${metrics.total} 个账号'
+                        : '系统共包含 $totalAvailable 个账号',
                   ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _AccountSectionCard(
-            icon: Icons.tune_outlined,
-            title: '筛选',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: queryController,
-                  decoration: InputDecoration(
-                    labelText: '搜索账号',
-                    hintText: '支持姓名、学号/工号或邮箱关键词',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: queryController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: '清空搜索',
-                            onPressed: () {
+                  if (filterNotices.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _FilterNoticeGroup(notices: filterNotices),
+                  ],
+                  const SizedBox(height: 12),
+                  _AccountMetricsGrid(metrics: metrics),
+                  if (metrics.total > 0) ...[
+                    const SizedBox(height: 12),
+                    _AccountInsightsPanel(metrics: metrics, accounts: filtered),
+                  ],
+                  if (hasActiveFilters) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (role.value != _AccountRoleFilter.all)
+                          FilterChip(
+                            label: Text(
+                              '身份：${_accountRoleFilterLabel(role.value)}',
+                            ),
+                            onSelected: (_) {},
+                            onDeleted: () {
+                              role.value = _AccountRoleFilter.all;
+                            },
+                          ),
+                        if (statusFilter.value != _AccountStatusFilter.all)
+                          FilterChip(
+                            label: Text(
+                              '状态：${_accountStatusFilterLabel(statusFilter.value)}',
+                            ),
+                            onSelected: (_) {},
+                            onDeleted: () {
+                              statusFilter.value = _AccountStatusFilter.all;
+                            },
+                          ),
+                        if (department.value != _kAllDepartments)
+                          FilterChip(
+                            label: Text('院系：$departmentChipLabel'),
+                            onSelected: (_) {},
+                            onDeleted: () {
+                              department.value = _kAllDepartments;
+                              classFilter.value = _kAllClasses;
+                            },
+                          ),
+                        if (classFilter.value != _kAllClasses)
+                          FilterChip(
+                            label: Text('班级：$classChipLabel'),
+                            onSelected: (_) {},
+                            onDeleted: () {
+                              classFilter.value = _kAllClasses;
+                            },
+                          ),
+                        if (sortOption.value != _AccountSortOption.nameAsc)
+                          FilterChip(
+                            label: Text(
+                              '排序：${_accountSortOptionLabel(sortOption.value)}',
+                            ),
+                            onSelected: (_) {},
+                            onDeleted: () {
+                              sortOption.value = _AccountSortOption.nameAsc;
+                            },
+                          ),
+                        if (debouncedQuery.value.isNotEmpty)
+                          FilterChip(
+                            label: Text('关键词：${debouncedQuery.value}'),
+                            onSelected: (_) {},
+                            onDeleted: () {
                               queryController.clear();
                               debouncedQuery.value = '';
                             },
-                            icon: const Icon(Icons.close),
                           ),
-                  ),
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) {
-                    debouncedQuery.value = queryController.text.trim();
-                  },
-                ),
-                const SizedBox(height: 12),
-                if (hasActiveFilters) ...[
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: resetFilters,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('重置筛选'),
+                      ],
                     ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _AccountSectionCard(
+              icon: Icons.tune_outlined,
+              title: '筛选',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: queryController,
+                    decoration: InputDecoration(
+                      labelText: '搜索账号',
+                      hintText: '支持姓名、学号/工号或邮箱关键词',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: queryController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: '清空搜索',
+                              onPressed: () {
+                                queryController.clear();
+                                debouncedQuery.value = '';
+                              },
+                              icon: const Icon(Icons.close),
+                            ),
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) {
+                      debouncedQuery.value = queryController.text.trim();
+                    },
                   ),
                   const SizedBox(height: 12),
-                ],
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final f in _AccountRoleFilter.values)
-                      ChoiceChip(
-                        label: Text(_accountRoleFilterLabel(f)),
-                        selected: role.value == f,
-                        onSelected: (selected) {
-                          if (selected) {
-                            role.value = f;
-                          }
-                        },
+                  if (hasActiveFilters) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: resetFilters,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('重置筛选'),
                       ),
+                    ),
+                    const SizedBox(height: 12),
                   ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final f in _AccountStatusFilter.values)
-                      ChoiceChip(
-                        label: Text(_accountStatusFilterLabel(f)),
-                        selected: statusFilter.value == f,
-                        onSelected: (selected) {
-                          if (selected) {
-                            statusFilter.value = f;
-                          }
-                        },
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final option in _AccountSortOption.values)
-                      ChoiceChip(
-                        label: Text(_accountSortOptionLabel(option)),
-                        avatar: sortOption.value == option
-                            ? const Icon(Icons.check, size: 16)
-                            : null,
-                        selected: sortOption.value == option,
-                        onSelected: (selected) {
-                          if (selected) {
-                            sortOption.value = option;
-                          }
-                        },
-                      ),
-                  ],
-                ),
-                if (department.value == _kAllDepartments ||
-                    department.value == _kNoDepartment) ...[
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final f in _AccountRoleFilter.values)
+                        ChoiceChip(
+                          label: Text(_accountRoleFilterLabel(f)),
+                          selected: role.value == f,
+                          onSelected: (selected) {
+                            if (selected) {
+                              role.value = f;
+                            }
+                          },
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      ChoiceChip(
-                        label: const Text('全部班级'),
-                        selected: classFilter.value == _kAllClasses,
-                        onSelected: (selected) {
-                          if (selected) {
-                            classFilter.value = _kAllClasses;
-                          }
-                        },
-                      ),
-                      ChoiceChip(
-                        label: const Text('未分配班级'),
-                        selected: classFilter.value == _kNoClass,
-                        onSelected: (selected) {
-                          classFilter.value = selected
-                              ? _kNoClass
-                              : _kAllClasses;
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 12),
-                DropdownMenu<String>(
-                  key: ValueKey(department.value),
-                  initialSelection: department.value,
-                  label: const Text('按院系统一筛选'),
-                  leadingIcon: const Icon(Icons.account_tree_outlined),
-                  onSelected: (value) {
-                    department.value = value ?? _kAllDepartments;
-                    classFilter.value = _kAllClasses;
-                  },
-                  dropdownMenuEntries: dropdownEntries,
-                ),
-                if (department.value != _kAllDepartments &&
-                    department.value != _kNoDepartment) ...[
-                  const SizedBox(height: 12),
-                  DropdownMenu<String>(
-                    key: ValueKey('${department.value}|${classFilter.value}'),
-                    initialSelection: classFilter.value,
-                    label: const Text('按班级筛选'),
-                    leadingIcon: const Icon(Icons.group_outlined),
-                    onSelected: (value) {
-                      classFilter.value = value ?? _kAllClasses;
-                    },
-                    dropdownMenuEntries: classDropdownEntries,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _AccountSectionCard(
-            icon: Icons.manage_accounts_outlined,
-            title: '账号列表',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (filtered.isNotEmpty) ...[
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      icon: exportingAccounts.value
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.download_outlined),
-                      label: Text(exportingAccounts.value ? '导出中…' : '导出列表'),
-                      onPressed: exportingAccounts.value
-                          ? null
-                          : () => exportAccountsToClipboard(filtered),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (filtered.isEmpty)
-                  _EmptyPlaceholder(
-                    title: '暂无账号',
-                    description: hasActiveFilters
-                        ? '没有符合筛选条件的账号，请调整筛选条件后再试。'
-                        : '暂未查询到账号数据，稍后再试或检查连接。',
-                  )
-                else
-                  Column(
-                    children: [
-                      _AccountListHeader(
-                        currentSort: sortOption.value,
-                        onSortChanged: (option) {
-                          if (sortOption.value != option) {
-                            sortOption.value = option;
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      for (final account in filtered)
-                        _AccountTile(
-                          account: account,
-                          onOpenDetails: () => showAccountDetails(account),
+                      for (final f in _AccountStatusFilter.values)
+                        ChoiceChip(
+                          label: Text(_accountStatusFilterLabel(f)),
+                          selected: statusFilter.value == f,
+                          onSelected: (selected) {
+                            if (selected) {
+                              statusFilter.value = f;
+                            }
+                          },
                         ),
                     ],
                   ),
-                if (loadMoreError.value != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Text(
-                      '加载更多失败：${loadMoreError.value}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final option in _AccountSortOption.values)
+                        ChoiceChip(
+                          label: Text(_accountSortOptionLabel(option)),
+                          avatar: sortOption.value == option
+                              ? const Icon(Icons.check, size: 16)
+                              : null,
+                          selected: sortOption.value == option,
+                          onSelected: (selected) {
+                            if (selected) {
+                              sortOption.value = option;
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                  if (department.value == _kAllDepartments ||
+                      department.value == _kNoDepartment) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('全部班级'),
+                          selected: classFilter.value == _kAllClasses,
+                          onSelected: (selected) {
+                            if (selected) {
+                              classFilter.value = _kAllClasses;
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('未分配班级'),
+                          selected: classFilter.value == _kNoClass,
+                          onSelected: (selected) {
+                            classFilter.value = selected
+                                ? _kNoClass
+                                : _kAllClasses;
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  DropdownMenu<String>(
+                    key: ValueKey(department.value),
+                    initialSelection: department.value,
+                    label: const Text('按院系统一筛选'),
+                    leadingIcon: const Icon(Icons.account_tree_outlined),
+                    onSelected: (value) {
+                      department.value = value ?? _kAllDepartments;
+                      classFilter.value = _kAllClasses;
+                    },
+                    dropdownMenuEntries: dropdownEntries,
+                  ),
+                  if (department.value != _kAllDepartments &&
+                      department.value != _kNoDepartment) ...[
+                    const SizedBox(height: 12),
+                    DropdownMenu<String>(
+                      key: ValueKey('${department.value}|${classFilter.value}'),
+                      initialSelection: classFilter.value,
+                      label: const Text('按班级筛选'),
+                      leadingIcon: const Icon(Icons.group_outlined),
+                      onSelected: (value) {
+                        classFilter.value = value ?? _kAllClasses;
+                      },
+                      dropdownMenuEntries: classDropdownEntries,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _AccountSectionCard(
+              icon: Icons.manage_accounts_outlined,
+              title: '账号列表',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (filtered.isNotEmpty) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        icon: exportingAccounts.value
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.download_outlined),
+                        label: Text(exportingAccounts.value ? '导出中…' : '导出列表'),
+                        onPressed: exportingAccounts.value
+                            ? null
+                            : () => exportAccountsToClipboard(filtered),
                       ),
                     ),
-                  ),
-                if (hasMore || isLoadingMore.value)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: OutlinedButton.icon(
-                      onPressed: isLoadingMore.value ? null : handleLoadMore,
-                      icon: isLoadingMore.value
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.unfold_more),
-                      label: Text(isLoadingMore.value ? '加载中…' : '加载更多'),
+                    const SizedBox(height: 12),
+                  ],
+                  if (filtered.isEmpty)
+                    _EmptyPlaceholder(
+                      title: '暂无账号',
+                      description: hasActiveFilters
+                          ? '没有符合筛选条件的账号，请调整筛选条件后再试。'
+                          : '暂未查询到账号数据，稍后再试或检查连接。',
+                    )
+                  else
+                    Column(
+                      children: [
+                        _AccountListHeader(
+                          currentSort: sortOption.value,
+                          onSortChanged: (option) {
+                            if (sortOption.value != option) {
+                              sortOption.value = option;
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        for (final account in filtered)
+                          _AccountTile(
+                            account: account,
+                            onOpenDetails: () => showAccountDetails(account),
+                          ),
+                      ],
                     ),
-                  ),
-              ],
+                  if (loadMoreError.value != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(
+                        '加载更多失败：${loadMoreError.value}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  if (hasMore || isLoadingMore.value)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: OutlinedButton.icon(
+                        onPressed: isLoadingMore.value ? null : handleLoadMore,
+                        icon: isLoadingMore.value
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.unfold_more),
+                        label: Text(isLoadingMore.value ? '加载中…' : '加载更多'),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2220,201 +2231,205 @@ class AdminStructuresPage extends HookConsumerWidget {
       }
     }
 
-    return filteredTree.when(
-      data: (nodes) {
-        final normalized = normalizedQuery;
-        final metricsValue = metrics.maybeWhen(
-          data: (value) => value,
-          orElse: () => null,
-        );
-        final canToggleBulkExpansion = normalized.isEmpty;
-        final allVisibleExpanded =
-            canToggleBulkExpansion &&
-            nodes.isNotEmpty &&
-            nodes.every(
-              (node) => expandedDepartments.contains(node.department.id),
-            );
-        final canCollapseAny =
-            canToggleBulkExpansion && expandedDepartments.isNotEmpty;
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: filteredTree.when(
+        data: (nodes) {
+          final normalized = normalizedQuery;
+          final metricsValue = metrics.maybeWhen(
+            data: (value) => value,
+            orElse: () => null,
+          );
+          final canToggleBulkExpansion = normalized.isEmpty;
+          final allVisibleExpanded =
+              canToggleBulkExpansion &&
+              nodes.isNotEmpty &&
+              nodes.every(
+                (node) => expandedDepartments.contains(node.department.id),
+              );
+          final canCollapseAny =
+              canToggleBulkExpansion && expandedDepartments.isNotEmpty;
 
-        return RefreshIndicator(
-          onRefresh: refreshStructures,
-          child: ListView(
-            controller: scrollController,
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('院系与班级', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                children: [
-                  FilledButton.icon(
-                    onPressed: canManageStructures
-                        ? () {
-                            showCreateDepartmentDialog();
-                          }
-                        : null,
-                    icon: const Icon(Icons.domain_add_outlined),
-                    label: const Text('新增院系'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: canManageStructures && allDepartments.isNotEmpty
-                        ? () {
-                            showCreateClassDialog();
-                          }
-                        : null,
-                    icon: const Icon(Icons.group_add_outlined),
-                    label: const Text('新增班级'),
-                  ),
-                ],
-              ),
-              if (!canManageStructures) ...[
+          return RefreshIndicator(
+            onRefresh: refreshStructures,
+            child: ListView(
+              controller: scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text('院系与班级', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 12),
-                Text(
-                  '需登录且拥有学校信息后才能创建院系与班级。',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              if (metricsValue != null)
                 Wrap(
                   spacing: 12,
-                  runSpacing: 12,
+                  runSpacing: 8,
                   children: [
-                    _AdminStatsCard(
-                      icon: Icons.apartment_outlined,
-                      title: '筛选院系',
-                      value: metricsValue.departmentCount.toString(),
-                      subtitle: '符合条件的院系数量。',
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    _AdminStatsCard(
-                      icon: Icons.class_outlined,
-                      title: '筛选班级',
-                      value: metricsValue.classCount.toString(),
-                      subtitle: '这些院系下的班级合计。',
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                    _AdminStatsCard(
-                      icon: Icons.hourglass_empty_outlined,
-                      title: '暂无班级',
-                      value: metricsValue.emptyDepartmentCount.toString(),
-                      subtitle: '仍未配置班级的院系数。',
-                      color: Theme.of(context).colorScheme.tertiary,
-                    ),
-                  ],
-                ),
-              if (metricsValue != null) const SizedBox(height: 12),
-              TextField(
-                controller: filterController,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  labelText: '搜索院系或班级',
-                  suffixIcon: filterController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: '清空搜索',
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            ref
-                                .read(
-                                  adminDepartmentViewPreferencesProvider
-                                      .notifier,
-                                )
-                                .setQuery('');
-                          },
-                        ),
-                ),
-                onChanged: (value) => ref
-                    .read(adminDepartmentViewPreferencesProvider.notifier)
-                    .setQuery(value),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  FilterChip(
-                    label: const Text('仅显示未配置班级'),
-                    selected: onlyEmpty,
-                    onSelected: (selected) => ref
-                        .read(adminDepartmentViewPreferencesProvider.notifier)
-                        .setOnlyEmpty(selected),
-                  ),
-                  if (canToggleBulkExpansion && nodes.isNotEmpty) ...[
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.unfold_more),
-                      label: const Text('展开全部'),
-                      onPressed: allVisibleExpanded
-                          ? null
-                          : () => expandAllDepartments(nodes),
-                    ),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.unfold_less),
-                      label: const Text('折叠全部'),
-                      onPressed: canCollapseAny
-                          ? () => collapseAllDepartments()
+                    FilledButton.icon(
+                      onPressed: canManageStructures
+                          ? () {
+                              showCreateDepartmentDialog();
+                            }
                           : null,
+                      icon: const Icon(Icons.domain_add_outlined),
+                      label: const Text('新增院系'),
+                    ),
+                    FilledButton.icon(
+                      onPressed:
+                          canManageStructures && allDepartments.isNotEmpty
+                          ? () {
+                              showCreateClassDialog();
+                            }
+                          : null,
+                      icon: const Icon(Icons.group_add_outlined),
+                      label: const Text('新增班级'),
                     ),
                   ],
+                ),
+                if (!canManageStructures) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '需登录且拥有学校信息后才能创建院系与班级。',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              if (nodes.isEmpty)
-                const _EmptyPlaceholder(
-                  title: '暂无匹配结果',
-                  description: '尝试调整关键词或取消筛选条件后再试。',
-                )
-              else
-                ...(() {
-                  final visibleIds = {
-                    for (final node in nodes) node.department.id,
-                  };
-                  departmentItemKeys.value.removeWhere(
-                    (key, _) => !visibleIds.contains(key),
-                  );
-                  return nodes.map((node) {
-                    final key = departmentItemKeys.value.putIfAbsent(
-                      node.department.id,
-                      () => GlobalKey(),
-                    );
-                    return _DepartmentExpansion(
-                      key: key,
-                      node: node,
-                      query: normalized,
-                      canManage: canManageStructures,
-                      initiallyExpanded: expandedDepartments.contains(
-                        node.department.id,
+                const SizedBox(height: 12),
+                if (metricsValue != null)
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _AdminStatsCard(
+                        icon: Icons.apartment_outlined,
+                        title: '筛选院系',
+                        value: metricsValue.departmentCount.toString(),
+                        subtitle: '符合条件的院系数量。',
+                        color: Theme.of(context).colorScheme.primary,
                       ),
-                      highlighted:
-                          highlightedDepartmentId.value == node.department.id,
-                      onExpansionChanged: (isExpanded) {
-                        ref
-                            .read(adminExpandedDepartmentsProvider.notifier)
-                            .setExpanded(node.department.id, isExpanded);
-                      },
-                      onRenameDepartment: showRenameDepartmentDialog,
-                      onDeleteDepartment: confirmDeleteDepartment,
-                      onRenameClass: showRenameClassDialog,
-                      onDeleteClass: confirmDeleteClass,
+                      _AdminStatsCard(
+                        icon: Icons.class_outlined,
+                        title: '筛选班级',
+                        value: metricsValue.classCount.toString(),
+                        subtitle: '这些院系下的班级合计。',
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      _AdminStatsCard(
+                        icon: Icons.hourglass_empty_outlined,
+                        title: '暂无班级',
+                        value: metricsValue.emptyDepartmentCount.toString(),
+                        subtitle: '仍未配置班级的院系数。',
+                        color: Theme.of(context).colorScheme.tertiary,
+                      ),
+                    ],
+                  ),
+                if (metricsValue != null) const SizedBox(height: 12),
+                TextField(
+                  controller: filterController,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.search),
+                    labelText: '搜索院系或班级',
+                    suffixIcon: filterController.text.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: '清空搜索',
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              ref
+                                  .read(
+                                    adminDepartmentViewPreferencesProvider
+                                        .notifier,
+                                  )
+                                  .setQuery('');
+                            },
+                          ),
+                  ),
+                  onChanged: (value) => ref
+                      .read(adminDepartmentViewPreferencesProvider.notifier)
+                      .setQuery(value),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    FilterChip(
+                      label: const Text('仅显示未配置班级'),
+                      selected: onlyEmpty,
+                      onSelected: (selected) => ref
+                          .read(adminDepartmentViewPreferencesProvider.notifier)
+                          .setOnlyEmpty(selected),
+                    ),
+                    if (canToggleBulkExpansion && nodes.isNotEmpty) ...[
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.unfold_more),
+                        label: const Text('展开全部'),
+                        onPressed: allVisibleExpanded
+                            ? null
+                            : () => expandAllDepartments(nodes),
+                      ),
+                      OutlinedButton.icon(
+                        icon: const Icon(Icons.unfold_less),
+                        label: const Text('折叠全部'),
+                        onPressed: canCollapseAny
+                            ? () => collapseAllDepartments()
+                            : null,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (nodes.isEmpty)
+                  const _EmptyPlaceholder(
+                    title: '暂无匹配结果',
+                    description: '尝试调整关键词或取消筛选条件后再试。',
+                  )
+                else
+                  ...(() {
+                    final visibleIds = {
+                      for (final node in nodes) node.department.id,
+                    };
+                    departmentItemKeys.value.removeWhere(
+                      (key, _) => !visibleIds.contains(key),
                     );
-                  }).toList();
-                })(),
-            ],
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _ErrorPlaceholder(
-        message: e.toString(),
-        onRetry: () {
-          ref.invalidate(adminDepartmentTreeProvider);
+                    return nodes.map((node) {
+                      final key = departmentItemKeys.value.putIfAbsent(
+                        node.department.id,
+                        () => GlobalKey(),
+                      );
+                      return _DepartmentExpansion(
+                        key: key,
+                        node: node,
+                        query: normalized,
+                        canManage: canManageStructures,
+                        initiallyExpanded: expandedDepartments.contains(
+                          node.department.id,
+                        ),
+                        highlighted:
+                            highlightedDepartmentId.value == node.department.id,
+                        onExpansionChanged: (isExpanded) {
+                          ref
+                              .read(adminExpandedDepartmentsProvider.notifier)
+                              .setExpanded(node.department.id, isExpanded);
+                        },
+                        onRenameDepartment: showRenameDepartmentDialog,
+                        onDeleteDepartment: confirmDeleteDepartment,
+                        onRenameClass: showRenameClassDialog,
+                        onDeleteClass: confirmDeleteClass,
+                      );
+                    }).toList();
+                  })(),
+              ],
+            ),
+          );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => _ErrorPlaceholder(
+          message: e.toString(),
+          onRetry: () {
+            ref.invalidate(adminDepartmentTreeProvider);
+          },
+        ),
       ),
     );
   }
@@ -2955,420 +2970,431 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       }
     }
 
-    return ossState.when(
-      data: (data) {
-        final credentials = data.credentials;
-        final policies = data.policies;
-        final logs = data.auditLogs;
-        final hasMoreLogs = data.hasMoreAuditLogs;
-        return RefreshIndicator(
-          onRefresh: () => ossNotifier.refresh(),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'OSS 设置',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: '刷新',
-                    onPressed: () {
-                      unawaited(ossNotifier.refresh());
-                    },
-                    icon: const Icon(Icons.refresh_outlined),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _AccountSectionCard(
-                icon: Icons.vpn_key_outlined,
-                title: '访问凭证',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: ossState.when(
+        data: (data) {
+          final credentials = data.credentials;
+          final policies = data.policies;
+          final logs = data.auditLogs;
+          final hasMoreLogs = data.hasMoreAuditLogs;
+          return RefreshIndicator(
+            onRefresh: () => ossNotifier.refresh(),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                Row(
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton.icon(
-                        onPressed: creatingCredential.value
-                            ? null
-                            : createCredential,
-                        icon: creatingCredential.value
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.add_circle_outline),
-                        label: Text(creatingCredential.value ? '创建中…' : '新增凭证'),
-                      ),
+                    Text(
+                      'OSS 设置',
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    const SizedBox(height: 12),
-                    if (credentials.isEmpty)
-                      const _EmptyPlaceholder(
-                        title: '暂无凭证',
-                        description: '尚未配置 OSS 访问凭证，无法上传教学资料。',
+                    const Spacer(),
+                    IconButton(
+                      tooltip: '刷新',
+                      onPressed: () {
+                        unawaited(ossNotifier.refresh());
+                      },
+                      icon: const Icon(Icons.refresh_outlined),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _AccountSectionCard(
+                  icon: Icons.vpn_key_outlined,
+                  title: '访问凭证',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          onPressed: creatingCredential.value
+                              ? null
+                              : createCredential,
+                          icon: creatingCredential.value
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.add_circle_outline),
+                          label: Text(
+                            creatingCredential.value ? '创建中…' : '新增凭证',
+                          ),
+                        ),
                       ),
-                    for (final credential in credentials)
-                      _OssCredentialTile(
-                        credential: credential,
-                        isMutating: isCredentialBusy(credential.id),
-                        onCopyKey: () => copyCredential(credential),
-                        onToggleActive: (value) =>
-                            runCredentialMutation(credential.id, () async {
-                              await ossNotifier.updateCredential(
-                                credentialId: credential.id,
-                                active: value,
-                              );
-                              return value ? '凭证已启用' : '凭证已停用';
-                            }),
-                        onTogglePublicRead: (value) =>
-                            runCredentialMutation(credential.id, () async {
-                              await ossNotifier.updateCredential(
-                                credentialId: credential.id,
-                                allowPublicRead: value,
-                              );
-                              return value ? '已允许公开只读访问' : '已关闭公开只读访问';
-                            }),
-                        onToggleMultipart: (value) =>
-                            runCredentialMutation(credential.id, () async {
-                              await ossNotifier.updateCredential(
-                                credentialId: credential.id,
-                                allowMultipartUpload: value,
-                              );
-                              return value ? '已开启分片上传' : '已关闭分片上传';
-                            }),
-                        onSetPrimary: credential.isPrimary
-                            ? null
-                            : () => runCredentialMutation(
-                                credential.id,
-                                () async {
-                                  await ossNotifier.updateCredential(
-                                    credentialId: credential.id,
-                                    isPrimary: true,
-                                    active: true,
-                                  );
-                                  return '已设为主凭证，并保持启用状态';
-                                },
-                              ),
-                        onEdit: () async {
-                          final formKey = GlobalKey<FormState>();
-                          final nameController = TextEditingController(
-                            text: credential.name,
-                          );
-                          final endpointController = TextEditingController(
-                            text: credential.endpoint,
-                          );
-                          final regionController = TextEditingController(
-                            text: credential.region,
-                          );
-                          final bucketController = TextEditingController(
-                            text: credential.bucket,
-                          );
-                          final prefixController = TextEditingController(
-                            text: credential.directoryPrefix,
-                          );
-                          final accessKeyController = TextEditingController(
-                            text: credential.accessKeyMasked,
-                          );
-                          try {
-                            final result =
-                                await showDialog<
-                                  ({
-                                    String name,
-                                    String endpoint,
-                                    String region,
-                                    String bucket,
-                                    String directoryPrefix,
-                                    String accessKeyMasked,
-                                  })
-                                >(
-                                  context: context,
-                                  builder: (dialogContext) {
-                                    return AlertDialog(
-                                      title: Text('编辑 ${credential.name}'),
-                                      content: SingleChildScrollView(
-                                        child: Form(
-                                          key: formKey,
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              TextFormField(
-                                                controller: nameController,
-                                                decoration:
-                                                    const InputDecoration(
-                                                      labelText: '名称',
-                                                      helperText:
-                                                          '仅用于管理端展示，建议包含用途说明',
-                                                    ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.trim().isEmpty) {
-                                                    return '名称不能为空';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                              const SizedBox(height: 12),
-                                              TextFormField(
-                                                controller: endpointController,
-                                                decoration: const InputDecoration(
-                                                  labelText: 'Endpoint',
-                                                  helperText:
-                                                      '例如：oss-cn-hangzhou.aliyuncs.com',
+                      const SizedBox(height: 12),
+                      if (credentials.isEmpty)
+                        const _EmptyPlaceholder(
+                          title: '暂无凭证',
+                          description: '尚未配置 OSS 访问凭证，无法上传教学资料。',
+                        ),
+                      for (final credential in credentials)
+                        _OssCredentialTile(
+                          credential: credential,
+                          isMutating: isCredentialBusy(credential.id),
+                          onCopyKey: () => copyCredential(credential),
+                          onToggleActive: (value) =>
+                              runCredentialMutation(credential.id, () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  active: value,
+                                );
+                                return value ? '凭证已启用' : '凭证已停用';
+                              }),
+                          onTogglePublicRead: (value) =>
+                              runCredentialMutation(credential.id, () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  allowPublicRead: value,
+                                );
+                                return value ? '已允许公开只读访问' : '已关闭公开只读访问';
+                              }),
+                          onToggleMultipart: (value) =>
+                              runCredentialMutation(credential.id, () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  allowMultipartUpload: value,
+                                );
+                                return value ? '已开启分片上传' : '已关闭分片上传';
+                              }),
+                          onSetPrimary: credential.isPrimary
+                              ? null
+                              : () => runCredentialMutation(
+                                  credential.id,
+                                  () async {
+                                    await ossNotifier.updateCredential(
+                                      credentialId: credential.id,
+                                      isPrimary: true,
+                                      active: true,
+                                    );
+                                    return '已设为主凭证，并保持启用状态';
+                                  },
+                                ),
+                          onEdit: () async {
+                            final formKey = GlobalKey<FormState>();
+                            final nameController = TextEditingController(
+                              text: credential.name,
+                            );
+                            final endpointController = TextEditingController(
+                              text: credential.endpoint,
+                            );
+                            final regionController = TextEditingController(
+                              text: credential.region,
+                            );
+                            final bucketController = TextEditingController(
+                              text: credential.bucket,
+                            );
+                            final prefixController = TextEditingController(
+                              text: credential.directoryPrefix,
+                            );
+                            final accessKeyController = TextEditingController(
+                              text: credential.accessKeyMasked,
+                            );
+                            try {
+                              final result =
+                                  await showDialog<
+                                    ({
+                                      String name,
+                                      String endpoint,
+                                      String region,
+                                      String bucket,
+                                      String directoryPrefix,
+                                      String accessKeyMasked,
+                                    })
+                                  >(
+                                    context: context,
+                                    builder: (dialogContext) {
+                                      return AlertDialog(
+                                        title: Text('编辑 ${credential.name}'),
+                                        content: SingleChildScrollView(
+                                          child: Form(
+                                            key: formKey,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                TextFormField(
+                                                  controller: nameController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText: '名称',
+                                                        helperText:
+                                                            '仅用于管理端展示，建议包含用途说明',
+                                                      ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return '名称不能为空';
+                                                    }
+                                                    return null;
+                                                  },
                                                 ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.trim().isEmpty) {
-                                                    return 'Endpoint 不能为空';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                              const SizedBox(height: 12),
-                                              TextFormField(
-                                                controller: regionController,
-                                                decoration:
-                                                    const InputDecoration(
-                                                      labelText: '区域',
-                                                      helperText: '例如：华东 1',
-                                                    ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.trim().isEmpty) {
-                                                    return '区域不能为空';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                              const SizedBox(height: 12),
-                                              TextFormField(
-                                                controller: bucketController,
-                                                decoration:
-                                                    const InputDecoration(
-                                                      labelText: 'Bucket',
-                                                      helperText:
-                                                          '例如：learn-go-prod',
-                                                    ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.trim().isEmpty) {
-                                                    return 'Bucket 不能为空';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                              const SizedBox(height: 12),
-                                              TextFormField(
-                                                controller: prefixController,
-                                                decoration: const InputDecoration(
-                                                  labelText: '目录前缀',
-                                                  helperText:
-                                                      '可留空，示例：prod/ 或 teacher/',
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller:
+                                                      endpointController,
+                                                  decoration: const InputDecoration(
+                                                    labelText: 'Endpoint',
+                                                    helperText:
+                                                        '例如：oss-cn-hangzhou.aliyuncs.com',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return 'Endpoint 不能为空';
+                                                    }
+                                                    return null;
+                                                  },
                                                 ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              TextFormField(
-                                                controller: accessKeyController,
-                                                decoration: const InputDecoration(
-                                                  labelText: '访问凭证标识',
-                                                  helperText:
-                                                      '仅展示已有凭证掩码，例如：LTAI****',
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: regionController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText: '区域',
+                                                        helperText: '例如：华东 1',
+                                                      ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return '区域不能为空';
+                                                    }
+                                                    return null;
+                                                  },
                                                 ),
-                                                validator: (value) {
-                                                  if (value == null ||
-                                                      value.trim().isEmpty) {
-                                                    return '访问凭证标识不能为空';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-                                            ],
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: bucketController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText: 'Bucket',
+                                                        helperText:
+                                                            '例如：learn-go-prod',
+                                                      ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return 'Bucket 不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller: prefixController,
+                                                  decoration: const InputDecoration(
+                                                    labelText: '目录前缀',
+                                                    helperText:
+                                                        '可留空，示例：prod/ 或 teacher/',
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller:
+                                                      accessKeyController,
+                                                  decoration: const InputDecoration(
+                                                    labelText: '访问凭证标识',
+                                                    helperText:
+                                                        '仅展示已有凭证掩码，例如：LTAI****',
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.trim().isEmpty) {
+                                                      return '访问凭证标识不能为空';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.of(dialogContext).pop(),
-                                          child: const Text('取消'),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () {
-                                            if (!(formKey.currentState
-                                                    ?.validate() ??
-                                                false)) {
-                                              return;
-                                            }
-                                            Navigator.of(dialogContext).pop((
-                                              name: nameController.text.trim(),
-                                              endpoint: endpointController.text
-                                                  .trim(),
-                                              region: regionController.text
-                                                  .trim(),
-                                              bucket: bucketController.text
-                                                  .trim(),
-                                              directoryPrefix: prefixController
-                                                  .text
-                                                  .trim(),
-                                              accessKeyMasked:
-                                                  accessKeyController.text
-                                                      .trim(),
-                                            ));
-                                          },
-                                          child: const Text('保存'),
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                );
-                            if (result == null) {
-                              return;
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              dialogContext,
+                                            ).pop(),
+                                            child: const Text('取消'),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () {
+                                              if (!(formKey.currentState
+                                                      ?.validate() ??
+                                                  false)) {
+                                                return;
+                                              }
+                                              Navigator.of(dialogContext).pop((
+                                                name: nameController.text
+                                                    .trim(),
+                                                endpoint: endpointController
+                                                    .text
+                                                    .trim(),
+                                                region: regionController.text
+                                                    .trim(),
+                                                bucket: bucketController.text
+                                                    .trim(),
+                                                directoryPrefix:
+                                                    prefixController.text
+                                                        .trim(),
+                                                accessKeyMasked:
+                                                    accessKeyController.text
+                                                        .trim(),
+                                              ));
+                                            },
+                                            child: const Text('保存'),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                              if (result == null) {
+                                return;
+                              }
+                              await runCredentialMutation(
+                                credential.id,
+                                () async {
+                                  final updated = await ossNotifier
+                                      .updateCredential(
+                                        credentialId: credential.id,
+                                        name: result.name,
+                                        endpoint: result.endpoint,
+                                        region: result.region,
+                                        bucket: result.bucket,
+                                        directoryPrefix: result.directoryPrefix,
+                                        accessKeyDisplay:
+                                            result.accessKeyMasked,
+                                      );
+                                  return '已更新 ${updated.name} 的访问信息';
+                                },
+                              );
+                            } finally {
+                              nameController.dispose();
+                              endpointController.dispose();
+                              regionController.dispose();
+                              bucketController.dispose();
+                              prefixController.dispose();
+                              accessKeyController.dispose();
                             }
-                            await runCredentialMutation(
-                              credential.id,
-                              () async {
-                                final updated = await ossNotifier
-                                    .updateCredential(
-                                      credentialId: credential.id,
-                                      name: result.name,
-                                      endpoint: result.endpoint,
-                                      region: result.region,
-                                      bucket: result.bucket,
-                                      directoryPrefix: result.directoryPrefix,
-                                      accessKeyDisplay: result.accessKeyMasked,
-                                    );
-                                return '已更新 ${updated.name} 的访问信息';
-                              },
-                            );
-                          } finally {
-                            nameController.dispose();
-                            endpointController.dispose();
-                            regionController.dispose();
-                            bucketController.dispose();
-                            prefixController.dispose();
-                            accessKeyController.dispose();
-                          }
-                        },
-                        onDelete: credential.isPrimary
-                            ? null
-                            : () => confirmDeleteCredential(credential),
-                      ),
-                  ],
+                          },
+                          onDelete: credential.isPrimary
+                              ? null
+                              : () => confirmDeleteCredential(credential),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _AccountSectionCard(
-                icon: Icons.rule_folder_outlined,
-                title: '安全策略',
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton.icon(
-                        onPressed: creatingPolicy.value ? null : createPolicy,
-                        icon: creatingPolicy.value
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                const SizedBox(height: 12),
+                _AccountSectionCard(
+                  icon: Icons.rule_folder_outlined,
+                  title: '安全策略',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          onPressed: creatingPolicy.value ? null : createPolicy,
+                          icon: creatingPolicy.value
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.add_task_outlined),
+                          label: Text(creatingPolicy.value ? '创建中…' : '新增策略'),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (policies.isEmpty)
+                        const _EmptyPlaceholder(
+                          title: '暂无安全策略',
+                          description: '建议为不同业务配置合适的策略，以保障文件访问安全。',
+                        ),
+                      for (final policy in policies)
+                        _OssPolicyTile(
+                          policy: policy,
+                          isMutating: isPolicyBusy(policy.id),
+                          onStatusChanged: isPolicyBusy(policy.id)
+                              ? null
+                              : (status) =>
+                                    runPolicyMutation(policy.id, () async {
+                                      final updated = await ossNotifier
+                                          .updatePolicyStatus(
+                                            policyId: policy.id,
+                                            status: status,
+                                          );
+                                      return '已更新 ${updated.name} 策略状态';
+                                    }),
+                          onDelete: () => confirmDeletePolicy(policy),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _AccountSectionCard(
+                  icon: Icons.event_note_outlined,
+                  title: '审计记录',
+                  child: logs.isEmpty
+                      ? const _EmptyPlaceholder(
+                          title: '暂无审计',
+                          description: '当发生凭证或策略变更时，会在此记录操作轨迹。',
+                        )
+                      : Column(
+                          children: [
+                            for (final log in logs) _OssAuditTile(log: log),
+                            const SizedBox(height: 8),
+                            if (hasMoreLogs)
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton.icon(
+                                  onPressed: auditBusy.value
+                                      ? null
+                                      : loadMoreAudits,
+                                  icon: auditBusy.value
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.unfold_more_outlined),
+                                  label: Text(
+                                    auditBusy.value ? '加载中…' : '加载更多记录',
+                                  ),
                                 ),
                               )
-                            : const Icon(Icons.add_task_outlined),
-                        label: Text(creatingPolicy.value ? '创建中…' : '新增策略'),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (policies.isEmpty)
-                      const _EmptyPlaceholder(
-                        title: '暂无安全策略',
-                        description: '建议为不同业务配置合适的策略，以保障文件访问安全。',
-                      ),
-                    for (final policy in policies)
-                      _OssPolicyTile(
-                        policy: policy,
-                        isMutating: isPolicyBusy(policy.id),
-                        onStatusChanged: isPolicyBusy(policy.id)
-                            ? null
-                            : (status) =>
-                                  runPolicyMutation(policy.id, () async {
-                                    final updated = await ossNotifier
-                                        .updatePolicyStatus(
-                                          policyId: policy.id,
-                                          status: status,
-                                        );
-                                    return '已更新 ${updated.name} 策略状态';
-                                  }),
-                        onDelete: () => confirmDeletePolicy(policy),
-                      ),
-                  ],
+                            else
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 4),
+                                  child: Text(
+                                    '已加载全部记录',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              _AccountSectionCard(
-                icon: Icons.event_note_outlined,
-                title: '审计记录',
-                child: logs.isEmpty
-                    ? const _EmptyPlaceholder(
-                        title: '暂无审计',
-                        description: '当发生凭证或策略变更时，会在此记录操作轨迹。',
-                      )
-                    : Column(
-                        children: [
-                          for (final log in logs) _OssAuditTile(log: log),
-                          const SizedBox(height: 8),
-                          if (hasMoreLogs)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton.icon(
-                                onPressed: auditBusy.value
-                                    ? null
-                                    : loadMoreAudits,
-                                icon: auditBusy.value
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.unfold_more_outlined),
-                                label: Text(
-                                  auditBusy.value ? '加载中…' : '加载更多记录',
-                                ),
-                              ),
-                            )
-                          else
-                            const Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 4),
-                                child: Text(
-                                  '已加载全部记录',
-                                  style: TextStyle(fontSize: 12),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-            ],
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => _ErrorPlaceholder(
-        message: errorMessage(error),
-        onRetry: () {
-          unawaited(ossNotifier.refresh());
+              ],
+            ),
+          );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _ErrorPlaceholder(
+          message: errorMessage(error),
+          onRetry: () {
+            unawaited(ossNotifier.refresh());
+          },
+        ),
       ),
     );
   }
@@ -3406,210 +3432,217 @@ class AdminSystemSettingsPage extends HookConsumerWidget {
       return error.toString();
     }
 
-    return systemState.when(
-      data: (data) {
-        final switches = data.switches;
-        final parameters = data.parameters;
-        final broadcasts = data.broadcasts;
-        final audits = data.auditLogs;
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: systemState.when(
+        data: (data) {
+          final switches = data.switches;
+          final parameters = data.parameters;
+          final broadcasts = data.broadcasts;
+          final audits = data.auditLogs;
 
-        Future<void> toggleSystemSwitch(
-          system.AdminSystemSwitch item,
-          bool value,
-        ) async {
-          if (switchBusy.value == item.id) {
-            return;
-          }
-          switchBusy.value = item.id;
-          try {
-            await notifier.setSwitchEnabled(switchId: item.id, enabled: value);
-            showSnack(value ? '已启用「${item.title}」' : '已停用「${item.title}」');
-          } catch (error) {
-            showSnack('操作失败：${formatError(error)}');
-          } finally {
-            switchBusy.value = null;
-          }
-        }
-
-        Future<void> editParameter(
-          system.AdminSystemParameter parameter,
-        ) async {
-          if (parameter.locked) {
-            showSnack('参数 ${parameter.key} 已锁定，无法修改');
-            return;
-          }
-          final controller = TextEditingController(text: parameter.value);
-          final result = await showDialog<String>(
-            context: context,
-            builder: (dialogContext) {
-              return AlertDialog(
-                title: Text('编辑 ${parameter.key}'),
-                content: TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    labelText: '新的参数值',
-                    helperText: parameter.description,
-                  ),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    child: const Text('取消'),
-                  ),
-                  FilledButton(
-                    onPressed: () =>
-                        Navigator.of(dialogContext).pop(controller.text.trim()),
-                    child: const Text('保存'),
-                  ),
-                ],
+          Future<void> toggleSystemSwitch(
+            system.AdminSystemSwitch item,
+            bool value,
+          ) async {
+            if (switchBusy.value == item.id) {
+              return;
+            }
+            switchBusy.value = item.id;
+            try {
+              await notifier.setSwitchEnabled(
+                switchId: item.id,
+                enabled: value,
               );
-            },
-          );
-          final normalized = result?.trim();
-          if (normalized == null || normalized.isEmpty) {
-            return;
+              showSnack(value ? '已启用「${item.title}」' : '已停用「${item.title}」');
+            } catch (error) {
+              showSnack('操作失败：${formatError(error)}');
+            } finally {
+              switchBusy.value = null;
+            }
           }
-          if (normalized == parameter.value) {
-            showSnack('参数 ${parameter.key} 未发生变化');
-            return;
-          }
-          parameterBusy.value = parameter.id;
-          try {
-            await notifier.updateParameterValue(
-              parameterId: parameter.id,
-              value: normalized,
-            );
-            showSnack('参数 ${parameter.key} 已更新');
-          } catch (error) {
-            showSnack('操作失败：${formatError(error)}');
-          } finally {
-            parameterBusy.value = null;
-          }
-        }
 
-        Future<void> toggleBroadcastPinned(
-          system.AdminSystemBroadcast item,
-        ) async {
-          if (broadcastBusy.value == item.id) {
-            return;
-          }
-          broadcastBusy.value = item.id;
-          try {
-            await notifier.updateBroadcast(
-              broadcastId: item.id,
-              pinned: !item.pinned,
+          Future<void> editParameter(
+            system.AdminSystemParameter parameter,
+          ) async {
+            if (parameter.locked) {
+              showSnack('参数 ${parameter.key} 已锁定，无法修改');
+              return;
+            }
+            final controller = TextEditingController(text: parameter.value);
+            final result = await showDialog<String>(
+              context: context,
+              builder: (dialogContext) {
+                return AlertDialog(
+                  title: Text('编辑 ${parameter.key}'),
+                  content: TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      labelText: '新的参数值',
+                      helperText: parameter.description,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('取消'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.of(
+                        dialogContext,
+                      ).pop(controller.text.trim()),
+                      child: const Text('保存'),
+                    ),
+                  ],
+                );
+              },
             );
-            showSnack(
-              !item.pinned ? '已置顶「${item.title}」' : '已取消置顶「${item.title}」',
-            );
-          } catch (error) {
-            showSnack('操作失败：${formatError(error)}');
-          } finally {
-            broadcastBusy.value = null;
+            final normalized = result?.trim();
+            if (normalized == null || normalized.isEmpty) {
+              return;
+            }
+            if (normalized == parameter.value) {
+              showSnack('参数 ${parameter.key} 未发生变化');
+              return;
+            }
+            parameterBusy.value = parameter.id;
+            try {
+              await notifier.updateParameterValue(
+                parameterId: parameter.id,
+                value: normalized,
+              );
+              showSnack('参数 ${parameter.key} 已更新');
+            } catch (error) {
+              showSnack('操作失败：${formatError(error)}');
+            } finally {
+              parameterBusy.value = null;
+            }
           }
-        }
 
-        Future<void> updateBroadcastStatus(
-          system.AdminSystemBroadcast item,
-          system.AdminSystemBroadcastStatus status,
-        ) async {
-          if (broadcastBusy.value == item.id) {
-            return;
+          Future<void> toggleBroadcastPinned(
+            system.AdminSystemBroadcast item,
+          ) async {
+            if (broadcastBusy.value == item.id) {
+              return;
+            }
+            broadcastBusy.value = item.id;
+            try {
+              await notifier.updateBroadcast(
+                broadcastId: item.id,
+                pinned: !item.pinned,
+              );
+              showSnack(
+                !item.pinned ? '已置顶「${item.title}」' : '已取消置顶「${item.title}」',
+              );
+            } catch (error) {
+              showSnack('操作失败：${formatError(error)}');
+            } finally {
+              broadcastBusy.value = null;
+            }
           }
-          broadcastBusy.value = item.id;
-          try {
-            await notifier.updateBroadcast(
-              broadcastId: item.id,
-              status: status,
-            );
-            showSnack('已更新公告「${item.title}」状态');
-          } catch (error) {
-            showSnack('操作失败：${formatError(error)}');
-          } finally {
-            broadcastBusy.value = null;
-          }
-        }
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text('系统设置', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            _AccountSectionCard(
-              icon: Icons.toggle_on_outlined,
-              title: '系统开关',
-              child: Column(
-                children: [
-                  for (final item in switches)
-                    _SystemSwitchTile(
-                      item: item,
-                      isBusy: switchBusy.value == item.id,
-                      onToggle: (value) =>
-                          unawaited(toggleSystemSwitch(item, value)),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _AccountSectionCard(
-              icon: Icons.settings_applications_outlined,
-              title: '平台参数',
-              child: Column(
-                children: [
-                  for (final parameter in parameters)
-                    _SystemParameterTile(
-                      item: parameter,
-                      isBusy: parameterBusy.value == parameter.id,
-                      onEdit: () => unawaited(editParameter(parameter)),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _AccountSectionCard(
-              icon: Icons.campaign_outlined,
-              title: '通知广播',
-              child: Column(
-                children: [
-                  for (final broadcast in broadcasts)
-                    _SystemBroadcastTile(
-                      item: broadcast,
-                      isBusy: broadcastBusy.value == broadcast.id,
-                      onTogglePinned: () =>
-                          unawaited(toggleBroadcastPinned(broadcast)),
-                      onStatusChanged: (status) =>
-                          unawaited(updateBroadcastStatus(broadcast, status)),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            _AccountSectionCard(
-              icon: Icons.rule_outlined,
-              title: '审计记录',
-              child: Column(
-                children: [
-                  for (final audit in audits) _SystemAuditTile(item: audit),
-                  if (audits.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: _EmptyPlaceholder(
-                        title: '暂无审计记录',
-                        description: '所有系统操作都会记录在此处，便于追踪。',
+          Future<void> updateBroadcastStatus(
+            system.AdminSystemBroadcast item,
+            system.AdminSystemBroadcastStatus status,
+          ) async {
+            if (broadcastBusy.value == item.id) {
+              return;
+            }
+            broadcastBusy.value = item.id;
+            try {
+              await notifier.updateBroadcast(
+                broadcastId: item.id,
+                status: status,
+              );
+              showSnack('已更新公告「${item.title}」状态');
+            } catch (error) {
+              showSnack('操作失败：${formatError(error)}');
+            } finally {
+              broadcastBusy.value = null;
+            }
+          }
+
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text('系统设置', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.toggle_on_outlined,
+                title: '系统开关',
+                child: Column(
+                  children: [
+                    for (final item in switches)
+                      _SystemSwitchTile(
+                        item: item,
+                        isBusy: switchBusy.value == item.id,
+                        onToggle: (value) =>
+                            unawaited(toggleSystemSwitch(item, value)),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => _ErrorPlaceholder(
-        message: formatError(error),
-        onRetry: () {
-          unawaited(notifier.refresh());
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.settings_applications_outlined,
+                title: '平台参数',
+                child: Column(
+                  children: [
+                    for (final parameter in parameters)
+                      _SystemParameterTile(
+                        item: parameter,
+                        isBusy: parameterBusy.value == parameter.id,
+                        onEdit: () => unawaited(editParameter(parameter)),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.campaign_outlined,
+                title: '通知广播',
+                child: Column(
+                  children: [
+                    for (final broadcast in broadcasts)
+                      _SystemBroadcastTile(
+                        item: broadcast,
+                        isBusy: broadcastBusy.value == broadcast.id,
+                        onTogglePinned: () =>
+                            unawaited(toggleBroadcastPinned(broadcast)),
+                        onStatusChanged: (status) =>
+                            unawaited(updateBroadcastStatus(broadcast, status)),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              _AccountSectionCard(
+                icon: Icons.rule_outlined,
+                title: '审计记录',
+                child: Column(
+                  children: [
+                    for (final audit in audits) _SystemAuditTile(item: audit),
+                    if (audits.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: _EmptyPlaceholder(
+                          title: '暂无审计记录',
+                          description: '所有系统操作都会记录在此处，便于追踪。',
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _ErrorPlaceholder(
+          message: formatError(error),
+          onRetry: () {
+            unawaited(notifier.refresh());
+          },
+        ),
       ),
     );
   }
@@ -3759,25 +3792,42 @@ class _AdminStatsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      elevation: 1,
+      // Theme handles shape and color
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 16),
             Text(
               value,
-              style: theme.textTheme.headlineSmall?.copyWith(color: color),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
             Text(
               subtitle,
               style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.8,
+                ),
               ),
             ),
           ],

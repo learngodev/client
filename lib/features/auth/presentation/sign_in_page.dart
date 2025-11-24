@@ -4,16 +4,15 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/exceptions/app_exception.dart';
 import '../../../core/storage/login_preference_storage.dart';
-import '../application/auth_controller.dart';
+import '../application/school_list_provider.dart';
 import '../application/sign_in_controller.dart';
-import '../domain/account.dart';
 
 class SignInPage extends HookConsumerWidget {
   const SignInPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final schoolIdController = useTextEditingController(text: 'school-1');
+    final schoolIdController = useTextEditingController();
     final identifierController = useTextEditingController();
     final passwordController = useTextEditingController();
     final isObscure = useState(true);
@@ -46,6 +45,8 @@ class SignInPage extends HookConsumerWidget {
     }, [lastLoginPreference]);
 
     final signInState = ref.watch(signInControllerProvider);
+    final schoolsAsync = ref.watch(schoolListProvider);
+
     ref.listen<AsyncValue<void>>(signInControllerProvider, (previous, next) {
       next.whenOrNull(
         error: (error, _) {
@@ -62,129 +63,126 @@ class SignInPage extends HookConsumerWidget {
         identifierController.text.isNotEmpty &&
         passwordController.text.isNotEmpty;
 
-    return Scaffold(
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Card(
-            elevation: 4,
-            margin: const EdgeInsets.all(24),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    '登录 LearnGo 乐学',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: schoolIdController,
-                    decoration: const InputDecoration(
-                      labelText: '学校 ID',
-                      hintText: '如 school-1',
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Scaffold(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(24),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '登录 LearnGo 乐学',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
                     ),
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: identifierController,
-                    decoration: const InputDecoration(
-                      labelText: '账号',
-                      hintText: '请输入教师号 / 学号 / 管理员账号',
-                    ),
-                    textInputAction: TextInputAction.next,
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: passwordController,
-                    decoration: InputDecoration(
-                      labelText: '密码',
-                      suffixIcon: IconButton(
-                        onPressed: () => isObscure.value = !isObscure.value,
-                        icon: Icon(
-                          isObscure.value
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                      ),
-                    ),
-                    obscureText: isObscure.value,
-                  ),
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: rememberPassword.value,
-                        onChanged: (checked) {
-                          rememberPassword.value = checked ?? false;
-                          if (!rememberPassword.value) {
-                            passwordController.clear();
+                    const SizedBox(height: 24),
+                    schoolsAsync.when(
+                      data: (schools) => DropdownButtonFormField<String>(
+                        value:
+                            schools.any((s) => s.id == schoolIdController.text)
+                            ? schoolIdController.text
+                            : null,
+                        decoration: const InputDecoration(labelText: '选择学校'),
+                        items: schools
+                            .map(
+                              (s) => DropdownMenuItem(
+                                value: s.id,
+                                child: Text(s.name),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            schoolIdController.text = value;
                           }
                         },
                       ),
-                      const Text('记住密码'),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: !canSubmit || signInState.isLoading
-                        ? null
-                        : () {
-                            FocusScope.of(context).unfocus();
-                            ref
-                                .read(signInControllerProvider.notifier)
-                                .signIn(
-                                  schoolId: schoolIdController.text.trim(),
-                                  identifier: identifierController.text.trim(),
-                                  password: passwordController.text,
-                                  rememberPassword: rememberPassword.value,
-                                );
-                          },
-                    child: signInState.isLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('登 录'),
-                  ),
-                  const SizedBox(height: 32),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Text(
-                    '快速体验',
-                    style: Theme.of(context).textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: AccountRole.values
-                        .map(
-                          (role) => OutlinedButton.icon(
-                            onPressed: () => ref
-                                .read(authStateProvider.notifier)
-                                .debugLogin(role),
-                            icon: const Icon(Icons.play_arrow),
-                            label: Text('${role.label}端'),
+                      loading: () => const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                      error: (err, stack) => Text(
+                        '加载学校列表失败: $err',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: identifierController,
+                      decoration: const InputDecoration(
+                        labelText: '账号',
+                        hintText: '请输入教师号 / 学号 / 管理员账号',
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: passwordController,
+                      decoration: InputDecoration(
+                        labelText: '密码',
+                        suffixIcon: IconButton(
+                          onPressed: () => isObscure.value = !isObscure.value,
+                          icon: Icon(
+                            isObscure.value
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                           ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '真实接入后将移除以上调试入口。',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                        ),
+                      ),
+                      obscureText: isObscure.value,
+                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: rememberPassword.value,
+                          onChanged: (checked) {
+                            rememberPassword.value = checked ?? false;
+                            if (!rememberPassword.value) {
+                              passwordController.clear();
+                            }
+                          },
+                        ),
+                        const Text('记住密码'),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: !canSubmit || signInState.isLoading
+                          ? null
+                          : () {
+                              FocusScope.of(context).unfocus();
+                              ref
+                                  .read(signInControllerProvider.notifier)
+                                  .signIn(
+                                    schoolId: schoolIdController.text.trim(),
+                                    identifier: identifierController.text
+                                        .trim(),
+                                    password: passwordController.text,
+                                    rememberPassword: rememberPassword.value,
+                                  );
+                            },
+                      child: signInState.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('登 录'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -5,6 +5,7 @@ import '../../../core/exceptions/app_exception.dart';
 import '../../../core/network/dio_provider.dart';
 import '../domain/account.dart';
 import '../domain/auth_tokens.dart';
+import '../domain/school.dart';
 
 class LoginResult {
   const LoginResult({
@@ -82,6 +83,44 @@ class AuthRepository {
       }
       message ??= error.message ?? '网络错误';
       details ??= error.response?.data?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<List<School>> fetchSchools() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/api/v1/schools');
+      final data = response.data;
+      if (data == null) {
+        throw const AppException('获取学校列表失败：服务端无响应数据');
+      }
+
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        final error = data['error'] as Map<String, dynamic>?;
+        final message = error?['message'] as String? ?? '获取学校列表失败';
+        throw AppException(message);
+      }
+
+      final schoolsData = data['data']['schools'] as List<dynamic>?;
+      if (schoolsData == null) {
+        return [];
+      }
+
+      return schoolsData
+          .map((e) => School.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
       throw AppException(message, details: details);
     }
   }

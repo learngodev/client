@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../application/student_dashboard_controller.dart';
 import '../../domain/sample_data.dart' as student_data;
 import '../../domain/student_repository.dart';
+import '../../../im/presentation/pages/conversation_list_screen.dart';
 
 typedef _DashboardBuilder = Widget Function(StudentDashboardData data);
 
@@ -57,13 +59,15 @@ Widget _buildStudentDashboardPage(
     data: (data) {
       return RefreshIndicator(
         onRefresh: controller.refresh,
-        child: builder(data),
+        child: ColoredBox(
+          color: Theme.of(ref.context).scaffoldBackgroundColor,
+          child: builder(data),
+        ),
       );
     },
     loading: () => const Center(child: CircularProgressIndicator()),
-    error: (error, stackTrace) => _DashboardErrorView(
-      onRetry: controller.refresh,
-    ),
+    error: (error, stackTrace) =>
+        _DashboardErrorView(onRetry: controller.refresh),
   );
 }
 
@@ -185,7 +189,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
       final schedule = data.todaySchedule;
       final pendingAssignments = data.pendingAssignments;
       final insights = data.insights;
-      final quickLinks = data.quickLinks;
+      // final quickLinks = data.quickLinks;
       final messages = data.messages;
 
       final stats = <_OverviewStat>[
@@ -237,6 +241,54 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
           ),
           const SizedBox(height: 24),
           _SectionHeader(
+            icon: Icons.apps_outlined,
+            title: '快捷访问',
+            description: '常用功能快速入口。',
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              // On smaller screens (mobile), use 2 columns.
+              // On larger screens (tablet/desktop), use 4 columns.
+              final crossAxisCount = width < 600 ? 2 : 4;
+              // Adjust aspect ratio to prevent items from being too tall or too short
+              final childAspectRatio = width < 600 ? 1.5 : 1.0;
+
+              return GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: childAspectRatio,
+                children: [
+                  _QuickAccessItem(
+                    icon: Icons.assignment_outlined,
+                    label: '作业',
+                    onTap: () => context.go('/student/assignments'),
+                  ),
+                  _QuickAccessItem(
+                    icon: Icons.quiz_outlined,
+                    label: '考试',
+                    onTap: () => context.go('/student/exams'),
+                  ),
+                  _QuickAccessItem(
+                    icon: Icons.note_alt_outlined,
+                    label: '笔记',
+                    onTap: () => context.go('/student/notes'),
+                  ),
+                  _QuickAccessItem(
+                    icon: Icons.notifications_outlined,
+                    label: '提醒',
+                    onTap: () => context.go('/student/reminders'),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          _SectionHeader(
             icon: Icons.flash_on_outlined,
             title: '今日提醒',
             description: '抓住重点任务，按时完成学习计划。',
@@ -276,7 +328,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
               description: '保持良好节奏，继续加油。',
             )
           else
-            for (final item in pendingReminders)
+            for (final item in pendingReminders.take(3))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _ReminderCard(
@@ -285,7 +337,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
                       controller.toggleReminderCompleted(item.id),
                   onNavigate: item.route == null
                       ? null
-                      : () => Navigator.of(context).pushNamed(item.route!),
+                      : () => context.go(item.route!),
                   onDelete: item.isCustom && !reminderActionInProgress
                       ? () => _confirmDeleteReminder(item)
                       : null,
@@ -327,7 +379,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
               description: '可以利用时间复习或提前完成作业。',
             )
           else
-            for (final item in schedule)
+            for (final item in schedule.take(3))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _ScheduleTile(item: item),
@@ -388,26 +440,12 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
           ),
           const SizedBox(height: 24),
           _SectionHeader(
-            icon: Icons.rocket_launch_outlined,
-            title: '快捷入口',
-            description: '常用模块一键直达，提升办事效率。',
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final link in quickLinks) _QuickLinkCard(link: link),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _SectionHeader(
             icon: Icons.chat_bubble_outline,
             title: '近期消息',
             description: '查看老师和同学的最新通知与沟通。',
           ),
           const SizedBox(height: 12),
-          for (final message in messages)
+          for (final message in messages.take(3))
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _MessageTile(
@@ -432,8 +470,7 @@ class StudentRemindersPage extends ConsumerStatefulWidget {
       _StudentRemindersPageState();
 }
 
-class _StudentRemindersPageState
-    extends ConsumerState<StudentRemindersPage>
+class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage>
     with ReminderActionMixin<StudentRemindersPage> {
   final TextEditingController _queryController = TextEditingController();
   student_data.StudentReminderPriority? _priorityFilter;
@@ -756,7 +793,7 @@ class _StudentRemindersPageState
                       controller.toggleReminderCompleted(reminder.id),
                   onNavigate: reminder.route == null
                       ? null
-                      : () => Navigator.of(context).pushNamed(reminder.route!),
+                      : () => context.go(reminder.route!),
                   onDelete: reminder.isCustom && !reminderActionInProgress
                       ? () => _confirmDeleteReminder(context, reminder)
                       : null,
@@ -1137,107 +1174,12 @@ class _StudentNotesPageState extends ConsumerState<StudentNotesPage> {
   }
 }
 
-class StudentMessagesPage extends ConsumerStatefulWidget {
+class StudentMessagesPage extends StatelessWidget {
   const StudentMessagesPage({super.key});
 
   @override
-  ConsumerState<StudentMessagesPage> createState() =>
-      _StudentMessagesPageState();
-}
-
-class _StudentMessagesPageState extends ConsumerState<StudentMessagesPage> {
-  student_data.StudentMessageCategory? _filter;
-
-  @override
   Widget build(BuildContext context) {
-    final dashboard = ref.watch(studentDashboardProvider);
-
-    return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final controller = ref.read(studentDashboardProvider.notifier);
-      final messages = data.messages;
-      final filtered = _filter == null
-          ? messages
-          : messages
-                .where((item) => item.category == _filter)
-                .toList(growable: false);
-      final filteredUnread = filtered
-          .where((item) => item.unreadCount > 0)
-          .length;
-
-      return ListView(
-        padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Text('消息中心', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          Text(
-            '关注老师通知与同学交流，及时处理系统提醒。',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('全部'),
-                selected: _filter == null,
-                onSelected: (value) {
-                  if (value) {
-                    setState(() => _filter = null);
-                  }
-                },
-              ),
-              for (final category in student_data.StudentMessageCategory.values)
-                ChoiceChip(
-                  label: Text(category.label),
-                  avatar: Icon(category.icon, size: 18),
-                  selected: _filter == category,
-                  onSelected: (value) {
-                    if (value) {
-                      setState(() => _filter = category);
-                    } else {
-                      setState(() => _filter = null);
-                    }
-                  },
-                ),
-            ],
-          ),
-          if (filteredUnread > 0) ...[
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () => controller.markMessagesAsRead(filtered),
-                icon: const Icon(Icons.done_all_outlined),
-                label: Text('标记当前为已读 ($filteredUnread)'),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          if (filtered.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.mark_email_read_outlined,
-              title: '暂无未读消息',
-              description: '保持与老师和同学的沟通，学习更高效。',
-            )
-          else
-            for (final message in filtered)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _MessageTile(
-                  message: message,
-                  onMarkRead: message.unreadCount > 0
-                      ? () => controller.markMessageAsRead(message)
-                      : null,
-                ),
-              ),
-          const SizedBox(height: 36),
-        ],
-      );
-    });
+    return const ConversationListWidget();
   }
 }
 
@@ -1303,30 +1245,39 @@ class _OverviewStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return SizedBox(
-      width: 220,
+    return Card(
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.of(context).pushNamed(stat.route),
-        child: Ink(
+        onTap: () => context.go(stat.route),
+        child: Container(
+          width: 220,
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: stat.color.withValues(alpha: 0.08),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(stat.icon, color: stat.color, size: 28),
-              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: stat.color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(stat.icon, color: stat.color, size: 24),
+              ),
+              const SizedBox(height: 16),
               Text(
                 stat.value,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: stat.color,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(stat.label, style: theme.textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(
+                stat.label,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ),
@@ -1492,7 +1443,7 @@ class _CompletedRemindersSection extends StatelessWidget {
                   onToggleCompleted: () => onToggleCompleted(reminder.id),
                   onNavigate: reminder.route == null
                       ? null
-                      : () => Navigator.of(context).pushNamed(reminder.route!),
+                      : () => context.go(reminder.route!),
                   onDelete: onDelete == null ? null : () => onDelete!(reminder),
                   onEdit: onEdit == null ? null : () => onEdit!(reminder),
                 ),
@@ -1960,33 +1911,6 @@ class _InsightTile extends StatelessWidget {
   }
 }
 
-class _QuickLinkCard extends StatelessWidget {
-  const _QuickLinkCard({required this.link});
-
-  final student_data.StudentQuickLink link;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: 280,
-      child: Card(
-        elevation: 0,
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(link.icon, color: theme.colorScheme.onPrimaryContainer),
-          ),
-          title: Text(link.title),
-          subtitle: Text(link.subtitle),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.of(context).pushNamed(link.route),
-        ),
-      ),
-    );
-  }
-}
-
 class _MessageTile extends StatelessWidget {
   const _MessageTile({required this.message, this.onMarkRead});
 
@@ -2233,7 +2157,7 @@ class _ViewMoreButton extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: () => Navigator.of(context).pushNamed(route),
+        onPressed: () => context.go(route),
         icon: const Icon(Icons.arrow_forward_outlined),
         label: Text(label),
       ),
@@ -2275,6 +2199,52 @@ class _IllustratedPlaceholder extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickAccessItem extends StatelessWidget {
+  const _QuickAccessItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withValues(
+                  alpha: 0.3,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: theme.colorScheme.primary, size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

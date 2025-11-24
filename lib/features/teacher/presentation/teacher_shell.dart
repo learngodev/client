@@ -5,16 +5,14 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 
-enum TeacherSection { overview, schedule, assignments, conversations, notes }
+enum TeacherSection { overview, schedule, conversations }
 
 extension TeacherSectionX on TeacherSection {
   String get label {
     return switch (this) {
       TeacherSection.overview => '概览',
       TeacherSection.schedule => '课表',
-      TeacherSection.assignments => '作业考试',
       TeacherSection.conversations => '消息',
-      TeacherSection.notes => '笔记',
     };
   }
 
@@ -22,9 +20,7 @@ extension TeacherSectionX on TeacherSection {
     return switch (this) {
       TeacherSection.overview => Icons.dashboard_customize_outlined,
       TeacherSection.schedule => Icons.event_note_outlined,
-      TeacherSection.assignments => Icons.assignment_turned_in_outlined,
       TeacherSection.conversations => Icons.chat_bubble_outline,
-      TeacherSection.notes => Icons.note_alt_outlined,
     };
   }
 
@@ -32,9 +28,7 @@ extension TeacherSectionX on TeacherSection {
     return switch (this) {
       TeacherSection.overview => '/teacher',
       TeacherSection.schedule => '/teacher/schedule',
-      TeacherSection.assignments => '/teacher/assignments',
       TeacherSection.conversations => '/teacher/conversations',
-      TeacherSection.notes => '/teacher/notes',
     };
   }
 }
@@ -59,9 +53,9 @@ class TeacherShell extends HookConsumerWidget {
         .toList();
 
     final location = state.matchedLocation;
-    final currentSection = TeacherSection.values.firstWhere(
+    final currentSection = TeacherSection.values.lastWhere(
       (section) =>
-          location == section.path || location.startsWith(section.path),
+          location == section.path || location.startsWith('${section.path}/'),
       orElse: () => TeacherSection.overview,
     );
     final currentIndex = TeacherSection.values.indexOf(currentSection);
@@ -84,7 +78,7 @@ class TeacherShell extends HookConsumerWidget {
               '${account.displayName} · ${account.identifier}',
               style: Theme.of(
                 context,
-              ).textTheme.labelSmall?.copyWith(color: Colors.white70),
+              ).textTheme.labelSmall?.copyWith(color: Colors.black87),
             ),
         ],
       ),

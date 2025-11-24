@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../auth/application/auth_controller.dart';
 import '../data/student_repository.dart';
 import '../data/student_reminder_storage.dart';
 import '../domain/sample_data.dart'
@@ -22,6 +23,19 @@ class StudentDashboardController
     extends AutoDisposeAsyncNotifier<StudentDashboardData> {
   @override
   Future<StudentDashboardData> build() async {
+    final authState = ref.watch(authStateProvider);
+    if (!authState.isAuthenticated) {
+      return const StudentDashboardData(
+        reminders: [],
+        schedule: [],
+        assignments: [],
+        exams: [],
+        notes: [],
+        messages: [],
+        quickLinks: [],
+        insights: [],
+      );
+    }
     return _loadDashboard(watch: true);
   }
 

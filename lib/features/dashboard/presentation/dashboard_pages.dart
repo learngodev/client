@@ -151,7 +151,7 @@ class TeacherDashboardPage extends HookConsumerWidget {
         title: '待批改',
         value: tasks.where((task) => task.isGrading).length.toString(),
         accent: theme.colorScheme.secondary,
-        onTap: () => context.go(TeacherSection.assignments.path),
+        onTap: () => context.go('/teacher/assignments'),
       ),
       _DashboardStatCard(
         icon: Icons.mark_chat_unread_outlined,
@@ -369,24 +369,27 @@ class _DashboardScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title),
-            if (subtitle != null)
-              Text(
-                subtitle!,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelSmall?.copyWith(color: Colors.white70),
-              ),
-          ],
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(color: Colors.white70),
+                ),
+            ],
+          ),
+          actions: actions,
         ),
-        actions: actions,
+        body: child,
       ),
-      body: child,
     );
   }
 }
@@ -494,30 +497,41 @@ class _DashboardStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Ink(
-        width: 240,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: theme.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.4,
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: 240,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: accent, size: 24),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                value,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: accent, size: 28),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: theme.textTheme.headlineMedium?.copyWith(color: accent),
-            ),
-            const SizedBox(height: 6),
-            Text(title, style: theme.textTheme.titleMedium),
-          ],
         ),
       ),
     );

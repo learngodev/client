@@ -11,6 +11,7 @@ import '../../features/student/presentation/pages/student_pages.dart';
 import '../../features/student/presentation/student_shell.dart';
 import '../../features/teacher/presentation/pages/teacher_pages.dart';
 import '../../features/teacher/presentation/teacher_shell.dart';
+import '../../features/im/presentation/pages/chat_screen.dart';
 import '../widgets/status_pages.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -64,6 +65,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'root',
         builder: (context, state) => const _RoleLandingPage(),
       ),
+      GoRoute(
+        path: '/conversations/:id',
+        name: 'conversation',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final conversationId = state.pathParameters['id']!;
+          return ChatScreen(conversationId: conversationId);
+        },
+      ),
       ShellRoute(
         navigatorKey: _adminShellNavigatorKey,
         builder: (context, state, child) =>
@@ -75,28 +85,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             redirect: (context, state) =>
                 _guardRole(authState, AccountRole.admin, state),
             builder: (context, state) => const AdminOverviewPage(),
-            routes: [
-              GoRoute(
-                path: '/accounts',
-                name: 'adminAccounts',
-                builder: (context, state) => const AdminAccountsPage(),
-              ),
-              GoRoute(
-                path: '/structures',
-                name: 'adminStructures',
-                builder: (context, state) => const AdminStructuresPage(),
-              ),
-              GoRoute(
-                path: '/oss',
-                name: 'adminOss',
-                builder: (context, state) => const AdminOssSettingsPage(),
-              ),
-              GoRoute(
-                path: '/system',
-                name: 'adminSystem',
-                builder: (context, state) => const AdminSystemSettingsPage(),
-              ),
-            ],
+          ),
+          GoRoute(
+            path: '/admin/accounts',
+            name: 'adminAccounts',
+            builder: (context, state) => const AdminAccountsPage(),
+          ),
+          GoRoute(
+            path: '/admin/structures',
+            name: 'adminStructures',
+            builder: (context, state) => const AdminStructuresPage(),
+          ),
+          GoRoute(
+            path: '/admin/oss',
+            name: 'adminOss',
+            builder: (context, state) => const AdminOssSettingsPage(),
+          ),
+          GoRoute(
+            path: '/admin/system',
+            name: 'adminSystem',
+            builder: (context, state) => const AdminSystemSettingsPage(),
           ),
         ],
       ),
@@ -111,28 +119,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             redirect: (context, state) =>
                 _guardRole(authState, AccountRole.teacher, state),
             builder: (context, state) => const TeacherOverviewPage(),
-            routes: [
-              GoRoute(
-                path: '/schedule',
-                name: 'teacherSchedule',
-                builder: (context, state) => const TeacherSchedulePage(),
-              ),
-              GoRoute(
-                path: '/assignments',
-                name: 'teacherAssignments',
-                builder: (context, state) => const TeacherAssignmentsPage(),
-              ),
-              GoRoute(
-                path: '/conversations',
-                name: 'teacherConversations',
-                builder: (context, state) => const TeacherConversationsPage(),
-              ),
-              GoRoute(
-                path: '/notes',
-                name: 'teacherNotes',
-                builder: (context, state) => const TeacherNotesPage(),
-              ),
-            ],
+          ),
+          GoRoute(
+            path: '/teacher/schedule',
+            name: 'teacherSchedule',
+            builder: (context, state) => const TeacherSchedulePage(),
+          ),
+          GoRoute(
+            path: '/teacher/assignments',
+            name: 'teacherAssignments',
+            builder: (context, state) => const TeacherAssignmentsPage(),
+          ),
+          GoRoute(
+            path: '/teacher/assignments/grading',
+            name: 'teacherGrading',
+            builder: (context, state) => const TeacherGradingPage(),
+          ),
+          GoRoute(
+            path: '/teacher/conversations',
+            name: 'teacherConversations',
+            builder: (context, state) => const TeacherConversationsPage(),
+          ),
+          GoRoute(
+            path: '/teacher/notes',
+            name: 'teacherNotes',
+            builder: (context, state) => const TeacherNotesPage(),
           ),
         ],
       ),
@@ -147,38 +158,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             redirect: (context, state) =>
                 _guardRole(authState, AccountRole.student, state),
             builder: (context, state) => const StudentOverviewPage(),
-            routes: [
-              GoRoute(
-                path: '/schedule',
-                name: 'studentSchedule',
-                builder: (context, state) => const StudentSchedulePage(),
-              ),
-              GoRoute(
-                path: '/reminders',
-                name: 'studentReminders',
-                builder: (context, state) => const StudentRemindersPage(),
-              ),
-              GoRoute(
-                path: '/assignments',
-                name: 'studentAssignments',
-                builder: (context, state) => const StudentAssignmentsPage(),
-              ),
-              GoRoute(
-                path: '/exams',
-                name: 'studentExams',
-                builder: (context, state) => const StudentExamsPage(),
-              ),
-              GoRoute(
-                path: '/notes',
-                name: 'studentNotes',
-                builder: (context, state) => const StudentNotesPage(),
-              ),
-              GoRoute(
-                path: '/messages',
-                name: 'studentMessages',
-                builder: (context, state) => const StudentMessagesPage(),
-              ),
-            ],
+          ),
+          GoRoute(
+            path: '/student/schedule',
+            name: 'studentSchedule',
+            builder: (context, state) => const StudentSchedulePage(),
+          ),
+          GoRoute(
+            path: '/student/reminders',
+            name: 'studentReminders',
+            builder: (context, state) => const StudentRemindersPage(),
+          ),
+          GoRoute(
+            path: '/student/assignments',
+            name: 'studentAssignments',
+            builder: (context, state) => const StudentAssignmentsPage(),
+          ),
+          GoRoute(
+            path: '/student/exams',
+            name: 'studentExams',
+            builder: (context, state) => const StudentExamsPage(),
+          ),
+          GoRoute(
+            path: '/student/notes',
+            name: 'studentNotes',
+            builder: (context, state) => const StudentNotesPage(),
+          ),
+          GoRoute(
+            path: '/student/messages',
+            name: 'studentMessages',
+            builder: (context, state) => const StudentMessagesPage(),
           ),
         ],
       ),
