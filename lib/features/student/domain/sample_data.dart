@@ -199,6 +199,8 @@ class StudentAssignmentItem {
     this.isOverdue = false,
     this.scoreLabel,
     this.feedback,
+    this.dueAt,
+    this.startAt,
   });
 
   final String id;
@@ -212,6 +214,8 @@ class StudentAssignmentItem {
   final bool isOverdue;
   final String? scoreLabel;
   final String? feedback;
+  final DateTime? dueAt;
+  final DateTime? startAt;
 
   double get progressValue => (progress.clamp(0, 100)) / 100;
 
@@ -246,6 +250,8 @@ class StudentAssignmentItem {
     bool? isOverdue,
     String? scoreLabel,
     String? feedback,
+    DateTime? dueAt,
+    DateTime? startAt,
   }) {
     return StudentAssignmentItem(
       id: id ?? this.id,
@@ -259,6 +265,8 @@ class StudentAssignmentItem {
       isOverdue: isOverdue ?? this.isOverdue,
       scoreLabel: scoreLabel ?? this.scoreLabel,
       feedback: feedback ?? this.feedback,
+      dueAt: dueAt ?? this.dueAt,
+      startAt: startAt ?? this.startAt,
     );
   }
 }
@@ -285,6 +293,8 @@ class StudentExamItem {
     required this.countdownLabel,
     this.seat,
     this.scoreLabel,
+    this.startAt,
+    this.endAt,
   });
 
   final String id;
@@ -296,6 +306,8 @@ class StudentExamItem {
   final String countdownLabel;
   final String? seat;
   final String? scoreLabel;
+  final DateTime? startAt;
+  final DateTime? endAt;
 
   bool get isUpcoming => status == StudentExamStatus.upcoming;
 }

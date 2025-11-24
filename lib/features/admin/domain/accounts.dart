@@ -25,6 +25,20 @@ extension AdminAccountRoleX on AdminAccountRole {
     };
   }
 
+  Color chipColor(ThemeData theme) {
+    return switch (this) {
+      AdminAccountRole.teacher => theme.colorScheme.secondary,
+      AdminAccountRole.student => theme.colorScheme.primary,
+    };
+  }
+
+  Color chipForegroundColor(ThemeData theme) {
+    return switch (this) {
+      AdminAccountRole.teacher => theme.colorScheme.onSecondary,
+      AdminAccountRole.student => theme.colorScheme.onPrimary,
+    };
+  }
+
   static AdminAccountRole fromApiValue(String value) {
     switch (value) {
       case 'student':
@@ -261,4 +275,3 @@ class AdminAccountPage {
     );
   }
 }
-

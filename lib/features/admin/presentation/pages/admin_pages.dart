@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -37,6 +38,7 @@ int _compareClassInfos(ClassInfo a, ClassInfo b) {
 
 const _kAutoLoadMoreThreshold = 280.0;
 const _kAccountFilterPrefsKey = 'admin.account.filters';
+const Duration _kRecentActiveWindow = Duration(days: 7);
 
 typedef _AccountFilterPayload = Map<String, dynamic>;
 
@@ -475,8 +477,8 @@ class AdminAccountsPage extends HookConsumerWidget {
       return null;
     }, [filterKey]);
 
-  final accountsState = ref.watch(adminAccountListProvider(request));
-  final scrollController = useScrollController();
+    final accountsState = ref.watch(adminAccountListProvider(request));
+    final scrollController = useScrollController();
 
     useEffect(() {
       if (!filtersChanged) {
@@ -837,8 +839,9 @@ class AdminAccountsPage extends HookConsumerWidget {
         classScope: classScope,
       );
       try {
-        final refreshed =
-            ref.refresh(adminAccountListProvider(refreshRequest).future);
+        final refreshed = ref.refresh(
+          adminAccountListProvider(refreshRequest).future,
+        );
         await refreshed;
       } catch (_) {
         // 错误由 accountsState 的 error 分支统一处理。
@@ -984,6 +987,10 @@ class AdminAccountsPage extends HookConsumerWidget {
                 ],
                 const SizedBox(height: 12),
                 _AccountMetricsGrid(metrics: metrics),
+                if (metrics.total > 0) ...[
+                  const SizedBox(height: 12),
+                  _AccountInsightsPanel(metrics: metrics, accounts: filtered),
+                ],
                 if (hasActiveFilters) ...[
                   const SizedBox(height: 12),
                   Wrap(
@@ -1239,6 +1246,15 @@ class AdminAccountsPage extends HookConsumerWidget {
                 else
                   Column(
                     children: [
+                      _AccountListHeader(
+                        currentSort: sortOption.value,
+                        onSortChanged: (option) {
+                          if (sortOption.value != option) {
+                            sortOption.value = option;
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 8),
                       for (final account in filtered)
                         _AccountTile(
                           account: account,
@@ -4197,6 +4213,8 @@ class _AccountTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final roleColor = account.role.chipColor(theme);
+    final roleForeground = account.role.chipForegroundColor(theme);
     void showSnack(String message) {
       final messenger = ScaffoldMessenger.maybeOf(context);
       if (messenger == null) {
@@ -4284,11 +4302,19 @@ class _AccountTile extends StatelessWidget {
                       children: [
                         Chip(
                           label: Text(account.role.label),
-                          side: BorderSide.none,
-                          backgroundColor: theme
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withValues(alpha: 0.4),
+                          avatar: Icon(
+                            account.role.icon,
+                            size: 16,
+                            color: roleForeground,
+                          ),
+                          side: BorderSide(
+                            color: roleColor.withValues(alpha: 0.3),
+                          ),
+                          backgroundColor: roleColor.withValues(alpha: 0.18),
+                          labelStyle: theme.textTheme.bodySmall?.copyWith(
+                            color: roleForeground,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         Chip(
                           label: Text(account.statusLabel),
@@ -4836,6 +4862,7 @@ class _AccountMetrics {
     required this.students,
     required this.locked,
     required this.pendingReset,
+    required this.recentActive,
   });
 
   factory _AccountMetrics.fromAccounts(List<AdminAccount> accounts) {
@@ -4843,6 +4870,8 @@ class _AccountMetrics {
     var students = 0;
     var locked = 0;
     var pendingReset = 0;
+    var recentActive = 0;
+    final cutoff = DateTime.now().subtract(_kRecentActiveWindow);
 
     for (final account in accounts) {
       switch (account.role) {
@@ -4857,6 +4886,10 @@ class _AccountMetrics {
       if (account.status == AdminAccountStatus.passwordResetRequired) {
         pendingReset++;
       }
+      final lastActive = account.lastActiveAt ?? account.createdAt;
+      if (lastActive.isAfter(cutoff)) {
+        recentActive++;
+      }
     }
 
     return _AccountMetrics(
@@ -4865,6 +4898,7 @@ class _AccountMetrics {
       students: students,
       locked: locked,
       pendingReset: pendingReset,
+      recentActive: recentActive,
     );
   }
 
@@ -4873,6 +4907,21 @@ class _AccountMetrics {
   final int students;
   final int locked;
   final int pendingReset;
+  final int recentActive;
+
+  int get inactive => (total - recentActive).clamp(0, total);
+
+  double get recentActiveShare {
+    if (total == 0) {
+      return 0;
+    }
+    return recentActive / total;
+  }
+
+  Map<AdminAccountRole, int> get roleDistribution => {
+    AdminAccountRole.teacher: teachers,
+    AdminAccountRole.student: students,
+  };
 }
 
 class _AccountMetricsGrid extends StatelessWidget {
@@ -4883,11 +4932,22 @@ class _AccountMetricsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final percentFormatter = NumberFormat.percentPattern('zh_CN');
+    final activeShareLabel = metrics.total == 0
+        ? '—'
+        : percentFormatter.format(metrics.recentActiveShare);
     final cards = <Widget>[
       _AccountMetricCard(
         icon: Icons.people_alt_outlined,
         label: '账号数量',
         value: metrics.total.toString(),
+        color: theme.colorScheme.primary,
+      ),
+      _AccountMetricCard(
+        icon: Icons.bolt_outlined,
+        label: '近7天活跃',
+        value: metrics.recentActive.toString(),
+        subtitle: '占比 $activeShareLabel',
         color: theme.colorScheme.primary,
       ),
       _AccountMetricCard(
@@ -4926,12 +4986,14 @@ class _AccountMetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.subtitle,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final Color color;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -4958,11 +5020,306 @@ class _AccountMetricCard extends StatelessWidget {
                 style: theme.textTheme.titleLarge?.copyWith(color: color),
               ),
               Text(label, style: theme.textTheme.bodySmall),
+              if (subtitle != null)
+                Text(
+                  subtitle!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodySmall?.color?.withValues(
+                      alpha: 0.7,
+                    ),
+                  ),
+                ),
             ],
           ),
         ],
       ),
     );
+  }
+}
+
+class _AccountInsightsPanel extends StatelessWidget {
+  const _AccountInsightsPanel({required this.metrics, required this.accounts});
+
+  final _AccountMetrics metrics;
+  final List<AdminAccount> accounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cutoff = DateTime.now().subtract(_kRecentActiveWindow);
+    final recentActive =
+        accounts.where((account) {
+          final lastActive = account.lastActiveAt ?? account.createdAt;
+          return lastActive.isAfter(cutoff);
+        }).toList()..sort((a, b) {
+          final aTime = a.lastActiveAt ?? a.createdAt;
+          final bTime = b.lastActiveAt ?? b.createdAt;
+          return bTime.compareTo(aTime);
+        });
+
+    final highlighted = recentActive.take(4).toList();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 640;
+        final left = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('活跃洞察', style: theme.textTheme.titleMedium),
+            Text(
+              '统计窗口：近${_kRecentActiveWindow.inDays}天',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            if (highlighted.isEmpty)
+              Text(
+                '最近暂无活跃账号',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodyMedium?.color?.withValues(
+                    alpha: 0.7,
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: [
+                  for (var i = 0; i < highlighted.length; i++)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: i == highlighted.length - 1 ? 0 : 8,
+                      ),
+                      child: _RecentActiveAccountRow(
+                        rank: i + 1,
+                        account: highlighted[i],
+                      ),
+                    ),
+                ],
+              ),
+            const SizedBox(height: 12),
+            Text('未活跃账号：${metrics.inactive}', style: theme.textTheme.bodySmall),
+          ],
+        );
+
+        final right = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('角色分布', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 12),
+            _RoleDistributionPieChart(metrics: metrics),
+          ],
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: isWide
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: left),
+                    const SizedBox(width: 24),
+                    Expanded(child: right),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [left, const SizedBox(height: 24), right],
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _RecentActiveAccountRow extends StatelessWidget {
+  const _RecentActiveAccountRow({required this.rank, required this.account});
+
+  final int rank;
+  final AdminAccount account;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final roleColor = account.role.chipColor(theme);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: roleColor.withValues(alpha: 0.2),
+            foregroundColor: roleColor,
+            child: Text(rank.toString()),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(account.name, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(
+                  account.structureLabel,
+                  style: theme.textTheme.bodySmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(account.role.label, style: theme.textTheme.bodySmall),
+              Text(
+                account.lastActiveLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.textTheme.bodySmall?.color?.withValues(
+                    alpha: 0.7,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleDistributionPieChart extends StatelessWidget {
+  const _RoleDistributionPieChart({required this.metrics});
+
+  final _AccountMetrics metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final distribution = metrics.roleDistribution;
+    final total = distribution.values.fold<int>(
+      0,
+      (prev, value) => prev + value,
+    );
+    final entries = distribution.entries
+        .where((entry) => entry.value > 0)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 180,
+          child: total == 0
+              ? Center(child: Text('暂无数据', style: theme.textTheme.bodyMedium))
+              : CustomPaint(
+                  painter: _PieChartPainter(
+                    entries.map((entry) {
+                      final color = entry.key.chipColor(theme);
+                      final fraction = entry.value / total;
+                      return _PieSlice(
+                        color: color,
+                        fraction: fraction.toDouble(),
+                      );
+                    }).toList(),
+                  ),
+                ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            for (final entry in distribution.entries)
+              _RoleDistributionLegendItem(
+                label: entry.key.label,
+                count: entry.value,
+                color: entry.key.chipColor(theme),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _RoleDistributionLegendItem extends StatelessWidget {
+  const _RoleDistributionLegendItem({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  final String label;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text('$label：$count', style: theme.textTheme.bodySmall),
+      ],
+    );
+  }
+}
+
+class _PieSlice {
+  const _PieSlice({required this.color, required this.fraction});
+
+  final Color color;
+  final double fraction;
+}
+
+class _PieChartPainter extends CustomPainter {
+  const _PieChartPainter(this.slices);
+
+  final List<_PieSlice> slices;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final radius = math.min(size.width, size.height) / 2;
+    final rect = Rect.fromCircle(
+      center: size.center(Offset.zero),
+      radius: radius,
+    );
+    var startAngle = -math.pi / 2;
+
+    if (slices.isEmpty) {
+      final paint = Paint()
+        ..color = Colors.grey.withValues(alpha: 0.2)
+        ..style = PaintingStyle.fill;
+      canvas.drawArc(rect, 0, 2 * math.pi, true, paint);
+      return;
+    }
+
+    for (final slice in slices) {
+      final sweep = 2 * math.pi * slice.fraction;
+      final paint = Paint()
+        ..color = slice.color
+        ..style = PaintingStyle.fill;
+      canvas.drawArc(rect, startAngle, sweep, true, paint);
+      startAngle += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PieChartPainter oldDelegate) {
+    return oldDelegate.slices != slices;
   }
 }
 
@@ -5000,6 +5357,122 @@ String _accountSortOptionLabel(_AccountSortOption option) {
     _AccountSortOption.lastActiveDesc => '最近活跃',
     _AccountSortOption.createdDesc => '最新创建',
   };
+}
+
+class _AccountListHeader extends StatelessWidget {
+  const _AccountListHeader({
+    required this.currentSort,
+    required this.onSortChanged,
+  });
+
+  final _AccountSortOption currentSort;
+  final ValueChanged<_AccountSortOption> onSortChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: _AccountHeaderSortButton(
+              label: '姓名 / 账号',
+              icon: Icons.sort_by_alpha,
+              active: currentSort == _AccountSortOption.nameAsc,
+              onTap: () => onSortChanged(_AccountSortOption.nameAsc),
+              alignment: Alignment.centerLeft,
+              trend: _SortTrend.ascending,
+            ),
+          ),
+          Expanded(
+            child: _AccountHeaderSortButton(
+              label: '最近活跃',
+              icon: Icons.bolt_outlined,
+              active: currentSort == _AccountSortOption.lastActiveDesc,
+              onTap: () => onSortChanged(_AccountSortOption.lastActiveDesc),
+              alignment: Alignment.center,
+              trend: _SortTrend.descending,
+            ),
+          ),
+          Expanded(
+            child: _AccountHeaderSortButton(
+              label: '创建时间',
+              icon: Icons.schedule_outlined,
+              active: currentSort == _AccountSortOption.createdDesc,
+              onTap: () => onSortChanged(_AccountSortOption.createdDesc),
+              alignment: Alignment.centerRight,
+              trend: _SortTrend.descending,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _SortTrend { ascending, descending }
+
+class _AccountHeaderSortButton extends StatelessWidget {
+  const _AccountHeaderSortButton({
+    required this.label,
+    required this.icon,
+    required this.active,
+    required this.onTap,
+    required this.trend,
+    this.alignment = Alignment.center,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool active;
+  final VoidCallback onTap;
+  final Alignment alignment;
+  final _SortTrend trend;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = active
+        ? theme.colorScheme.primary
+        : theme.textTheme.bodyMedium?.color;
+    final iconData = active
+        ? (trend == _SortTrend.ascending ? Icons.north_east : Icons.south_east)
+        : Icons.unfold_more;
+
+    return Align(
+      alignment: alignment,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: active ? FontWeight.w600 : null,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(iconData, size: 16, color: color),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 int _compareAccounts(
