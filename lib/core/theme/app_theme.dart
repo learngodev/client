@@ -47,7 +47,7 @@ ThemeData buildLightTheme() {
             fontSize: 20,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.5,
-          ),
+          ).useSystemChineseFont(),
         ),
         cardTheme: CardThemeData(
           color: surfaceColor,
@@ -87,10 +87,12 @@ ThemeData buildLightTheme() {
             horizontal: 16,
             vertical: 16,
           ),
-          labelStyle: TextStyle(color: base.colorScheme.onSurfaceVariant),
+          labelStyle: TextStyle(
+            color: base.colorScheme.onSurfaceVariant,
+          ).useSystemChineseFont(),
           hintStyle: TextStyle(
             color: base.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-          ),
+          ).useSystemChineseFont(),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -104,7 +106,7 @@ ThemeData buildLightTheme() {
             textStyle: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-            ),
+            ).useSystemChineseFont(),
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
@@ -116,7 +118,7 @@ ThemeData buildLightTheme() {
             textStyle: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-            ),
+            ).useSystemChineseFont(),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
@@ -129,7 +131,7 @@ ThemeData buildLightTheme() {
             textStyle: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-            ),
+            ).useSystemChineseFont(),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
@@ -137,7 +139,9 @@ ThemeData buildLightTheme() {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+            ).useSystemChineseFont(),
           ),
         ),
         dividerTheme: DividerThemeData(

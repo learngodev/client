@@ -11,6 +11,7 @@ import '../../../core/exceptions/app_exception.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
+import '../domain/assignment_models.dart';
 import '../domain/sample_data.dart' as sample;
 import '../domain/student_repository.dart';
 
@@ -70,6 +71,36 @@ class StudentApiRepository implements StudentRepository {
             .length,
       ),
     );
+  }
+
+  @override
+  Future<AssignmentDetail> getAssignmentDetail(String id) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/assignments/$id',
+      );
+      final data = _extractData(response.data, '未能获取作业详情');
+      return AssignmentDetail.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载作业详情');
+    }
+  }
+
+  @override
+  Future<SubmissionResult> submitAssignment(
+    String id,
+    Map<String, dynamic> answers,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/assignments/$id/submit',
+        data: answers,
+      );
+      final data = _extractData(response.data, '提交失败');
+      return SubmissionResult.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, '提交作业失败');
+    }
   }
 
   Future<_NoteFetchResult> _fetchNotes() async {
@@ -1016,6 +1047,49 @@ class FakeStudentRepository implements StudentRepository {
       messages: sample.studentMessages,
       quickLinks: sample.studentQuickLinks,
       insights: sample.studentInsights,
+    );
+  }
+
+  @override
+  Future<AssignmentDetail> getAssignmentDetail(String id) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return AssignmentDetail(
+      id: id,
+      title: '模拟作业详情',
+      description: '这是一个模拟的作业详情描述。',
+      maxScore: 100.0,
+      questions: [
+        const AssignmentQuestion(
+          id: 'q1',
+          prompt: '1 + 1 = ?',
+          type: QuestionType.singleChoice,
+          score: 10.0,
+          options: ['1', '2', '3', '4'],
+          orderIndex: 0,
+        ),
+        const AssignmentQuestion(
+          id: 'q2',
+          prompt: '请简述 Flutter 的优势。',
+          type: QuestionType.essay,
+          score: 20.0,
+          orderIndex: 1,
+        ),
+      ],
+      dueAt: DateTime.now().add(const Duration(days: 1)),
+    );
+  }
+
+  @override
+  Future<SubmissionResult> submitAssignment(
+    String id,
+    Map<String, dynamic> answers,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    return SubmissionResult(
+      id: 'sub-mock',
+      score: null,
+      status: 'submitted',
+      submittedAt: DateTime.now(),
     );
   }
 }

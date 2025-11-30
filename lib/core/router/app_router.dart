@@ -7,6 +7,7 @@ import '../../features/auth/domain/account.dart';
 import '../../features/auth/presentation/sign_in_page.dart';
 import '../../features/admin/presentation/admin_shell.dart';
 import '../../features/admin/presentation/pages/admin_pages.dart';
+import '../../features/student/presentation/pages/assignment_detail_page.dart';
 import '../../features/student/presentation/pages/student_pages.dart';
 import '../../features/student/presentation/student_shell.dart';
 import '../../features/teacher/presentation/pages/teacher_pages.dart';
@@ -72,6 +73,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final conversationId = state.pathParameters['id']!;
           return ChatScreen(conversationId: conversationId);
+        },
+      ),
+      GoRoute(
+        path: '/student/assignments/:id',
+        name: 'studentAssignmentDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return AssignmentDetailPage(id: id);
         },
       ),
       ShellRoute(

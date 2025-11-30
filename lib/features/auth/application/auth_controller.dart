@@ -100,6 +100,7 @@ class AuthController extends Notifier<AuthState> {
         password: rememberPassword ? password : null,
       ),
     );
+    ref.invalidate(lastLoginPreferenceProvider);
     state = AuthState.authenticated(
       account: result.account,
       tokens: result.tokens,

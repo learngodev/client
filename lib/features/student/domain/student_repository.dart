@@ -1,3 +1,4 @@
+import 'assignment_models.dart';
 import 'sample_data.dart';
 
 class StudentDashboardData {
@@ -102,4 +103,9 @@ class StudentDashboardData {
 
 abstract class StudentRepository {
   Future<StudentDashboardData> fetchDashboard();
+  Future<AssignmentDetail> getAssignmentDetail(String id);
+  Future<SubmissionResult> submitAssignment(
+    String id,
+    Map<String, dynamic> answers,
+  );
 }

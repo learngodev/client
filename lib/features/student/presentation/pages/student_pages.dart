@@ -398,6 +398,8 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
               padding: const EdgeInsets.only(bottom: 12),
               child: _AssignmentCard(
                 assignment: assignment,
+                onTap: () =>
+                    context.push('/student/assignments/${assignment.id}'),
                 onUpdateProgress: (value) =>
                     controller.updateAssignmentProgress(assignment.id, value),
                 onSubmit: () => controller.submitAssignment(assignment.id),
@@ -977,6 +979,8 @@ class _StudentAssignmentsPageState
                 padding: const EdgeInsets.only(bottom: 16),
                 child: _AssignmentCard(
                   assignment: assignment,
+                  onTap: () =>
+                      context.push('/student/assignments/${assignment.id}'),
                   onUpdateProgress:
                       assignment.status ==
                           student_data.StudentAssignmentStatus.pending
@@ -1725,12 +1729,14 @@ class _AssignmentCard extends StatelessWidget {
     this.onUpdateProgress,
     this.onSubmit,
     this.onRequestResubmit,
+    this.onTap,
   });
 
   final student_data.StudentAssignmentItem assignment;
   final ValueChanged<int>? onUpdateProgress;
   final VoidCallback? onSubmit;
   final VoidCallback? onRequestResubmit;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1747,125 +1753,131 @@ class _AssignmentCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: accent.withValues(alpha: 0.18),
-                  child: Icon(assignment.statusIcon(), color: accent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        assignment.title,
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${assignment.course} · ${assignment.teacher}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Chip(
-                  label: Text(assignment.status.label),
-                  backgroundColor: accent.withValues(alpha: 0.12),
-                  labelStyle: TextStyle(color: accent),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: assignment.progressValue,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: 0.5),
-              valueColor: AlwaysStoppedAnimation(accent),
-              minHeight: 6,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  assignment.dueLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: assignment.isOverdue
-                        ? theme.colorScheme.error
-                        : Colors.grey[600],
-                  ),
-                ),
-                if (assignment.scoreLabel != null)
-                  Text(
-                    assignment.scoreLabel!,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: accent),
-                  ),
-              ],
-            ),
-            if (assignment.feedback != null) ...[
-              const SizedBox(height: 8),
-              Text(assignment.feedback!, style: theme.textTheme.bodySmall),
-            ],
-            if (assignment.allowResubmit) ...[
-              const SizedBox(height: 8),
-              Text(
-                '允许重新提交',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
-            if (showProgressSlider) ...[
-              const SizedBox(height: 16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: Slider.adaptive(
-                      value: assignment.progress.toDouble(),
-                      min: 0,
-                      max: 100,
-                      divisions: 20,
-                      label: '${assignment.progress}%',
-                      onChanged: (value) => onUpdateProgress!(value.round()),
-                    ),
+                  CircleAvatar(
+                    backgroundColor: accent.withValues(alpha: 0.18),
+                    child: Icon(assignment.statusIcon(), color: accent),
                   ),
                   const SizedBox(width: 12),
-                  Text('${assignment.progress}%'),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          assignment.title,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${assignment.course} · ${assignment.teacher}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Chip(
+                    label: Text(assignment.status.label),
+                    backgroundColor: accent.withValues(alpha: 0.12),
+                    labelStyle: TextStyle(color: accent),
+                  ),
                 ],
               ),
-            ],
-            if (showSubmit || showResubmit) ...[
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 8,
+              LinearProgressIndicator(
+                value: assignment.progressValue,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest
+                    .withValues(alpha: 0.5),
+                valueColor: AlwaysStoppedAnimation(accent),
+                minHeight: 6,
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (showSubmit)
-                    FilledButton.icon(
-                      onPressed: onSubmit,
-                      icon: const Icon(Icons.cloud_upload_outlined),
-                      label: const Text('提交作业'),
+                  Text(
+                    assignment.dueLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: assignment.isOverdue
+                          ? theme.colorScheme.error
+                          : Colors.grey[600],
                     ),
-                  if (showResubmit)
-                    OutlinedButton.icon(
-                      onPressed: onRequestResubmit,
-                      icon: const Icon(Icons.refresh_outlined),
-                      label: const Text('重新提交申请'),
+                  ),
+                  if (assignment.scoreLabel != null)
+                    Text(
+                      assignment.scoreLabel!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: accent,
+                      ),
                     ),
                 ],
               ),
+              if (assignment.feedback != null) ...[
+                const SizedBox(height: 8),
+                Text(assignment.feedback!, style: theme.textTheme.bodySmall),
+              ],
+              if (assignment.allowResubmit) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '允许重新提交',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+              if (showProgressSlider) ...[
+                const SizedBox(height: 16),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Slider.adaptive(
+                        value: assignment.progress.toDouble(),
+                        min: 0,
+                        max: 100,
+                        divisions: 20,
+                        label: '${assignment.progress}%',
+                        onChanged: (value) => onUpdateProgress!(value.round()),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text('${assignment.progress}%'),
+                  ],
+                ),
+              ],
+              if (showSubmit || showResubmit) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    if (showSubmit)
+                      FilledButton.icon(
+                        onPressed: onSubmit,
+                        icon: const Icon(Icons.cloud_upload_outlined),
+                        label: const Text('提交作业'),
+                      ),
+                    if (showResubmit)
+                      OutlinedButton.icon(
+                        onPressed: onRequestResubmit,
+                        icon: const Icon(Icons.refresh_outlined),
+                        label: const Text('重新提交申请'),
+                      ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
