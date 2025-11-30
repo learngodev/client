@@ -5,7 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 
-enum StudentSection { overview, schedule, messages }
+enum StudentSection { overview, schedule, messages, aiChat }
 
 extension StudentSectionX on StudentSection {
   String get label {
@@ -13,6 +13,7 @@ extension StudentSectionX on StudentSection {
       StudentSection.overview => '概览',
       StudentSection.schedule => '课表',
       StudentSection.messages => '消息',
+      StudentSection.aiChat => 'AI 助手',
     };
   }
 
@@ -21,6 +22,7 @@ extension StudentSectionX on StudentSection {
       StudentSection.overview => Icons.dashboard_outlined,
       StudentSection.schedule => Icons.event_available_outlined,
       StudentSection.messages => Icons.chat_outlined,
+      StudentSection.aiChat => Icons.smart_toy_outlined,
     };
   }
 
@@ -29,6 +31,7 @@ extension StudentSectionX on StudentSection {
       StudentSection.overview => '/student',
       StudentSection.schedule => '/student/schedule',
       StudentSection.messages => '/student/messages',
+      StudentSection.aiChat => '/student/ai-chat',
     };
   }
 }

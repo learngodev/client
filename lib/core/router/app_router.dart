@@ -13,6 +13,8 @@ import '../../features/student/presentation/student_shell.dart';
 import '../../features/teacher/presentation/pages/teacher_pages.dart';
 import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
+import '../../features/ai_assistant/presentation/ai_chat_list_screen.dart';
+import '../../features/ai_assistant/presentation/ai_chat_screen.dart';
 import '../widgets/status_pages.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -198,6 +200,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/student/messages',
             name: 'studentMessages',
             builder: (context, state) => const StudentMessagesPage(),
+          ),
+          GoRoute(
+            path: '/student/ai-chat',
+            name: 'studentAIChat',
+            builder: (context, state) => const AIChatListScreen(),
+          ),
+          GoRoute(
+            path: '/student/ai-chat/:id',
+            name: 'studentAIChatDetail',
+            parentNavigatorKey: _rootNavigatorKey,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return AIChatScreen(sessionId: id);
+            },
           ),
         ],
       ),
