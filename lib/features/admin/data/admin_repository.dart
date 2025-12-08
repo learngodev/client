@@ -7,6 +7,7 @@ import '../domain/accounts.dart';
 import '../domain/models.dart';
 import '../domain/oss.dart';
 import '../domain/system_settings.dart';
+import '../domain/ai_settings.dart';
 
 class AdminRepository {
   const AdminRepository(this._dio);
@@ -37,6 +38,81 @@ class AdminRepository {
         nestedKey: 'departments',
       ).map(Department.fromJson).where((dept) => dept.id.isNotEmpty).toList();
       return list;
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AIAgentSetting> fetchAISettings({required String schoolId}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/ai/settings',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取 AI 配置');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取 AI 配置失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data == null) {
+        throw const AppException('AI 配置数据为空');
+      }
+      return AIAgentSetting.fromJson(data as Map<String, dynamic>);
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<AIAgentSetting> updateAISettings({
+    required AIAgentSetting setting,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/api/v1/admin/ai/settings',
+        data: setting.toJson(),
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能更新 AI 配置');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新 AI 配置失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      return AIAgentSetting.fromJson(data as Map<String, dynamic>);
     } on DioException catch (error) {
       final body = error.response?.data;
       String? message;
@@ -171,7 +247,6 @@ class AdminRepository {
       throw AppException(message, details: details);
     }
   }
-
 
   Future<void> resetAccountPassword({
     required String schoolId,

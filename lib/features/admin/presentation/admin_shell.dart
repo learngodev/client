@@ -5,7 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 
-enum AdminSection { overview, accounts, structures, oss, system }
+enum AdminSection { overview, accounts, structures, oss, system, ai }
 
 extension AdminSectionX on AdminSection {
   String get label {
@@ -15,6 +15,7 @@ extension AdminSectionX on AdminSection {
       AdminSection.structures => '院系班级',
       AdminSection.oss => 'OSS 配置',
       AdminSection.system => '系统设置',
+      AdminSection.ai => 'AI 配置',
     };
   }
 
@@ -25,6 +26,7 @@ extension AdminSectionX on AdminSection {
       AdminSection.structures => Icons.account_tree_outlined,
       AdminSection.oss => Icons.cloud_upload_outlined,
       AdminSection.system => Icons.settings_outlined,
+      AdminSection.ai => Icons.psychology_outlined,
     };
   }
 
@@ -35,6 +37,7 @@ extension AdminSectionX on AdminSection {
       AdminSection.structures => '/admin/structures',
       AdminSection.oss => '/admin/oss',
       AdminSection.system => '/admin/system',
+      AdminSection.ai => '/admin/ai',
     };
   }
 }

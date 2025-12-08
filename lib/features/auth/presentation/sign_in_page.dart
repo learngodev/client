@@ -86,7 +86,7 @@ class SignInPage extends HookConsumerWidget {
                     const SizedBox(height: 24),
                     schoolsAsync.when(
                       data: (schools) => DropdownButtonFormField<String>(
-                        value:
+                        initialValue:
                             schools.any((s) => s.id == schoolIdController.text)
                             ? schoolIdController.text
                             : null,

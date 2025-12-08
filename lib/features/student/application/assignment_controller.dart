@@ -27,3 +27,9 @@ final assignmentDetailControllerProvider = AsyncNotifierProvider.autoDispose
     .family<AssignmentDetailController, AssignmentDetail, String>(
       AssignmentDetailController.new,
     );
+
+final submissionDetailControllerProvider = FutureProvider.autoDispose
+    .family<StudentSubmissionDetail, String>((ref, id) async {
+      final repository = ref.watch(studentRepositoryProvider);
+      return repository.getSubmissionDetail(id);
+    });

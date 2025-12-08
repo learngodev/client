@@ -398,8 +398,18 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
               padding: const EdgeInsets.only(bottom: 12),
               child: _AssignmentCard(
                 assignment: assignment,
-                onTap: () =>
-                    context.push('/student/assignments/${assignment.id}'),
+                onTap: () {
+                  if (assignment.status ==
+                          student_data.StudentAssignmentStatus.graded ||
+                      assignment.status ==
+                          student_data.StudentAssignmentStatus.submitted) {
+                    context.push(
+                      '/student/assignments/${assignment.id}/result',
+                    );
+                  } else {
+                    context.push('/student/assignments/${assignment.id}');
+                  }
+                },
                 onUpdateProgress: (value) =>
                     controller.updateAssignmentProgress(assignment.id, value),
                 onSubmit: () => controller.submitAssignment(assignment.id),
@@ -979,8 +989,18 @@ class _StudentAssignmentsPageState
                 padding: const EdgeInsets.only(bottom: 16),
                 child: _AssignmentCard(
                   assignment: assignment,
-                  onTap: () =>
-                      context.push('/student/assignments/${assignment.id}'),
+                  onTap: () {
+                    if (assignment.status ==
+                            student_data.StudentAssignmentStatus.graded ||
+                        assignment.status ==
+                            student_data.StudentAssignmentStatus.submitted) {
+                      context.push(
+                        '/student/assignments/${assignment.id}/result',
+                      );
+                    } else {
+                      context.push('/student/assignments/${assignment.id}');
+                    }
+                  },
                   onUpdateProgress:
                       assignment.status ==
                           student_data.StudentAssignmentStatus.pending

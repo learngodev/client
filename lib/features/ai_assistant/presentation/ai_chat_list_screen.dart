@@ -12,20 +12,43 @@ class AIChatListScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionsAsync = ref.watch(aiSessionsProvider);
     final controller = ref.watch(aiChatControllerProvider.notifier);
+    final chatState = ref.watch(aiChatControllerProvider);
+    final isLoading = chatState.isLoading;
+
+    ref.listen<AsyncValue<void>>(aiChatControllerProvider, (previous, next) {
+      if (next.hasError && !next.isLoading) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('操作失败: ${next.error}')));
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI 助手'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              final session = await controller.createSession();
-              if (session != null && context.mounted) {
-                context.push('/student/ai-chat/${session.id}');
-              }
-            },
-          ),
+          if (isLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () async {
+                final session = await controller.createSession();
+                if (session != null && context.mounted) {
+                  final currentPath = GoRouterState.of(context).uri.path;
+                  context.push('$currentPath/${session.id}');
+                }
+              },
+            ),
         ],
       ),
       body: sessionsAsync.when(
@@ -44,13 +67,24 @@ class AIChatListScreen extends HookConsumerWidget {
                   const Text('还没有对话记录'),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () async {
-                      final session = await controller.createSession();
-                      if (session != null && context.mounted) {
-                        context.push('/student/ai-chat/${session.id}');
-                      }
-                    },
-                    child: const Text('开始新对话'),
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            final session = await controller.createSession();
+                            if (session != null && context.mounted) {
+                              final currentPath = GoRouterState.of(
+                                context,
+                              ).uri.path;
+                              context.push('$currentPath/${session.id}');
+                            }
+                          },
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('开始新对话'),
                   ),
                 ],
               ),
@@ -67,7 +101,8 @@ class AIChatListScreen extends HookConsumerWidget {
                   '${DateFormat('MM-dd HH:mm').format(session.lastMessageAt)} · ${session.messageCount} 条消息',
                 ),
                 onTap: () {
-                  context.push('/student/ai-chat/${session.id}');
+                  final currentPath = GoRouterState.of(context).uri.path;
+                  context.push('$currentPath/${session.id}');
                 },
               );
             },

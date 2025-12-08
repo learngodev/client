@@ -75,6 +75,12 @@ class AIChatScreen extends HookConsumerWidget {
                       try {
                         await controller.sendMessage(sessionId, value);
                         textController.clear();
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text('发送失败: $e')));
+                        }
                       } finally {
                         isSending.value = false;
                       }
@@ -93,6 +99,12 @@ class AIChatScreen extends HookConsumerWidget {
                           try {
                             await controller.sendMessage(sessionId, value);
                             textController.clear();
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('发送失败: $e')),
+                              );
+                            }
                           } finally {
                             isSending.value = false;
                           }

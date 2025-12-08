@@ -103,6 +103,38 @@ class StudentApiRepository implements StudentRepository {
     }
   }
 
+  @override
+  Future<StudentSubmissionDetail> getSubmissionDetail(
+    String assignmentId,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/assignments/$assignmentId/submission',
+      );
+      final data = _extractData(response.data, '未能获取提交详情');
+
+      final assignmentData = data['assignment'] as Map<String, dynamic>;
+      final submissionData = data['submission'] as Map<String, dynamic>;
+      final itemsData = data['items'] as List?;
+
+      final assignment = AssignmentDetail.fromJson(assignmentData);
+      final submission = SubmissionResult.fromJson(submissionData);
+      final items =
+          itemsData
+              ?.map((e) => SubmissionItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+
+      return StudentSubmissionDetail(
+        assignment: assignment,
+        submission: submission,
+        items: items,
+      );
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载提交详情');
+    }
+  }
+
   Future<_NoteFetchResult> _fetchNotes() async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1090,6 +1122,38 @@ class FakeStudentRepository implements StudentRepository {
       score: null,
       status: 'submitted',
       submittedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<StudentSubmissionDetail> getSubmissionDetail(
+    String assignmentId,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final assignment = await getAssignmentDetail(assignmentId);
+    return StudentSubmissionDetail(
+      assignment: assignment,
+      submission: SubmissionResult(
+        id: 'sub-mock',
+        score: 85.0,
+        status: 'graded',
+        submittedAt: DateTime.now().subtract(const Duration(days: 1)),
+        feedback: '做得不错，继续加油！',
+      ),
+      items: [
+        const SubmissionItem(
+          id: 'item1',
+          questionId: 'q1',
+          answer: '2',
+          score: 10.0,
+        ),
+        const SubmissionItem(
+          id: 'item2',
+          questionId: 'q2',
+          answer: 'Flutter 是 Google 开源的 UI 工具包...',
+          score: 15.0,
+        ),
+      ],
     );
   }
 }

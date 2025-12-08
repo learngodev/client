@@ -7,10 +7,17 @@ import '../../features/auth/domain/account.dart';
 import '../../features/auth/presentation/sign_in_page.dart';
 import '../../features/admin/presentation/admin_shell.dart';
 import '../../features/admin/presentation/pages/admin_pages.dart';
+import '../../features/admin/presentation/pages/admin_ai_settings_page.dart';
 import '../../features/student/presentation/pages/assignment_detail_page.dart';
+import '../../features/student/presentation/pages/submission_detail_page.dart';
 import '../../features/student/presentation/pages/student_pages.dart';
 import '../../features/student/presentation/student_shell.dart';
 import '../../features/teacher/presentation/pages/teacher_pages.dart';
+import '../../features/teacher/presentation/pages/grading_page.dart';
+import '../../features/teacher/presentation/pages/teacher_assignments_page.dart';
+import '../../features/teacher/presentation/pages/assignment_submissions_page.dart';
+import '../../features/teacher/presentation/pages/create_assignment_page.dart';
+import '../../features/teacher/domain/teacher_models.dart';
 import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
 import '../../features/ai_assistant/presentation/ai_chat_list_screen.dart';
@@ -86,6 +93,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return AssignmentDetailPage(id: id);
         },
       ),
+      GoRoute(
+        path: '/student/assignments/:id/result',
+        name: 'studentAssignmentResult',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return SubmissionDetailPage(assignmentId: id);
+        },
+      ),
+      GoRoute(
+        path: '/teacher/grading/:assignmentId/:submissionId',
+        name: 'teacherGradingDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final assignmentId = state.pathParameters['assignmentId']!;
+          final submissionId = state.pathParameters['submissionId']!;
+          return GradingPage(
+            assignmentId: assignmentId,
+            submissionId: submissionId,
+          );
+        },
+      ),
       ShellRoute(
         navigatorKey: _adminShellNavigatorKey,
         builder: (context, state, child) =>
@@ -118,6 +147,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'adminSystem',
             builder: (context, state) => const AdminSystemSettingsPage(),
           ),
+          GoRoute(
+            path: '/admin/ai',
+            name: 'adminAI',
+            builder: (context, state) => const AdminAISettingsPage(),
+          ),
         ],
       ),
       ShellRoute(
@@ -143,9 +177,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const TeacherAssignmentsPage(),
           ),
           GoRoute(
-            path: '/teacher/assignments/grading',
-            name: 'teacherGrading',
-            builder: (context, state) => const TeacherGradingPage(),
+            path: '/teacher/assignments/create',
+            name: 'teacherCreateAssignment',
+            builder: (context, state) => const CreateAssignmentPage(),
+          ),
+          GoRoute(
+            path: '/teacher/assignments/:assignmentId/submissions',
+            name: 'teacherAssignmentSubmissions',
+            builder: (context, state) {
+              final assignmentId = state.pathParameters['assignmentId']!;
+              final assignment = state.extra as TeacherAssignment?;
+              return AssignmentSubmissionsPage(
+                assignmentId: assignmentId,
+                assignmentTitle: assignment?.title,
+              );
+            },
           ),
           GoRoute(
             path: '/teacher/conversations',
@@ -156,6 +202,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/teacher/notes',
             name: 'teacherNotes',
             builder: (context, state) => const TeacherNotesPage(),
+          ),
+          GoRoute(
+            path: '/teacher/ai-chat',
+            name: 'teacherAIChat',
+            builder: (context, state) => const AIChatListScreen(),
+          ),
+          GoRoute(
+            path: '/teacher/ai-chat/:id',
+            name: 'teacherAIChatDetail',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return AIChatScreen(sessionId: id);
+            },
           ),
         ],
       ),
@@ -209,7 +268,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/student/ai-chat/:id',
             name: 'studentAIChatDetail',
-            parentNavigatorKey: _rootNavigatorKey,
             builder: (context, state) {
               final id = state.pathParameters['id']!;
               return AIChatScreen(sessionId: id);

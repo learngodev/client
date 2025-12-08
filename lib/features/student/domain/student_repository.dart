@@ -104,6 +104,7 @@ class StudentDashboardData {
 abstract class StudentRepository {
   Future<StudentDashboardData> fetchDashboard();
   Future<AssignmentDetail> getAssignmentDetail(String id);
+  Future<StudentSubmissionDetail> getSubmissionDetail(String assignmentId);
   Future<SubmissionResult> submitAssignment(
     String id,
     Map<String, dynamic> answers,
