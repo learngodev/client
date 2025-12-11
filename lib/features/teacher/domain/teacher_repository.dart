@@ -18,4 +18,15 @@ abstract class TeacherRepository {
   );
   Future<void> createAssignment(CreateAssignmentRequest request);
   Future<List<TeacherClass>> listMyClasses();
+  Future<GradeAssignmentResult> gradeAssignment({
+    required String title,
+    required String description,
+    required String content,
+    required String rubrics,
+  });
+  Future<List<CreateAssignmentQuestionInput>> generateQuestions({
+    required String topic,
+    required int count,
+    required String difficulty,
+  });
 }

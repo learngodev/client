@@ -52,7 +52,118 @@ class GradingPage extends HookConsumerWidget {
     }, [snapshot.data]);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('批改作业')),
+      appBar: AppBar(
+        title: const Text('批改作业'),
+        actions: [
+          if (snapshot.hasData)
+            IconButton(
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: 'AI 智能批改',
+              onPressed: () async {
+                final assignment = snapshot.data![0] as AssignmentDetail;
+                final submission = snapshot.data![1] as TeacherSubmissionDetail;
+
+                final content = assignment.questions
+                    .map((q) {
+                      final item = submission.items.firstWhere(
+                        (i) => i.questionId == q.id,
+                        orElse: () => SubmissionItem(
+                          id: '',
+                          questionId: q.id,
+                          answer: '',
+                        ),
+                      );
+                      return '题目: ${q.prompt}\n回答: ${item.answer}';
+                    })
+                    .join('\n\n');
+
+                if (content.trim().isEmpty) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(const SnackBar(content: Text('作业内容为空，无法批改')));
+                  return;
+                }
+
+                try {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (c) =>
+                        const Center(child: CircularProgressIndicator()),
+                  );
+
+                  final result = await repository.gradeAssignment(
+                    title: assignment.title,
+                    description: assignment.description,
+                    content: content,
+                    rubrics: '满分: ${assignment.maxScore}',
+                  );
+
+                  if (context.mounted) {
+                    Navigator.pop(context); // Hide loading
+
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('AI 批改建议'),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '建议得分: ${result.score}',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '评语摘要:',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              Text(result.summary),
+                              const SizedBox(height: 16),
+                              Text(
+                                '详细建议:',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              ...result.suggestions.map(
+                                (e) => Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text('• $e'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('关闭'),
+                          ),
+                          FilledButton(
+                            onPressed: () {
+                              feedbackController.text =
+                                  '${result.summary}\n\n改进建议:\n${result.suggestions.join('\n')}';
+                              Navigator.pop(context);
+                            },
+                            child: const Text('采纳评语'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('AI 批改失败: $e')));
+                  }
+                }
+              },
+            ),
+        ],
+      ),
       body: snapshot.connectionState == ConnectionState.waiting
           ? const Center(child: CircularProgressIndicator())
           : snapshot.hasError

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/teacher_models.dart';
+import '../../domain/teacher_repository.dart';
 import '../../data/teacher_repository.dart';
 import '../../../auth/application/auth_controller.dart';
 
@@ -89,6 +90,16 @@ class CreateAssignmentPage extends HookConsumerWidget {
         }
       } finally {
         isSubmitting.value = false;
+      }
+    }
+
+    Future<void> generateQuestions() async {
+      final result = await showDialog<List<CreateAssignmentQuestionInput>>(
+        context: context,
+        builder: (context) => _GenerateQuestionsDialog(repository: repository),
+      );
+      if (result != null) {
+        questions.value = [...questions.value, ...result];
       }
     }
 
@@ -312,10 +323,19 @@ class CreateAssignmentPage extends HookConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('题目列表', style: theme.textTheme.titleMedium),
-              TextButton.icon(
-                onPressed: addQuestion,
-                icon: const Icon(Icons.add),
-                label: const Text('添加题目'),
+              Row(
+                children: [
+                  TextButton.icon(
+                    onPressed: generateQuestions,
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('AI 出题'),
+                  ),
+                  TextButton.icon(
+                    onPressed: addQuestion,
+                    icon: const Icon(Icons.add),
+                    label: const Text('添加题目'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -561,6 +581,97 @@ class _QuestionEditorDialog extends HookWidget {
             );
           },
           child: const Text('确定'),
+        ),
+      ],
+    );
+  }
+}
+
+class _GenerateQuestionsDialog extends HookWidget {
+  const _GenerateQuestionsDialog({required this.repository});
+
+  final TeacherRepository repository;
+
+  @override
+  Widget build(BuildContext context) {
+    final topicController = useTextEditingController();
+    final countController = useTextEditingController(text: '5');
+    final difficulty = useState('medium');
+    final isLoading = useState(false);
+
+    return AlertDialog(
+      title: const Text('AI 智能出题'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: topicController,
+              decoration: const InputDecoration(
+                labelText: '出题主题',
+                hintText: '例如：Go语言并发编程',
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: countController,
+              decoration: const InputDecoration(labelText: '题目数量'),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: difficulty.value,
+              decoration: const InputDecoration(labelText: '难度'),
+              items: const [
+                DropdownMenuItem(value: 'easy', child: Text('简单')),
+                DropdownMenuItem(value: 'medium', child: Text('中等')),
+                DropdownMenuItem(value: 'hard', child: Text('困难')),
+              ],
+              onChanged: (value) {
+                if (value != null) difficulty.value = value;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: isLoading.value ? null : () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: isLoading.value
+              ? null
+              : () async {
+                  if (topicController.text.isEmpty) return;
+
+                  isLoading.value = true;
+                  try {
+                    final questions = await repository.generateQuestions(
+                      topic: topicController.text,
+                      count: int.tryParse(countController.text) ?? 5,
+                      difficulty: difficulty.value,
+                    );
+                    if (context.mounted) {
+                      Navigator.of(context).pop(questions);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('生成失败: $e')));
+                    }
+                  } finally {
+                    isLoading.value = false;
+                  }
+                },
+          child: isLoading.value
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('生成'),
         ),
       ],
     );

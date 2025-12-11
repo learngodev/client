@@ -109,4 +109,9 @@ abstract class StudentRepository {
     String id,
     Map<String, dynamic> answers,
   );
+  Future<CheckAssignmentResult> checkAssignment({
+    required String title,
+    required String description,
+    required String content,
+  });
 }

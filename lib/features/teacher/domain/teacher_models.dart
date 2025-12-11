@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../student/domain/assignment_models.dart';
 
 class TeacherClass {
@@ -233,5 +235,23 @@ class CreateAssignmentQuestionInput {
       if (score != null) 'score': score,
       if (orderIndex != null) 'order_index': orderIndex,
     };
+  }
+
+  factory CreateAssignmentQuestionInput.fromJson(Map<String, dynamic> json) {
+    String? optionsStr;
+    if (json['options'] is List) {
+      optionsStr = jsonEncode(json['options']);
+    } else if (json['options'] is String) {
+      optionsStr = json['options'] as String;
+    }
+
+    return CreateAssignmentQuestionInput(
+      type: json['type'] as String? ?? 'essay',
+      prompt: json['prompt'] as String? ?? '',
+      options: optionsStr,
+      answer: json['answer'] as String?,
+      score: (json['score'] as num?)?.toDouble(),
+      orderIndex: json['order_index'] as int?,
+    );
   }
 }

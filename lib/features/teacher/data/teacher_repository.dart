@@ -158,6 +158,56 @@ class TeacherApiRepository implements TeacherRepository {
     }
   }
 
+  @override
+  Future<GradeAssignmentResult> gradeAssignment({
+    required String title,
+    required String description,
+    required String content,
+    required String rubrics,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/teacher/grade_assignment',
+        data: {
+          'title': title,
+          'description': description,
+          'content': content,
+          'rubrics': rubrics,
+        },
+      );
+      final data = _extractData(response.data, 'AI 批改失败');
+      return GradeAssignmentResult.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, 'AI 批改失败');
+    }
+  }
+
+  @override
+  Future<List<CreateAssignmentQuestionInput>> generateQuestions({
+    required String topic,
+    required int count,
+    required String difficulty,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/teacher/generate_questions',
+        data: {'topic': topic, 'count': count, 'difficulty': difficulty},
+      );
+      final data = _extractData(response.data, '生成题目失败');
+      final list = data['questions'] as List?;
+      return list
+              ?.map(
+                (e) => CreateAssignmentQuestionInput.fromJson(
+                  e as Map<String, dynamic>,
+                ),
+              )
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '生成题目失败');
+    }
+  }
+
   Map<String, dynamic> _extractData(
     Map<String, dynamic>? body,
     String fallbackMessage,

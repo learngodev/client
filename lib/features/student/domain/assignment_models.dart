@@ -190,3 +190,43 @@ class StudentSubmissionDetail {
   final SubmissionResult submission;
   final List<SubmissionItem> items;
 }
+
+class CheckAssignmentResult {
+  CheckAssignmentResult({
+    required this.issues,
+    required this.suggestions,
+    required this.overall,
+  });
+
+  factory CheckAssignmentResult.fromJson(Map<String, dynamic> json) {
+    return CheckAssignmentResult(
+      issues: List<String>.from(json['issues'] ?? []),
+      suggestions: List<String>.from(json['suggestions'] ?? []),
+      overall: json['overall'] as String? ?? '',
+    );
+  }
+
+  final List<String> issues;
+  final List<String> suggestions;
+  final String overall;
+}
+
+class GradeAssignmentResult {
+  GradeAssignmentResult({
+    required this.score,
+    required this.summary,
+    required this.suggestions,
+  });
+
+  factory GradeAssignmentResult.fromJson(Map<String, dynamic> json) {
+    return GradeAssignmentResult(
+      score: json['score'] as int? ?? 0,
+      summary: json['summary'] as String? ?? '',
+      suggestions: List<String>.from(json['suggestions'] ?? []),
+    );
+  }
+
+  final int score;
+  final String summary;
+  final List<String> suggestions;
+}

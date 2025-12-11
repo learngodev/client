@@ -104,6 +104,24 @@ class StudentApiRepository implements StudentRepository {
   }
 
   @override
+  Future<CheckAssignmentResult> checkAssignment({
+    required String title,
+    required String description,
+    required String content,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/ai/check_assignment',
+        data: {'title': title, 'description': description, 'content': content},
+      );
+      final data = _extractData(response.data, 'AI 检查失败');
+      return CheckAssignmentResult.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, 'AI 检查失败');
+    }
+  }
+
+  @override
   Future<StudentSubmissionDetail> getSubmissionDetail(
     String assignmentId,
   ) async {
@@ -1122,6 +1140,20 @@ class FakeStudentRepository implements StudentRepository {
       score: null,
       status: 'submitted',
       submittedAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<CheckAssignmentResult> checkAssignment({
+    required String title,
+    required String description,
+    required String content,
+  }) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    return CheckAssignmentResult(
+      issues: ['模拟问题1', '模拟问题2'],
+      suggestions: ['模拟建议1', '模拟建议2'],
+      overall: '模拟总体评价',
     );
   }
 

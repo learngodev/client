@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../application/assignment_controller.dart';
+import '../../data/student_repository.dart';
 import '../../domain/assignment_models.dart';
 
 class AssignmentDetailPage extends HookConsumerWidget {
@@ -202,6 +203,80 @@ class AssignmentDetailPage extends HookConsumerWidget {
                     ),
                   ),
                 ),
+                if (!isExam && !isSubmitted.value)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: isSubmitting.value
+                            ? null
+                            : () async {
+                                final content = answers.value.entries
+                                    .map((e) {
+                                      final q = detail.questions.firstWhere(
+                                        (q) => q.id == e.key,
+                                        orElse: () => const AssignmentQuestion(
+                                          id: '',
+                                          prompt: '',
+                                          type: QuestionType.essay,
+                                          score: 0,
+                                          orderIndex: 0,
+                                        ),
+                                      );
+                                      return '题目: ${q.prompt}\n回答: ${e.value}';
+                                    })
+                                    .join('\n\n');
+
+                                if (content.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('请先填写作业内容')),
+                                  );
+                                  return;
+                                }
+
+                                try {
+                                  // Show loading
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (c) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+
+                                  final result = await ref
+                                      .read(studentRepositoryProvider)
+                                      .checkAssignment(
+                                        title: detail.title,
+                                        description: detail.description,
+                                        content: content,
+                                      );
+
+                                  if (context.mounted) {
+                                    Navigator.pop(context); // Hide loading
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      useSafeArea: true,
+                                      builder: (context) =>
+                                          _AICheckResultSheet(result: result),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    Navigator.pop(context); // Hide loading
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('AI 检查失败: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('AI 智能预检'),
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: SizedBox(
@@ -495,5 +570,106 @@ class _QuestionCard extends HookWidget {
           onChanged: onAnswerChanged,
         );
     }
+  }
+}
+
+class _AICheckResultSheet extends StatelessWidget {
+  const _AICheckResultSheet({required this.result});
+
+  final CheckAssignmentResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            AppBar(
+              title: const Text('AI 预检报告'),
+              leading: const SizedBox(),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            Expanded(
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (result.overall.isNotEmpty) ...[
+                    Text(
+                      '总体评价',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(result.overall),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (result.issues.isNotEmpty) ...[
+                    Text(
+                      '发现的问题',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...result.issues.map(
+                      (e) => ListTile(
+                        leading: Icon(
+                          Icons.warning_amber,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        title: Text(e),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (result.suggestions.isNotEmpty) ...[
+                    Text(
+                      '修改建议',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...result.suggestions.map(
+                      (e) => ListTile(
+                        leading: Icon(
+                          Icons.lightbulb_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(e),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
