@@ -4358,9 +4358,9 @@ class _AccountTile extends StatelessWidget {
                             color: roleForeground,
                           ),
                           side: BorderSide(
-                            color: roleColor.withValues(alpha: 0.3),
+                            color: roleColor.withValues(alpha: 0.6),
                           ),
-                          backgroundColor: roleColor.withValues(alpha: 0.18),
+                          backgroundColor: roleColor.withValues(alpha: 0.48),
                           labelStyle: theme.textTheme.bodySmall?.copyWith(
                             color: roleForeground,
                             fontWeight: FontWeight.w600,
@@ -4482,6 +4482,143 @@ class _AccountTile extends StatelessWidget {
 
 enum _AccountTileAction { viewDetails, copyIdentifier, copyEmail, copyPhone }
 
+class _EditAccountStructureSheet extends HookConsumerWidget {
+  const _EditAccountStructureSheet({
+    required this.account,
+    required this.departmentNodes,
+  });
+
+  final AdminAccount account;
+  final List<DepartmentNode> departmentNodes;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final selectedDepartmentId = useState<String?>(account.departmentId);
+    final selectedClassId = useState<String?>(account.classId);
+    final isSubmitting = useState(false);
+
+    final availableClasses = useMemoized(() {
+      if (selectedDepartmentId.value == null) {
+        return <ClassInfo>[];
+      }
+      final node = departmentNodes.firstWhere(
+        (n) => n.department.id == selectedDepartmentId.value,
+        orElse: () => const DepartmentNode(
+          department: Department(id: '', name: '', schoolId: ''),
+          classes: [],
+        ),
+      );
+      return node.classes;
+    }, [selectedDepartmentId.value, departmentNodes]);
+
+    // Reset class selection if department changes and current class is not in new department
+    useEffect(() {
+      if (selectedClassId.value != null &&
+          !availableClasses.any((c) => c.id == selectedClassId.value)) {
+        selectedClassId.value = null;
+      }
+      return null;
+    }, [availableClasses]);
+
+    Future<void> handleSubmit() async {
+      if (isSubmitting.value) return;
+
+      final authState = ref.read(authStateProvider);
+      final schoolId = authState.account?.schoolId ?? '';
+      if (schoolId.isEmpty) return;
+
+      isSubmitting.value = true;
+      try {
+        await ref
+            .read(adminRepositoryProvider)
+            .updateAccountStructure(
+              schoolId: schoolId,
+              accountId: account.id,
+              departmentId: selectedDepartmentId.value,
+              classId: selectedClassId.value,
+            );
+        if (context.mounted) {
+          Navigator.of(context).pop(true);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e is AppException ? e.message : e.toString()),
+              backgroundColor: theme.colorScheme.error,
+            ),
+          );
+        }
+      } finally {
+        isSubmitting.value = false;
+      }
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('修改所属结构', style: theme.textTheme.titleLarge),
+          const SizedBox(height: 20),
+          DropdownButtonFormField<String>(
+            value: selectedDepartmentId.value,
+            decoration: const InputDecoration(
+              labelText: '所属院系',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              for (final node in departmentNodes)
+                DropdownMenuItem(
+                  value: node.department.id,
+                  child: Text(node.department.name),
+                ),
+            ],
+            onChanged: (value) {
+              selectedDepartmentId.value = value;
+            },
+          ),
+          const SizedBox(height: 16),
+          if (account.role == AdminAccountRole.student) ...[
+            DropdownButtonFormField<String>(
+              value: selectedClassId.value,
+              decoration: const InputDecoration(
+                labelText: '所属班级',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final cls in availableClasses)
+                  DropdownMenuItem(value: cls.id, child: Text(cls.name)),
+              ],
+              onChanged: (value) {
+                selectedClassId.value = value;
+              },
+            ),
+            const SizedBox(height: 24),
+          ],
+          FilledButton(
+            onPressed: isSubmitting.value ? null : handleSubmit,
+            child: isSubmitting.value
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AccountDetailSheet extends HookConsumerWidget {
   const _AccountDetailSheet({
     required this.account,
@@ -4566,6 +4703,26 @@ class _AccountDetailSheet extends HookConsumerWidget {
       loadingAction.value = action.type;
       try {
         switch (action.type) {
+          case _AccountActionType.editStructure:
+            final departmentTreeAsync = ref.read(adminDepartmentTreeProvider);
+            final departmentNodes =
+                departmentTreeAsync.asData?.value ?? const <DepartmentNode>[];
+            final result = await showModalBottomSheet<bool>(
+              context: context,
+              isScrollControlled: true,
+              showDragHandle: true,
+              builder: (context) => _EditAccountStructureSheet(
+                account: currentAccount.value,
+                departmentNodes: departmentNodes,
+              ),
+            );
+            if (result == true) {
+              showSnack('所属结构已更新');
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            }
+            break;
           case _AccountActionType.resetPassword:
             await repository.resetAccountPassword(
               schoolId: schoolId,
@@ -4632,6 +4789,11 @@ class _AccountDetailSheet extends HookConsumerWidget {
     ).format(accountValue.createdAt.toLocal());
 
     final actions = <_AccountSheetAction>[
+      const _AccountSheetAction(
+        label: '修改所属',
+        type: _AccountActionType.editStructure,
+        icon: Icons.edit_note_outlined,
+      ),
       const _AccountSheetAction(
         label: '重置密码',
         type: _AccountActionType.resetPassword,
@@ -4829,7 +4991,7 @@ class _AccountDetailSheet extends HookConsumerWidget {
   }
 }
 
-enum _AccountActionType { resetPassword, lock, unlock, delete }
+enum _AccountActionType { editStructure, resetPassword, lock, unlock, delete }
 
 class _AccountSheetAction {
   const _AccountSheetAction({

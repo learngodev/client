@@ -259,6 +259,45 @@ class AdminRepository {
     }
   }
 
+  Future<void> updateAccountStructure({
+    required String schoolId,
+    required String accountId,
+    String? departmentId,
+    String? classId,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/$accountId/structure',
+        data: {'department_id': departmentId, 'class_id': classId},
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('更新账号所属失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新账号所属失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
   Future<void> resetAccountPassword({
     required String schoolId,
     required String accountId,
