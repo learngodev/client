@@ -18,7 +18,8 @@ class AIRepository {
       '/api/v1/ai/sessions',
       queryParameters: {'limit': limit},
     );
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     final list = data['sessions'] as List<dynamic>? ?? [];
     return list
         .map((e) => AIChatSession.fromJson(e as Map<String, dynamic>))
@@ -30,7 +31,8 @@ class AIRepository {
       '/api/v1/ai/sessions',
       data: {'title': title ?? 'New Chat'},
     );
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     return AIChatSession.fromJson(data['session'] as Map<String, dynamic>);
   }
 
@@ -39,13 +41,19 @@ class AIRepository {
       '/api/v1/ai/sessions/$id',
       data: {'title': title},
     );
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     return AIChatSession.fromJson(data['session'] as Map<String, dynamic>);
+  }
+
+  Future<void> deleteSession(String id) async {
+    await _dio.delete('/api/v1/ai/sessions/$id');
   }
 
   Future<AIChatSession> closeSession(String id) async {
     final response = await _dio.post('/api/v1/ai/sessions/$id/close');
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     return AIChatSession.fromJson(data['session'] as Map<String, dynamic>);
   }
 
@@ -63,7 +71,8 @@ class AIRepository {
       '/api/v1/ai/sessions/$sessionId/messages',
       queryParameters: query,
     );
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     final list = data['messages'] as List<dynamic>? ?? [];
     return list
         .map((e) => AIChatMessage.fromJson(e as Map<String, dynamic>))
@@ -75,7 +84,8 @@ class AIRepository {
       '/api/v1/ai/sessions/$sessionId/messages',
       data: {'content': content},
     );
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     // The backend returns { session, user_message, assistant_message, status }
     // We return the assistant message if available, otherwise the user message (or handle pending state)
     // For simplicity in this chat UI, we might want to return the assistant message.
@@ -98,7 +108,8 @@ class AIRepository {
       query['since'] = since.toUtc().toIso8601String();
     }
     final response = await _dio.get('/api/v1/ai/usage', queryParameters: query);
-    final data = response.data as Map<String, dynamic>;
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
     return AIUsageSummary.fromJson(data['usage'] as Map<String, dynamic>);
   }
 }

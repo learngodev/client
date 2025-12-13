@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../application/ai_settings_provider.dart';
 import '../../domain/ai_settings.dart';
+import '../../../auth/application/auth_controller.dart';
 
 class AdminAISettingsPage extends HookConsumerWidget {
   const AdminAISettingsPage({super.key});
@@ -13,6 +14,7 @@ class AdminAISettingsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settingsState = ref.watch(adminAISettingsProvider);
     final notifier = ref.read(adminAISettingsProvider.notifier);
+    final authState = ref.watch(authStateProvider);
 
     void showSnack(String message) {
       if (!context.mounted) return;
@@ -25,11 +27,31 @@ class AdminAISettingsPage extends HookConsumerWidget {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: settingsState.when(
         data: (setting) {
-          if (setting == null) {
-            return const Center(child: Text('未找到 AI 配置'));
-          }
+          final currentSetting =
+              setting ??
+              AIAgentSetting(
+                id: '',
+                schoolId: authState.account?.schoolId ?? '',
+                provider: AIProvider.deepseek,
+                model: 'deepseek-chat',
+                apiKey: '',
+                baseUrl: 'https://api.deepseek.com',
+                temperature: 0.7,
+                topP: 0.9,
+                maxOutputTokens: 2048,
+                maxDailyRequests: 1000,
+                maxConcurrentRequests: 10,
+                maxConversationMessages: 50,
+                systemPrompt: '',
+                visionEnabled: false,
+                updatedBy: '',
+                updatedByName: '',
+                updatedAt: DateTime.now(),
+                apiKeyPresent: false,
+              );
+
           return _AISettingsForm(
-            setting: setting,
+            setting: currentSetting,
             onSave: (newSetting) async {
               try {
                 await notifier.updateSettings(newSetting);
@@ -87,6 +109,26 @@ class _AISettingsForm extends HookWidget {
 
     // Only show API key if user explicitly wants to edit it, otherwise show placeholder if present
     final isEditingApiKey = useState(setting.apiKey.isEmpty);
+
+    // Sync state when setting changes (e.g. after save)
+    useEffect(() {
+      provider.value = setting.provider;
+      modelController.text = setting.model;
+      if (setting.apiKey.isNotEmpty) {
+        apiKeyController.text = setting.apiKey;
+        isEditingApiKey.value = false;
+      } else if (setting.apiKeyPresent) {
+        // API Key is present but not returned (masked by backend)
+        isEditingApiKey.value = false;
+      }
+      baseUrlController.text = setting.baseUrl;
+      systemPromptController.text = setting.systemPrompt;
+      temperature.value = setting.temperature;
+      topP.value = setting.topP;
+      maxTokensController.text = setting.maxOutputTokens.toString();
+      visionEnabled.value = setting.visionEnabled;
+      return null;
+    }, [setting]);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),

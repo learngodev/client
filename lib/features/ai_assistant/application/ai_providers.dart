@@ -69,4 +69,14 @@ class AIChatController extends StateNotifier<AsyncValue<void>> {
       rethrow;
     }
   }
+
+  Future<void> deleteSession(String sessionId) async {
+    try {
+      final repo = _ref.read(aiRepositoryProvider);
+      await repo.deleteSession(sessionId);
+      _ref.invalidate(aiSessionsProvider);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

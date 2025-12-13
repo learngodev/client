@@ -93,7 +93,9 @@ class GradingPage extends HookConsumerWidget {
                   );
 
                   final result = await repository.gradeAssignment(
-                    title: assignment.title,
+                    title: assignment.title.isEmpty
+                        ? '无标题作业'
+                        : assignment.title,
                     description: assignment.description,
                     content: content,
                     rubrics: '满分: ${assignment.maxScore}',

@@ -53,7 +53,7 @@ class AdminRepository {
     }
   }
 
-  Future<AIAgentSetting> fetchAISettings({required String schoolId}) async {
+  Future<AIAgentSetting?> fetchAISettings({required String schoolId}) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/api/v1/admin/ai/settings',
@@ -73,9 +73,13 @@ class AdminRepository {
       }
       final data = body['data'];
       if (data == null) {
-        throw const AppException('AI 配置数据为空');
+        return null;
       }
-      return AIAgentSetting.fromJson(data as Map<String, dynamic>);
+      final settingData = data['setting'];
+      if (settingData is Map<String, dynamic>) {
+        return AIAgentSetting.fromJson(settingData);
+      }
+      return null;
     } on DioException catch (error) {
       final body = error.response?.data;
       String? message;
@@ -112,7 +116,14 @@ class AdminRepository {
         );
       }
       final data = body['data'];
-      return AIAgentSetting.fromJson(data as Map<String, dynamic>);
+      if (data == null) {
+        throw const AppException('AI 配置数据为空');
+      }
+      final settingData = data['setting'];
+      if (settingData is Map<String, dynamic>) {
+        return AIAgentSetting.fromJson(settingData);
+      }
+      throw const AppException('返回的 AI 配置格式错误');
     } on DioException catch (error) {
       final body = error.response?.data;
       String? message;
