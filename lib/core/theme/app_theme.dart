@@ -111,7 +111,7 @@ ThemeData buildLightTheme() {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size(52, 50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),

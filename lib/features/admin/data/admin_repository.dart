@@ -139,6 +139,106 @@ class AdminRepository {
     }
   }
 
+  Future<Map<String, dynamic>> fetchAIUsageSummaries({
+    required String schoolId,
+    int page = 1,
+    int pageSize = 20,
+    String? sortBy,
+    String? sortDir,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/ai/usage',
+        queryParameters: {
+          'school_id': schoolId,
+          'page': page,
+          'page_size': pageSize,
+          if (sortBy != null) 'sort_by': sortBy,
+          if (sortDir != null) 'sort_dir': sortDir,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取 AI 使用统计');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取 AI 使用统计失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return <String, dynamic>{};
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchAIUsageTimeline({
+    required String schoolId,
+    String? role,
+    DateTime? start,
+    DateTime? end,
+    String interval = 'day',
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/ai/usage/timeline',
+        queryParameters: {
+          'school_id': schoolId,
+          if (role != null) 'role': role,
+          if (start != null) 'start': start.toIso8601String(),
+          if (end != null) 'end': end.toIso8601String(),
+          'interval': interval,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取 AI 使用趋势');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取 AI 使用趋势失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return <String, dynamic>{};
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
   Future<List<ClassInfo>> fetchClassesByDepartment({
     required String schoolId,
     required String departmentId,
@@ -259,6 +359,104 @@ class AdminRepository {
     }
   }
 
+  Future<void> createTeacher({
+    required String schoolId,
+    required String number,
+    required String name,
+    required String email,
+    String? phone,
+    required String defaultPassword,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/teachers',
+        data: {
+          'school_id': schoolId,
+          'number': number,
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'default_password': defaultPassword,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能创建教师账号');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '创建教师账号失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> createStudent({
+    required String schoolId,
+    required String number,
+    required String name,
+    required String email,
+    String? phone,
+    required String classId,
+    required List<String> teacherIds,
+    required String defaultPassword,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/students',
+        data: {
+          'school_id': schoolId,
+          'number': number,
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'class_id': classId,
+          'teacher_ids': teacherIds,
+          'default_password': defaultPassword,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能创建学生账号');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '创建学生账号失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
   Future<void> updateAccountStructure({
     required String schoolId,
     required String accountId,
@@ -344,6 +542,52 @@ class AdminRepository {
       failureMessage: '删除账号失败',
       requestType: _AccountActionRequestType.delete,
     );
+  }
+
+  Future<Map<String, dynamic>> batchOperateAccounts({
+    required String schoolId,
+    required List<String> accountIds,
+    required String action,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/batch',
+        data: {
+          'school_id': schoolId,
+          'account_ids': accountIds,
+          'action': action,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('批量操作失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '批量操作失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return <String, dynamic>{};
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
   }
 
   Future<List<AdminOssCredential>> fetchOssCredentials({

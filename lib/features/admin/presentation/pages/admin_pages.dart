@@ -1226,20 +1226,42 @@ class AdminAccountsPage extends HookConsumerWidget {
                   if (filtered.isNotEmpty) ...[
                     Align(
                       alignment: Alignment.centerRight,
-                      child: FilledButton.icon(
-                        icon: exportingAccounts.value
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.download_outlined),
-                        label: Text(exportingAccounts.value ? '导出中…' : '导出列表'),
-                        onPressed: exportingAccounts.value
-                            ? null
-                            : () => exportAccountsToClipboard(filtered),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FilledButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: const Text('添加账号'),
+                            onPressed: () async {
+                              final success = await showDialog<bool>(
+                                context: context,
+                                builder: (context) =>
+                                    const _CreateAccountDialog(),
+                              );
+                              if (success == true) {
+                                handleRefresh();
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                          FilledButton.icon(
+                            icon: exportingAccounts.value
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.download_outlined),
+                            label: Text(
+                              exportingAccounts.value ? '导出中…' : '导出列表',
+                            ),
+                            onPressed: exportingAccounts.value
+                                ? null
+                                : () => exportAccountsToClipboard(filtered),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1375,9 +1397,11 @@ class AdminStructuresPage extends HookConsumerWidget {
     useEffect(() {
       final data = baseTree.asData?.value;
       if (data != null) {
-        ref
-            .read(adminExpandedDepartmentsProvider.notifier)
-            .pruneToIds(data.map((node) => node.department.id));
+        Future.microtask(
+          () => ref
+              .read(adminExpandedDepartmentsProvider.notifier)
+              .pruneToIds(data.map((node) => node.department.id)),
+        );
       }
       return null;
     }, [baseTree]);
@@ -4670,12 +4694,12 @@ class _AccountDetailSheet extends HookConsumerWidget {
                 child: const Text('取消'),
               ),
               FilledButton(
-                style: action.destructive
-                    ? FilledButton.styleFrom(
-                        backgroundColor: theme.colorScheme.error,
-                        foregroundColor: theme.colorScheme.onError,
-                      )
-                    : null,
+                // style: action.destructive
+                //     ? FilledButton.styleFrom(
+                //         backgroundColor: theme.colorScheme.error,
+                //         foregroundColor: theme.colorScheme.onError,
+                //       )
+                //     : null,
                 onPressed: () => Navigator.of(dialogContext).pop(true),
                 child: Text(confirmLabel),
               ),
@@ -4717,6 +4741,7 @@ class _AccountDetailSheet extends HookConsumerWidget {
               ),
             );
             if (result == true) {
+              ref.invalidate(adminAccountListProvider);
               showSnack('所属结构已更新');
               if (context.mounted) {
                 Navigator.of(context).pop();
@@ -6295,6 +6320,238 @@ class _SystemAuditTile extends StatelessWidget {
     return ListTile(
       title: Text(item.action),
       subtitle: Text('${item.category} · ${item.operator}'),
+    );
+  }
+}
+
+class _CreateAccountDialog extends HookConsumerWidget {
+  const _CreateAccountDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final role = useState(AdminAccountRole.student);
+    final formKey = useMemoized(() => GlobalKey<FormState>());
+    final nameController = useTextEditingController();
+    final numberController = useTextEditingController();
+    final emailController = useTextEditingController();
+    final phoneController = useTextEditingController();
+    final passwordController = useTextEditingController(text: '123456');
+    final selectedClassId = useState<String?>(null);
+    final selectedTeacherIds = useState<List<String>>([]);
+    final isSubmitting = useState(false);
+
+    final authState = ref.watch(authStateProvider);
+    final schoolId = authState.account?.schoolId ?? '';
+
+    final departmentTreeAsync = ref.watch(adminDepartmentTreeProvider);
+    final departmentNodes =
+        departmentTreeAsync.asData?.value ?? const <DepartmentNode>[];
+
+    final allClasses = <ClassInfo>[];
+    for (final node in departmentNodes) {
+      allClasses.addAll(node.classes);
+    }
+
+    // Fetch teachers for selection
+    final teachersAsync = ref.watch(
+      adminAccountListProvider(
+        AdminAccountListRequest(
+          schoolId: schoolId,
+          role: AdminAccountRole.teacher,
+          page: 1,
+          pageSize: 1000,
+        ),
+      ),
+    );
+
+    final teachers = teachersAsync.asData?.value.accounts ?? [];
+
+    Future<void> submit() async {
+      if (!formKey.currentState!.validate()) {
+        return;
+      }
+      if (role.value == AdminAccountRole.student) {
+        if (selectedClassId.value == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('请选择班级')));
+          return;
+        }
+        if (selectedTeacherIds.value.isEmpty) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('请至少选择一位关联教师')));
+          return;
+        }
+      }
+
+      isSubmitting.value = true;
+      try {
+        final repository = ref.read(adminRepositoryProvider);
+        if (role.value == AdminAccountRole.teacher) {
+          await repository.createTeacher(
+            schoolId: schoolId,
+            number: numberController.text.trim(),
+            name: nameController.text.trim(),
+            email: emailController.text.trim(),
+            phone: phoneController.text.trim().isEmpty
+                ? null
+                : phoneController.text.trim(),
+            defaultPassword: passwordController.text,
+          );
+        } else {
+          await repository.createStudent(
+            schoolId: schoolId,
+            number: numberController.text.trim(),
+            name: nameController.text.trim(),
+            email: emailController.text.trim(),
+            phone: phoneController.text.trim().isEmpty
+                ? null
+                : phoneController.text.trim(),
+            classId: selectedClassId.value!,
+            teacherIds: selectedTeacherIds.value,
+            defaultPassword: passwordController.text,
+          );
+        }
+        if (context.mounted) {
+          Navigator.of(context).pop(true);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('账号创建成功')));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('创建失败: $e')));
+        }
+      } finally {
+        isSubmitting.value = false;
+      }
+    }
+
+    return AlertDialog(
+      title: const Text('添加账号'),
+      content: SizedBox(
+        width: 500,
+        child: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<AdminAccountRole>(
+                  value: role.value,
+                  decoration: const InputDecoration(labelText: '角色'),
+                  items: const [
+                    DropdownMenuItem(
+                      value: AdminAccountRole.student,
+                      child: Text('学生'),
+                    ),
+                    DropdownMenuItem(
+                      value: AdminAccountRole.teacher,
+                      child: Text('教师'),
+                    ),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) role.value = v;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: '姓名'),
+                  validator: (v) => v?.trim().isEmpty == true ? '请输入姓名' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: numberController,
+                  decoration: const InputDecoration(labelText: '学号/工号'),
+                  validator: (v) =>
+                      v?.trim().isEmpty == true ? '请输入学号/工号' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: '邮箱'),
+                  validator: (v) => v?.trim().isEmpty == true ? '请输入邮箱' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: '手机号 (可选)'),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(labelText: '默认密码'),
+                  validator: (v) => v?.isEmpty == true ? '请输入默认密码' : null,
+                ),
+                if (role.value == AdminAccountRole.student) ...[
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: selectedClassId.value,
+                    decoration: const InputDecoration(labelText: '班级'),
+                    items: allClasses
+                        .map(
+                          (c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) => selectedClassId.value = v,
+                    validator: (v) => v == null ? '请选择班级' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  InputDecorator(
+                    decoration: const InputDecoration(labelText: '关联教师'),
+                    child: teachersAsync.when(
+                      data: (_) => Wrap(
+                        spacing: 8,
+                        children: teachers.map((t) {
+                          final isSelected = selectedTeacherIds.value.contains(
+                            t.id,
+                          );
+                          return FilterChip(
+                            label: Text(t.name),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                selectedTeacherIds.value = [
+                                  ...selectedTeacherIds.value,
+                                  t.id,
+                                ];
+                              } else {
+                                selectedTeacherIds.value = selectedTeacherIds
+                                    .value
+                                    .where((id) => id != t.id)
+                                    .toList();
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (e, _) => Text('加载教师失败: $e'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: isSubmitting.value ? null : submit,
+          child: Text(isSubmitting.value ? '提交中...' : '提交'),
+        ),
+      ],
     );
   }
 }

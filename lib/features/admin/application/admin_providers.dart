@@ -288,22 +288,19 @@ class AdminSystemSettingsNotifier
   }
 }
 
-class AdminExpandedDepartmentsNotifier extends StateNotifier<Set<String>> {
-  AdminExpandedDepartmentsNotifier(this.ref) : super(<String>{}) {
-    _authSubscription = ref.listen<AuthState>(authStateProvider, (
-      previous,
-      next,
-    ) {
-      unawaited(_handleAuthStateChange(previous, next));
-    }, fireImmediately: true);
-  }
-
+class AdminExpandedDepartmentsNotifier extends Notifier<Set<String>> {
   static const _prefsKey = 'admin.expanded_departments';
 
-  final Ref ref;
-  ProviderSubscription<AuthState>? _authSubscription;
   String? _currentSchoolId;
   var _isHydrating = false;
+
+  @override
+  Set<String> build() {
+    ref.listen<AuthState>(authStateProvider, (previous, next) {
+      Future.microtask(() => _handleAuthStateChange(previous, next));
+    }, fireImmediately: true);
+    return <String>{};
+  }
 
   void setExpanded(String id, bool expanded) {
     if (expanded) {
@@ -344,12 +341,6 @@ class AdminExpandedDepartmentsNotifier extends StateNotifier<Set<String>> {
     } else {
       _setStateWithoutPersist(<String>{});
     }
-  }
-
-  @override
-  void dispose() {
-    _authSubscription?.close();
-    super.dispose();
   }
 
   void _emit(Set<String> next) {
@@ -496,7 +487,7 @@ class AdminDepartmentViewPreferencesNotifier
       previous,
       next,
     ) {
-      unawaited(_handleAuthStateChange(previous, next));
+      Future.microtask(() => _handleAuthStateChange(previous, next));
     }, fireImmediately: true);
   }
 
@@ -1018,8 +1009,8 @@ final adminOssProvider = AsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
 );
 
 final adminExpandedDepartmentsProvider =
-    StateNotifierProvider<AdminExpandedDepartmentsNotifier, Set<String>>(
-      (ref) => AdminExpandedDepartmentsNotifier(ref),
+    NotifierProvider<AdminExpandedDepartmentsNotifier, Set<String>>(
+      AdminExpandedDepartmentsNotifier.new,
     );
 
 final adminDepartmentViewPreferencesProvider =
