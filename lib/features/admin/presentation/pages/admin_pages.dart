@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+// ignore_for_file: use_build_context_synchronously
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/services.dart';
@@ -4043,6 +4044,16 @@ class _DepartmentExpansion extends StatelessWidget {
         : filteredClasses
               .map(
                 (clazz) => ListTile(
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                  leading: Icon(
+                    Icons.class_outlined,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.7,
+                    ),
+                  ),
                   title: Text.rich(
                     TextSpan(
                       children: _buildHighlightedSpans(
@@ -4105,7 +4116,7 @@ class _DepartmentExpansion extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         color: highlighted ? highlightColor : surfaceColor,
         borderRadius: borderRadius,
@@ -4133,6 +4144,14 @@ class _DepartmentExpansion extends StatelessWidget {
           key: PageStorageKey(node.department.id),
           initiallyExpanded: expanded,
           onExpansionChanged: onExpansionChanged,
+          shape: const Border(),
+          collapsedShape: const Border(),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          leading: Icon(
+            Icons.apartment_outlined,
+            color: theme.colorScheme.primary,
+          ),
           title: Row(
             children: [
               Expanded(
@@ -4148,6 +4167,18 @@ class _DepartmentExpansion extends StatelessWidget {
                   style: departmentTitleStyle,
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${node.classes.length} 班 · ${node.department.teacherCount} 师 · ${node.department.studentCount} 生',
+                  style: theme.textTheme.labelSmall,
+                ),
+              ),
+              const SizedBox(width: 8),
               PopupMenuButton<String>(
                 tooltip: '管理院系',
                 enabled: canManage,
@@ -4181,9 +4212,6 @@ class _DepartmentExpansion extends StatelessWidget {
                 ],
               ),
             ],
-          ),
-          subtitle: Text(
-            '院系ID：${node.department.id} · 学校：${node.department.schoolId}',
           ),
           children: children,
         ),
@@ -4250,16 +4278,6 @@ List<InlineSpan> _buildClassSubtitleSpans(
     }
   }
 
-  addSeparatorIfNeeded();
-  spans.addAll(
-    _buildHighlightedSpans(
-      '班级ID：${clazz.id}',
-      query,
-      baseStyle,
-      highlightStyle,
-    ),
-  );
-
   final grade = clazz.grade;
   if (grade != null && grade.isNotEmpty) {
     addSeparatorIfNeeded();
@@ -4275,6 +4293,9 @@ List<InlineSpan> _buildClassSubtitleSpans(
       _buildHighlightedSpans(description, query, baseStyle, highlightStyle),
     );
   }
+
+  addSeparatorIfNeeded();
+  spans.add(TextSpan(text: '${clazz.studentCount} 人', style: baseStyle));
 
   return spans;
 }
@@ -4593,7 +4614,7 @@ class _EditAccountStructureSheet extends HookConsumerWidget {
           Text('修改所属结构', style: theme.textTheme.titleLarge),
           const SizedBox(height: 20),
           DropdownButtonFormField<String>(
-            value: selectedDepartmentId.value,
+            initialValue: selectedDepartmentId.value,
             decoration: const InputDecoration(
               labelText: '所属院系',
               border: OutlineInputBorder(),
@@ -4612,7 +4633,7 @@ class _EditAccountStructureSheet extends HookConsumerWidget {
           const SizedBox(height: 16),
           if (account.role == AdminAccountRole.student) ...[
             DropdownButtonFormField<String>(
-              value: selectedClassId.value,
+              initialValue: selectedClassId.value,
               decoration: const InputDecoration(
                 labelText: '所属班级',
                 border: OutlineInputBorder(),
@@ -4742,8 +4763,8 @@ class _AccountDetailSheet extends HookConsumerWidget {
             );
             if (result == true) {
               ref.invalidate(adminAccountListProvider);
-              showSnack('所属结构已更新');
               if (context.mounted) {
+                showSnack('所属结构已更新'); // ignore: use_build_context_synchronously
                 Navigator.of(context).pop();
               }
             }
@@ -4970,7 +4991,8 @@ class _AccountDetailSheet extends HookConsumerWidget {
               const SizedBox(height: 20),
               Text('操作', style: theme.textTheme.titleMedium),
               const SizedBox(height: 12),
-              Column(
+              Row(
+                spacing: 12,
                 children: [
                   for (final action in actions)
                     Padding(
@@ -6441,7 +6463,7 @@ class _CreateAccountDialog extends HookConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<AdminAccountRole>(
-                  value: role.value,
+                  initialValue: role.value,
                   decoration: const InputDecoration(labelText: '角色'),
                   items: const [
                     DropdownMenuItem(
@@ -6490,7 +6512,7 @@ class _CreateAccountDialog extends HookConsumerWidget {
                 if (role.value == AdminAccountRole.student) ...[
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: selectedClassId.value,
+                    initialValue: selectedClassId.value,
                     decoration: const InputDecoration(labelText: '班级'),
                     items: allClasses
                         .map(

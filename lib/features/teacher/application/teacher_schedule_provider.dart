@@ -28,3 +28,28 @@ final teacherScheduleProvider = FutureProvider.autoDispose<List<TeacherScheduleI
 
   return repository.listSchedule(start, end);
 });
+
+class TeacherScheduleController extends StateNotifier<AsyncValue<void>> {
+  TeacherScheduleController(this._ref) : super(const AsyncData(null));
+
+  final Ref _ref;
+
+  Future<void> updateSession(
+    String sessionId, {
+    String? location,
+    String? status,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await _ref
+          .read(teacherRepositoryProvider)
+          .updateSession(sessionId, location: location, status: status);
+      _ref.invalidate(teacherScheduleProvider);
+    });
+  }
+}
+
+final teacherScheduleControllerProvider =
+    StateNotifierProvider<TeacherScheduleController, AsyncValue<void>>((ref) {
+      return TeacherScheduleController(ref);
+    });

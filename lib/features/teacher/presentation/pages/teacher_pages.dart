@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:learn_go/features/im/presentation/pages/conversation_list_screen.dart';
 import 'package:learn_go/features/im/application/im_providers.dart';
@@ -66,7 +67,7 @@ class TeacherOverviewPage extends HookConsumerWidget {
                   color: theme.colorScheme.tertiary,
                   onTap: () => context.go(TeacherSection.conversations.path),
                 ),
-                error: (_, __) => _OverviewStatCard(
+                error: (_, _) => _OverviewStatCard(
                   icon: Icons.mark_chat_unread_outlined,
                   label: '新消息',
                   value: '-',
@@ -390,60 +391,72 @@ class TeacherSchedulePage extends HookConsumerWidget {
                                 }
 
                                 return DataCell(
-                                  Container(
-                                    width: 140,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          item.courseName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
+                                  InkWell(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) =>
+                                            _EditSessionDialog(session: item),
+                                      );
+                                    },
+                                    child: Container(
+                                      width: 140,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            item.courseName,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          '${item.className}\n${item.location}',
-                                          style: theme.textTheme.bodySmall,
-                                          maxLines: 3,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        if (item.isOnline)
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              top: 4,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: theme
-                                                  .colorScheme
-                                                  .primaryContainer,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              '线上',
-                                              style: theme.textTheme.labelSmall
-                                                  ?.copyWith(
-                                                    color: theme
-                                                        .colorScheme
-                                                        .onPrimaryContainer,
-                                                    fontSize: 10,
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${item.className}\n${item.location}',
+                                            style: theme.textTheme.bodySmall,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          if (item.isOnline)
+                                            Container(
+                                              margin: const EdgeInsets.only(
+                                                top: 4,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
                                                   ),
+                                              decoration: BoxDecoration(
+                                                color: theme
+                                                    .colorScheme
+                                                    .primaryContainer,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              child: Text(
+                                                '线上',
+                                                style: theme
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onPrimaryContainer,
+                                                      fontSize: 10,
+                                                    ),
+                                              ),
                                             ),
-                                          ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );
@@ -776,6 +789,53 @@ class _StatBadge extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: color,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditSessionDialog extends HookConsumerWidget {
+  const _EditSessionDialog({required this.session});
+
+  final TeacherScheduleItem session;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locationController = useTextEditingController(text: session.location);
+
+    return AlertDialog(
+      title: const Text('调整课程'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('课程: ${session.courseName}'),
+          const SizedBox(height: 8),
+          Text('班级: ${session.className}'),
+          const SizedBox(height: 16),
+          TextField(
+            controller: locationController,
+            decoration: const InputDecoration(labelText: '地点'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () async {
+            await ref
+                .read(teacherScheduleControllerProvider.notifier)
+                .updateSession(
+                  session.sessionId,
+                  location: locationController.text,
+                );
+            if (context.mounted) Navigator.pop(context);
+          },
+          child: const Text('保存'),
         ),
       ],
     );

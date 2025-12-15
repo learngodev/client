@@ -286,6 +286,29 @@ class TeacherApiRepository implements TeacherRepository {
     }
   }
 
+  @override
+  Future<void> updateSession(
+    String sessionId, {
+    String? location,
+    String? status,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (location != null) data['location'] = location;
+      if (status != null) data['status'] = status;
+
+      if (data.isEmpty) return;
+
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/api/v1/teacher/sessions/$sessionId',
+        data: data,
+      );
+      _extractData(response.data, '更新课程失败');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法更新课程');
+    }
+  }
+
   Map<String, dynamic> _extractData(
     Map<String, dynamic>? body,
     String fallbackMessage,

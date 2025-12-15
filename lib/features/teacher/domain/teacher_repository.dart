@@ -39,4 +39,9 @@ abstract class TeacherRepository {
     required int count,
     required String difficulty,
   });
+  Future<void> updateSession(
+    String sessionId, {
+    String? location,
+    String? status,
+  });
 }

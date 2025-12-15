@@ -17,7 +17,7 @@ class CourseManagementPage extends ConsumerWidget {
     final filter = ref.watch(courseFilterProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('课程管理'), centerTitle: true),
+      appBar: AppBar(title: const Text('课程管理')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateCourseDialog(context, ref),
         icon: const Icon(Icons.add),
@@ -63,7 +63,7 @@ class CourseManagementPage extends ConsumerWidget {
                             ),
                           ),
                           style: Theme.of(context).textTheme.bodyMedium,
-                          value: filter.departmentId,
+                          initialValue: filter.departmentId,
                           isExpanded: true,
                           items: [
                             const DropdownMenuItem(
@@ -101,7 +101,7 @@ class CourseManagementPage extends ConsumerWidget {
                             ),
                           ),
                           style: Theme.of(context).textTheme.bodyMedium,
-                          value: filter.classId,
+                          initialValue: filter.classId,
                           isExpanded: true,
                           items: [
                             const DropdownMenuItem(
@@ -295,10 +295,12 @@ class CourseManagementPage extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -328,7 +330,7 @@ class CourseManagementPage extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -356,10 +358,14 @@ class CourseManagementPage extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.tertiary.withOpacity(0.1),
+                        color: theme.colorScheme.tertiary.withValues(
+                          alpha: 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: theme.colorScheme.tertiary.withOpacity(0.2),
+                          color: theme.colorScheme.tertiary.withValues(
+                            alpha: 0.2,
+                          ),
                         ),
                       ),
                       child: Row(
@@ -389,7 +395,7 @@ class CourseManagementPage extends ConsumerWidget {
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(

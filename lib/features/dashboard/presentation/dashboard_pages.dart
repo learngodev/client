@@ -6,7 +6,6 @@ import '../../admin/application/admin_providers.dart';
 import '../../admin/presentation/admin_shell.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../teacher/domain/sample_data.dart' as teacher_data;
-import '../../teacher/presentation/teacher_shell.dart';
 
 class AdminDashboardPage extends HookConsumerWidget {
   const AdminDashboardPage({super.key});

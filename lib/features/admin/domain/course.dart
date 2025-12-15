@@ -43,29 +43,53 @@ class Course {
 
 class TeachingAssignment {
   final String id;
-  final String schoolId;
-  final String courseId;
-  final String teacherId;
+  final String? schoolId;
+  final String? courseId;
+  final String? teacherId;
   final String classId;
-  final DateTime createdAt;
+  final DateTime? createdAt;
+  final String? className;
+  final String? teacherName;
+  final String? courseName;
+  final int teacherCount;
+  final int studentCount;
+  final List<String> assignmentIds;
 
   TeachingAssignment({
     required this.id,
-    required this.schoolId,
-    required this.courseId,
-    required this.teacherId,
+    this.schoolId,
+    this.courseId,
+    this.teacherId,
     required this.classId,
-    required this.createdAt,
+    this.createdAt,
+    this.className,
+    this.teacherName,
+    this.courseName,
+    this.teacherCount = 0,
+    this.studentCount = 0,
+    this.assignmentIds = const [],
   });
 
   factory TeachingAssignment.fromJson(Map<String, dynamic> json) {
     return TeachingAssignment(
-      id: json['ID'] ?? json['id'],
+      id: json['ID'] ?? json['id'] ?? '',
       schoolId: json['SchoolID'] ?? json['school_id'],
       courseId: json['CourseID'] ?? json['course_id'],
       teacherId: json['TeacherID'] ?? json['teacher_id'],
-      classId: json['ClassID'] ?? json['class_id'],
-      createdAt: DateTime.parse(json['CreatedAt'] ?? json['created_at']),
+      classId: json['ClassID'] ?? json['class_id'] ?? '',
+      createdAt: json['created_at'] != null || json['CreatedAt'] != null
+          ? DateTime.tryParse(json['created_at'] ?? json['CreatedAt'])
+          : null,
+      className: json['class_name'],
+      teacherName: json['teacher_name'],
+      courseName: json['course_name'],
+      teacherCount: json['teacher_count'] ?? 0,
+      studentCount: json['student_count'] ?? 0,
+      assignmentIds:
+          (json['assignment_ids'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 }

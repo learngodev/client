@@ -96,7 +96,7 @@ ThemeData buildLightTheme() {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size(52, 50),
             backgroundColor: primaryColor,
             foregroundColor: Colors.white,
             elevation: 0,
@@ -123,7 +123,7 @@ ThemeData buildLightTheme() {
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
+            minimumSize: const Size(52, 50),
             side: BorderSide(color: base.colorScheme.outline),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),

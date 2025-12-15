@@ -9,6 +9,7 @@ import '../domain/oss.dart';
 import '../domain/system_settings.dart';
 import '../domain/ai_settings.dart';
 import '../domain/course.dart';
+import '../domain/schedule.dart';
 
 class AdminRepository {
   const AdminRepository(this._dio);
@@ -1906,6 +1907,230 @@ class AdminRepository {
       details ??= body?.toString();
       throw AppException(message, details: details);
     }
+  }
+
+  Future<void> assignStudents({
+    required String courseId,
+    List<String>? studentIds,
+    String? classId,
+    String? departmentId,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/courses/$courseId/assign/students',
+        data: {
+          'student_ids': studentIds,
+          'class_id': classId,
+          'department_id': departmentId,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('分配学生失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '分配学生失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> assignTeachers({
+    required String courseId,
+    List<String>? teacherIds,
+    String? departmentId,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/courses/$courseId/assign/teachers',
+        data: {'teacher_ids': teacherIds, 'department_id': departmentId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('分配教师失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '分配教师失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  // Schedule Management
+
+  Future<List<TimeSlot>> listTimeSlots({required String schoolId}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/slots',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('Failed to fetch time slots');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to fetch time slots',
+        );
+      }
+      final data = body['data'];
+      if (data is List) {
+        return data
+            .map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<TimeSlot> createTimeSlot({
+    required String schoolId,
+    required String name,
+    required String startTime,
+    required String endTime,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/slots',
+        data: {
+          'school_id': schoolId,
+          'name': name,
+          'start_time': startTime,
+          'end_time': endTime,
+        },
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('Failed to create time slot');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to create time slot',
+        );
+      }
+      return TimeSlot.fromJson(body['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<CourseSchedule> createScheduleRule({
+    required String schoolId,
+    required String courseId,
+    required String classId,
+    required String teacherId,
+    required String slotId,
+    required int dayOfWeek,
+    required String location,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/rules',
+        data: {
+          'school_id': schoolId,
+          'course_id': courseId,
+          'class_id': classId,
+          'teacher_id': teacherId,
+          'slot_id': slotId,
+          'day_of_week': dayOfWeek,
+          'location': location,
+          'start_date': startDate.toIso8601String(),
+          'end_date': endDate.toIso8601String(),
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('Failed to create schedule rule');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to create schedule rule',
+        );
+      }
+      return CourseSchedule.fromJson(body['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> generateSessions({
+    required String schoolId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/generate',
+        data: {
+          'school_id': schoolId,
+          'start': start.toIso8601String(),
+          'end': end.toIso8601String(),
+        },
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('Failed to generate sessions');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to generate sessions',
+        );
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  AppException _handleDioError(DioException error) {
+    final body = error.response?.data;
+    String? message;
+    String? details;
+    if (body is Map<String, dynamic>) {
+      final map = body['error'] as Map<String, dynamic>?;
+      message = map?['message']?.toString();
+      details = map?['details']?.toString();
+    }
+    message ??= error.message ?? '网络错误';
+    details ??= body?.toString();
+    return AppException(message, details: details);
   }
 
   List<Map<String, dynamic>> _extractMapList(

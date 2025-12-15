@@ -146,7 +146,7 @@ class PasswordResetPage extends HookConsumerWidget {
         ],
         schoolsAsync.when(
           data: (schools) => DropdownButtonFormField<String>(
-            value: schools.any((s) => s.id == schoolId.text)
+            initialValue: schools.any((s) => s.id == schoolId.text)
                 ? schoolId.text
                 : null,
             decoration: const InputDecoration(labelText: '选择学校'),
@@ -158,7 +158,7 @@ class PasswordResetPage extends HookConsumerWidget {
             },
           ),
           loading: () => const LinearProgressIndicator(),
-          error: (_, __) => const Text('加载学校列表失败'),
+          error: (_, _) => const Text('加载学校列表失败'),
         ),
         const SizedBox(height: 16),
         TextField(

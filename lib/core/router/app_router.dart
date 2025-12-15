@@ -10,6 +10,7 @@ import '../../features/admin/presentation/admin_shell.dart';
 import '../../features/admin/presentation/pages/admin_pages.dart';
 import '../../features/admin/presentation/pages/admin_ai_settings_page.dart';
 import '../../features/admin/presentation/pages/course_management_page.dart';
+import '../../features/admin/presentation/pages/schedule_management_page.dart';
 import '../../features/student/presentation/pages/assignment_detail_page.dart';
 import '../../features/student/presentation/pages/submission_detail_page.dart';
 import '../../features/student/presentation/pages/student_pages.dart';
@@ -148,6 +149,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/admin/courses',
             name: 'adminCourses',
             builder: (context, state) => const CourseManagementPage(),
+          ),
+          GoRoute(
+            path: '/admin/schedule',
+            name: 'adminSchedule',
+            builder: (context, state) => const ScheduleManagementPage(),
           ),
           GoRoute(
             path: '/admin/oss',
