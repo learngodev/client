@@ -111,18 +111,81 @@ class AuthRepository {
           .map((e) => School.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (error) {
-      final body = error.response?.data;
-      String? message;
-      String? details;
-      if (body is Map<String, dynamic>) {
-        final map = body['error'] as Map<String, dynamic>?;
-        message = map?['message']?.toString();
-        details = map?['details']?.toString();
-      }
-      message ??= error.message ?? '网络错误';
-      details ??= body?.toString();
-      throw AppException(message, details: details);
+      throw _handleDioError(error);
     }
+  }
+
+  Future<String> requestPasswordReset({
+    required String schoolId,
+    required String identifier,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/auth/password/reset/request',
+        data: {'school_id': schoolId, 'identifier': identifier},
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppException('请求失败：服务端无响应数据');
+      }
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        final error = data['error'] as Map<String, dynamic>?;
+        throw AppException(error?['message']?.toString() ?? '请求重置密码失败');
+      }
+      final payload = data['data'] as Map<String, dynamic>?;
+      final token = payload?['reset_token'] as String?;
+      if (token == null || token.isEmpty) {
+        throw const AppException('未获取到重置令牌');
+      }
+      return token;
+    } on DioException catch (error) {
+      throw _handleDioError(error);
+    }
+  }
+
+  Future<void> confirmPasswordReset({
+    required String schoolId,
+    required String identifier,
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/auth/password/reset/confirm',
+        data: {
+          'school_id': schoolId,
+          'identifier': identifier,
+          'token': token,
+          'new_password': newPassword,
+        },
+      );
+      final data = response.data;
+      if (data == null) {
+        throw const AppException('请求失败：服务端无响应数据');
+      }
+      final success = data['success'] as bool? ?? false;
+      if (!success) {
+        final error = data['error'] as Map<String, dynamic>?;
+        throw AppException(error?['message']?.toString() ?? '重置密码失败');
+      }
+    } on DioException catch (error) {
+      throw _handleDioError(error);
+    }
+  }
+
+  AppException _handleDioError(DioException error) {
+    final body = error.response?.data;
+    String? message;
+    String? details;
+    if (body is Map<String, dynamic>) {
+      final map = body['error'] as Map<String, dynamic>?;
+      message = map?['message']?.toString();
+      details = map?['details']?.toString();
+    }
+    message ??= error.message ?? '网络错误';
+    details ??= body?.toString();
+    return AppException(message, details: details);
   }
 }
 

@@ -6,11 +6,56 @@ import '../../../core/network/dio_provider.dart';
 import '../../student/domain/assignment_models.dart';
 import '../domain/teacher_models.dart';
 import '../domain/teacher_repository.dart';
+import '../domain/teacher_schedule_model.dart';
+import '../domain/time_slot.dart';
 
 class TeacherApiRepository implements TeacherRepository {
   TeacherApiRepository({required Dio dio}) : _dio = dio;
 
   final Dio _dio;
+
+  @override
+  Future<List<TimeSlot>> listTimeSlots() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/time-slots',
+      );
+      final data = _extractData(response.data, '未能获取时间段');
+      final list = data['time_slots'] as List?;
+      return list
+              ?.map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载时间段');
+    }
+  }
+
+  @override
+  Future<List<TeacherScheduleItem>> listSchedule(
+    DateTime from,
+    DateTime to,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/schedule',
+        queryParameters: {
+          'from': from.toUtc().toIso8601String(),
+          'to': to.toUtc().toIso8601String(),
+        },
+      );
+      final data = _extractData(response.data, '未能获取课表');
+      final list = data['sessions'] as List?;
+      return list
+              ?.map(
+                (e) => TeacherScheduleItem.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载课表');
+    }
+  }
 
   @override
   Future<List<TeacherAssignment>> listTeacherAssignments() async {
@@ -179,6 +224,39 @@ class TeacherApiRepository implements TeacherRepository {
       return GradeAssignmentResult.fromJson(data);
     } on DioException catch (error) {
       throw _asAppException(error, 'AI 批改失败');
+    }
+  }
+
+  @override
+  Future<void> updateAssignment(
+    String id,
+    UpdateAssignmentRequest request,
+  ) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/assignments/$id',
+        data: request.toJson(),
+      );
+      _extractData(response.data, '更新作业失败');
+    } on DioException catch (error) {
+      throw _asAppException(error, '更新作业失败');
+    }
+  }
+
+  @override
+  Future<void> returnSubmission(
+    String assignmentId,
+    String submissionId,
+    String comment,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/assignments/$assignmentId/submissions/$submissionId/return',
+        data: {'comment': comment},
+      );
+      _extractData(response.data, '打回作业失败');
+    } on DioException catch (error) {
+      throw _asAppException(error, '打回作业失败');
     }
   }
 

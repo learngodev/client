@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/admin_repository.dart';
 import '../domain/accounts.dart';
+import '../domain/course.dart';
 import '../domain/models.dart';
 import '../domain/oss.dart' as oss;
 import '../domain/system_settings.dart';
@@ -650,6 +651,7 @@ class AdminAccountListRequest {
     this.departmentScope,
     this.classId,
     this.classScope,
+    this.courseId,
     this.query = '',
   });
 
@@ -660,6 +662,7 @@ class AdminAccountListRequest {
   final String? departmentScope;
   final String? classId;
   final String? classScope;
+  final String? courseId;
   final int page;
   final int pageSize;
   final String query;
@@ -674,6 +677,7 @@ class AdminAccountListRequest {
         other.departmentScope == departmentScope &&
         other.classId == classId &&
         other.classScope == classScope &&
+        other.courseId == courseId &&
         other.page == page &&
         other.pageSize == pageSize &&
         other.query == query;
@@ -688,6 +692,7 @@ class AdminAccountListRequest {
     departmentScope,
     classId,
     classScope,
+    courseId,
     page,
     pageSize,
     query,
@@ -1030,6 +1035,38 @@ final adminSystemSettingsProvider =
       AdminSystemSettingsState
     >(AdminSystemSettingsNotifier.new);
 
+class AdminCourseAssignmentsRequest {
+  const AdminCourseAssignmentsRequest({
+    required this.schoolId,
+    required this.courseId,
+  });
+
+  final String schoolId;
+  final String courseId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is AdminCourseAssignmentsRequest &&
+        other.schoolId == schoolId &&
+        other.courseId == courseId;
+  }
+
+  @override
+  int get hashCode => Object.hash(schoolId, courseId);
+}
+
+final adminCourseAssignmentsProvider = FutureProvider.autoDispose
+    .family<List<TeachingAssignment>, AdminCourseAssignmentsRequest>((
+      ref,
+      request,
+    ) async {
+      final repository = ref.watch(adminRepositoryProvider);
+      return repository.fetchAssignments(
+        schoolId: request.schoolId,
+        courseId: request.courseId,
+      );
+    });
+
 final adminAccountListProvider = FutureProvider.autoDispose
     .family<AdminAccountPage, AdminAccountListRequest>((ref, request) async {
       final repository = ref.watch(adminRepositoryProvider);
@@ -1041,6 +1078,7 @@ final adminAccountListProvider = FutureProvider.autoDispose
         departmentScope: request.departmentScope,
         classId: request.classId,
         classScope: request.classScope,
+        courseId: request.courseId,
         page: request.page,
         pageSize: request.pageSize,
         query: request.query,

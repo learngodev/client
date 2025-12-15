@@ -134,32 +134,15 @@ class TeacherDashboardPage extends HookConsumerWidget {
     final account = ref.watch(authStateProvider).account;
     final theme = Theme.of(context);
     final schedule = teacher_data.teacherTodaySchedule;
-    final tasks = teacher_data.teacherPendingTasks;
-    final messages = teacher_data.teacherRecentMessages;
-    final quickActions = _teacherQuickActions;
-    final insights = teacher_data.teacherInsights;
-    final stats = [
-      _DashboardStatCard(
-        icon: Icons.event_note_outlined,
-        title: '今日课程',
-        value: schedule.length.toString(),
-        accent: theme.colorScheme.primary,
-        onTap: () => context.go(TeacherSection.schedule.path),
-      ),
-      _DashboardStatCard(
-        icon: Icons.assignment_turned_in_outlined,
-        title: '待批改',
-        value: tasks.where((task) => task.isGrading).length.toString(),
-        accent: theme.colorScheme.secondary,
-        onTap: () => context.go('/teacher/assignments'),
-      ),
-      _DashboardStatCard(
-        icon: Icons.mark_chat_unread_outlined,
-        title: '未读消息',
-        value: messages.length.toString(),
-        accent: theme.colorScheme.tertiary,
-        onTap: () => context.go(TeacherSection.conversations.path),
-      ),
+    final gradingTasks = teacher_data.teacherPendingTasks
+        .where((t) => t.isGrading)
+        .toList();
+
+    // Mock classes data since it's not in sample_data
+    final classes = [
+      {'name': '2023 级计科 1 班', 'studentCount': 45, 'course': '线性代数'},
+      {'name': '2023 级计科 2 班', 'studentCount': 42, 'course': '高等数学'},
+      {'name': '2023 级计科 3 班', 'studentCount': 44, 'course': '线性代数'},
     ];
 
     return _DashboardScaffold(
@@ -174,181 +157,226 @@ class TeacherDashboardPage extends HookConsumerWidget {
       ],
       child: ListView(
         padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Wrap(spacing: 12, runSpacing: 12, children: stats),
-          const SizedBox(height: 24),
-          _TeacherCard(
-            icon: Icons.insights_outlined,
-            title: '教学洞察',
-            description: '根据近期数据识别课堂风险与工作重点。',
-            children: [
-              for (var index = 0; index < insights.length; index++) ...[
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          insights[index].icon,
-                          color: insights[index].barColor(theme),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                insights[index].label,
-                                style: theme.textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                insights[index].hint,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          insights[index].value,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: insights[index].progress,
-                        backgroundColor: theme
-                            .colorScheme
-                            .surfaceContainerHighest
-                            .withValues(alpha: 0.5),
-                        valueColor: AlwaysStoppedAnimation(
-                          insights[index].barColor(theme),
-                        ),
-                        minHeight: 8,
-                      ),
-                    ),
-                  ],
-                ),
-                if (index < insights.length - 1) const Divider(height: 24),
-              ],
-            ],
-          ),
-          const SizedBox(height: 24),
-          _TeacherCard(
-            icon: Icons.schedule_outlined,
-            title: '今日课表',
-            description: '掌握当日教学安排，及时调整授课节奏。',
-            children: [
-              for (var index = 0; index < schedule.length; index++) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Text(
-                      schedule[index].startTime,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                  title: Text(schedule[index].course),
-                  subtitle: Text(
-                    '${schedule[index].timeRange} · ${schedule[index].className}',
-                  ),
-                  trailing: Text(schedule[index].location),
-                ),
-                if (index < schedule.length - 1) const Divider(height: 16),
-              ],
-            ],
-          ),
-          const SizedBox(height: 16),
-          _TeacherCard(
-            icon: Icons.task_alt_outlined,
-            title: '待处理事项',
-            description: '查看批改与审批任务，保持教学进度。',
-            children: [
-              for (var index = 0; index < tasks.length; index++) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    tasks[index].icon,
-                    color: tasks[index].iconColor(theme),
-                  ),
-                  title: Text(tasks[index].title),
-                  subtitle: Text(tasks[index].subtitle),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        tasks[index].deadlineLabel,
-                        style: theme.textTheme.labelMedium,
-                      ),
-                      if (tasks[index].route != null)
-                        TextButton(
-                          onPressed: () => context.go(tasks[index].route!),
-                          child: const Text('前往处理'),
-                        ),
-                    ],
-                  ),
-                ),
-                if (index < tasks.length - 1) const Divider(height: 16),
-              ],
-            ],
-          ),
-          const SizedBox(height: 16),
-          _TeacherCard(
-            icon: Icons.mark_chat_unread_outlined,
-            title: '最近消息',
-            description: '关注学生与家长的反馈，保持顺畅沟通。',
-            children: [
-              for (var index = 0; index < messages.length; index++) ...[
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.secondaryContainer,
-                    child: Text(
-                      messages[index].initials,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                  ),
-                  title: Text(messages[index].sender),
-                  subtitle: Text(messages[index].preview),
-                  trailing: Text(
-                    messages[index].timeLabel,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  onTap: () => context.go(TeacherSection.conversations.path),
-                ),
-                if (index < messages.length - 1) const Divider(height: 16),
-              ],
-            ],
-          ),
-          const SizedBox(height: 24),
-          _DashboardSectionHeader(
-            icon: Icons.flash_on_outlined,
-            title: '快捷操作',
-            description: '常用教学入口，帮助你快速完成日常任务。',
-          ),
+          // 1. 作业情况 (Homework Status) - Prominent
+          _TeacherSectionHeader(title: '作业情况', icon: Icons.assignment_outlined),
           const SizedBox(height: 12),
-          ...quickActions.map(
-            (action) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _QuickActionCard(action: action),
+          Row(
+            children: [
+              Expanded(
+                child: _InfoCard(
+                  title: '待批改',
+                  value: gradingTasks.length.toString(),
+                  unit: '份',
+                  icon: Icons.rate_review_outlined,
+                  color: theme.colorScheme.primary,
+                  onTap: () => context.go('/teacher/assignments'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _InfoCard(
+                  title: '批改完成率',
+                  value: '68', // Mocked from insights
+                  unit: '%',
+                  icon: Icons.pie_chart_outline,
+                  color: theme.colorScheme.tertiary,
+                  onTap: () => context.go('/teacher/assignments'),
+                ),
+              ),
+            ],
+          ),
+          if (gradingTasks.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Card(
+              elevation: 0,
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: gradingTasks
+                    .map(
+                      (task) => ListTile(
+                        title: Text(task.title),
+                        subtitle: Text(task.subtitle),
+                        trailing: TextButton(
+                          onPressed: () =>
+                              context.go(task.route ?? '/teacher/assignments'),
+                          child: const Text('去批改'),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 24),
+
+          // 2. 所属班级 (Class Information)
+          _TeacherSectionHeader(title: '所属班级', icon: Icons.people_outline),
+          const SizedBox(height: 12),
+          ...classes.map(
+            (cls) => Card(
+              elevation: 0,
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: theme.colorScheme.secondaryContainer,
+                  child: Icon(
+                    Icons.class_outlined,
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                title: Text(cls['name'] as String),
+                subtitle: Text(
+                  '课程：${cls['course']} · ${cls['studentCount']} 人',
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () {
+                  // Navigate to class details if available
+                },
+              ),
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // 3. 课程安排 (Course Schedule)
+          _TeacherSectionHeader(title: '课程安排', icon: Icons.calendar_today),
+          const SizedBox(height: 12),
+          if (schedule.isEmpty)
+            const Card(
+              elevation: 0,
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(child: Text('今日无课程安排')),
+              ),
+            )
+          else
+            ...schedule.map(
+              (item) => Card(
+                elevation: 0,
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      item.startTime,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    item.course,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('${item.className} · ${item.location}'),
+                  onTap: () => context.go('/teacher/schedule'),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _TeacherSectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _TeacherSectionHeader({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
+
+class _InfoCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _InfoCard({
+    required this.title,
+    required this.value,
+    required this.unit,
+    required this.icon,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: color.withValues(alpha: 0.1),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      unit,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: color.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: color.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -429,52 +457,6 @@ class _DashboardSectionHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TeacherCard extends StatelessWidget {
-  const _TeacherCard({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.children,
-  });
-
-  final IconData icon;
-  final String title;
-  final String description;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: theme.colorScheme.primary),
-                const SizedBox(width: 12),
-                Text(title, style: theme.textTheme.titleMedium),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              description,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
-        ),
-      ),
     );
   }
 }
@@ -644,32 +626,5 @@ const List<_QuickAction> _adminQuickActions = [
     title: '系统参数',
     subtitle: '统一维护公告、平台参数与日志',
     route: '/admin/system',
-  ),
-];
-
-const List<_QuickAction> _teacherQuickActions = [
-  _QuickAction(
-    icon: Icons.assignment_outlined,
-    title: '布置作业',
-    subtitle: '选择班级并发布新的作业或考试',
-    route: '/teacher/assignments',
-  ),
-  _QuickAction(
-    icon: Icons.playlist_add_check_outlined,
-    title: '批改提交',
-    subtitle: '查看学生提交记录并完成批改反馈',
-    route: '/teacher/assignments',
-  ),
-  _QuickAction(
-    icon: Icons.event_available_outlined,
-    title: '管理课程表',
-    subtitle: '调整课程节次、审批调课请求',
-    route: '/teacher/schedule',
-  ),
-  _QuickAction(
-    icon: Icons.chat_bubble_outline,
-    title: '消息中心',
-    subtitle: '快速回复学生与家长的咨询消息',
-    route: '/teacher/conversations',
   ),
 ];

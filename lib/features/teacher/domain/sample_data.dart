@@ -4,7 +4,8 @@ class TeacherScheduleItem {
   const TeacherScheduleItem({
     required this.course,
     required this.className,
-    required this.dayLabel,
+    required this.weekDay,
+    required this.slotName,
     required this.timeRange,
     required this.startTime,
     required this.location,
@@ -14,7 +15,8 @@ class TeacherScheduleItem {
 
   final String course;
   final String className;
-  final String dayLabel;
+  final int weekDay; // 1 = Monday, 7 = Sunday
+  final String slotName;
   final String timeRange;
   final String startTime;
   final String location;
@@ -28,7 +30,6 @@ class TeacherScheduleItem {
     }
     return course.toLowerCase().contains(lower) ||
         className.toLowerCase().contains(lower) ||
-        dayLabel.toLowerCase().contains(lower) ||
         location.toLowerCase().contains(lower);
   }
 }
@@ -171,60 +172,84 @@ class TeacherQuickLink {
 
 const List<TeacherScheduleItem> teacherScheduleItems = [
   TeacherScheduleItem(
-    course: '线性代数（复习课）',
+    course: '线性代数',
     className: '2023 级计科 1 班',
-    dayLabel: '今天',
-    timeRange: '08:00 - 09:30',
+    weekDay: 1,
+    slotName: '第1-2节',
+    timeRange: '08:00 - 09:35',
     startTime: '08:00',
     location: '教学楼 A-305',
     isKeyCourse: true,
   ),
   TeacherScheduleItem(
-    course: '高等数学（习题课）',
+    course: '高等数学',
     className: '2023 级计科 2 班',
-    dayLabel: '今天',
-    timeRange: '10:00 - 11:30',
-    startTime: '10:00',
+    weekDay: 1,
+    slotName: '第3-4节',
+    timeRange: '09:50 - 11:25',
+    startTime: '09:50',
     location: '教学楼 A-402',
   ),
   TeacherScheduleItem(
-    course: '学业辅导（答疑）',
-    className: '线上会议',
-    dayLabel: '今天',
-    timeRange: '15:00 - 15:45',
-    startTime: '15:00',
-    location: '腾讯会议 839-xxxx-321',
-    isOnline: true,
+    course: '离散数学',
+    className: '2023 级计科 1 班',
+    weekDay: 2,
+    slotName: '第1-2节',
+    timeRange: '08:00 - 09:35',
+    startTime: '08:00',
+    location: '教学楼 B-201',
   ),
   TeacherScheduleItem(
-    course: '线性代数（课堂讲授）',
+    course: '线性代数',
     className: '2023 级计科 3 班',
-    dayLabel: '明天',
-    timeRange: '09:50 - 11:20',
+    weekDay: 2,
+    slotName: '第3-4节',
+    timeRange: '09:50 - 11:25',
     startTime: '09:50',
     location: '教学楼 B-210',
   ),
   TeacherScheduleItem(
-    course: '课程组集体备课',
+    course: '学业辅导',
+    className: '线上会议',
+    weekDay: 3,
+    slotName: '第5-6节',
+    timeRange: '14:00 - 15:35',
+    startTime: '14:00',
+    location: '腾讯会议',
+    isOnline: true,
+  ),
+  TeacherScheduleItem(
+    course: '高等数学',
+    className: '2023 级计科 2 班',
+    weekDay: 4,
+    slotName: '第1-2节',
+    timeRange: '08:00 - 09:35',
+    startTime: '08:00',
+    location: '教学楼 A-402',
+  ),
+  TeacherScheduleItem(
+    course: '课程组备课',
     className: '教研室',
-    dayLabel: '周五',
-    timeRange: '14:00 - 16:00',
+    weekDay: 5,
+    slotName: '第5-6节',
+    timeRange: '14:00 - 15:35',
     startTime: '14:00',
     location: '办公室 5 楼会议室',
   ),
   TeacherScheduleItem(
-    course: '线上家长沟通会',
+    course: '家长沟通会',
     className: '家校沟通',
-    dayLabel: '周六',
-    timeRange: '19:30 - 20:30',
-    startTime: '19:30',
-    location: '腾讯会议 889-xxxx-210',
+    weekDay: 6,
+    slotName: '第9-10节',
+    timeRange: '19:00 - 20:35',
+    startTime: '19:00',
+    location: '腾讯会议',
     isOnline: true,
   ),
 ];
 
 final List<TeacherScheduleItem> teacherTodaySchedule = teacherScheduleItems
-    .where((item) => item.dayLabel == '今天')
+    .where((item) => item.weekDay == DateTime.now().weekday)
     .toList(growable: false);
 
 const List<TeacherTaskItem> teacherPendingTasks = [

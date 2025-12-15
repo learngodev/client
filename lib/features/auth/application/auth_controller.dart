@@ -133,3 +133,7 @@ class AuthController extends Notifier<AuthState> {
 final authStateProvider = NotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
+
+final currentUserProvider = Provider<Account?>((ref) {
+  return ref.watch(authStateProvider).account;
+});

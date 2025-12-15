@@ -146,6 +146,39 @@ class GradingPage extends HookConsumerWidget {
                             onPressed: () {
                               feedbackController.text =
                                   '${result.summary}\n\n改进建议:\n${result.suggestions.join('\n')}';
+
+                              // If there is only one question, automatically fill the score
+                              if (assignment.questions.length == 1) {
+                                final qId = assignment.questions.first.id;
+                                final newScores = Map<String, double>.from(
+                                  itemScores.value,
+                                );
+                                newScores[qId] = result.score.toDouble();
+                                itemScores.value = newScores;
+                              } else if (assignment.questions.isNotEmpty) {
+                                if (result.itemScores.length ==
+                                    assignment.questions.length) {
+                                  final newScores = Map<String, double>.from(
+                                    itemScores.value,
+                                  );
+                                  for (
+                                    int i = 0;
+                                    i < assignment.questions.length;
+                                    i++
+                                  ) {
+                                    newScores[assignment.questions[i].id] =
+                                        result.itemScores[i].toDouble();
+                                  }
+                                  itemScores.value = newScores;
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('AI 返回的分数数量与题目数量不一致，请手动评分'),
+                                    ),
+                                  );
+                                }
+                              }
+
                               Navigator.pop(context);
                             },
                             child: const Text('采纳评语'),
@@ -212,6 +245,7 @@ class GradingPage extends HookConsumerWidget {
                   SubmissionItem(id: '', questionId: question.id, answer: ''),
             );
             return QuestionGradingItem(
+              key: ValueKey(question.id),
               question: question,
               submissionItem: submissionItem,
               initialScore: itemScores.value[question.id],
@@ -238,31 +272,107 @@ class GradingPage extends HookConsumerWidget {
             ),
           ),
           const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: isSubmitting.value
-                  ? null
-                  : () => _submitGrade(
-                      context,
-                      itemScores.value,
-                      feedbackController.text,
-                      isSubmitting,
-                      repository,
-                      submission,
-                    ),
-              child: isSubmitting.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('提交评分'),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: isSubmitting.value
+                      ? null
+                      : () => _returnSubmission(
+                          context,
+                          feedbackController.text,
+                          isSubmitting,
+                          repository,
+                          submission,
+                        ),
+                  child: const Text('打回重做'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: FilledButton(
+                  onPressed: isSubmitting.value
+                      ? null
+                      : () => _submitGrade(
+                          context,
+                          itemScores.value,
+                          feedbackController.text,
+                          isSubmitting,
+                          repository,
+                          submission,
+                        ),
+                  child: isSubmitting.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('提交评分'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _returnSubmission(
+    BuildContext context,
+    String comment,
+    ValueNotifier<bool> isSubmitting,
+    TeacherRepository repository,
+    TeacherSubmissionDetail submission,
+  ) async {
+    if (comment.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('打回作业必须填写评语/原因')));
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认打回'),
+        content: const Text('确定要将作业打回给学生重做吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确认打回'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    isSubmitting.value = true;
+    try {
+      await repository.returnSubmission(
+        assignmentId,
+        submission.submission.id,
+        comment,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('作业已打回')));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('操作失败: $e')));
+      }
+    } finally {
+      isSubmitting.value = false;
+    }
   }
 
   Future<void> _submitGrade(
@@ -351,6 +461,19 @@ class _QuestionGradingItemState extends State<QuestionGradingItem> {
     _controller = TextEditingController(
       text: widget.initialScore?.toString() ?? '',
     );
+  }
+
+  @override
+  void didUpdateWidget(QuestionGradingItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialScore != oldWidget.initialScore) {
+      final currentScore = double.tryParse(_controller.text);
+      // Update if current text is empty or matches old score (meaning user hasn't changed it manually to something else)
+      // Or if we just want to force update from parent
+      if (currentScore != widget.initialScore) {
+        _controller.text = widget.initialScore?.toString() ?? '';
+      }
+    }
   }
 
   @override

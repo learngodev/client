@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:learn_go/features/im/presentation/pages/conversation_list_screen.dart';
@@ -7,7 +6,11 @@ import 'package:learn_go/features/im/application/im_providers.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:intl/intl.dart';
 
-import '../../domain/sample_data.dart';
+import '../../domain/teacher_schedule_model.dart';
+import '../../domain/teacher_models.dart';
+import '../../application/teacher_schedule_provider.dart';
+import '../../application/teacher_assignment_provider.dart';
+import '../../application/teacher_classes_provider.dart';
 import '../teacher_shell.dart';
 
 class TeacherOverviewPage extends HookConsumerWidget {
@@ -16,11 +19,11 @@ class TeacherOverviewPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final schedule = teacherTodaySchedule;
-    final tasks = teacherPendingTasks;
+    final scheduleAsync = ref.watch(teacherScheduleProvider);
+    final assignmentsAsync = ref.watch(teacherAssignmentsProvider);
+    final classesAsync = ref.watch(teacherClassesProvider);
     // final messages = teacherRecentMessages;
-    final insights = teacherInsights;
-    final quickLinks = teacherQuickLinks;
+    // final quickLinks = teacherQuickLinks;
 
     final conversationsAsync = ref.watch(conversationsProvider);
     final currentUserId = ref.watch(authStateProvider).account?.id ?? '';
@@ -43,19 +46,9 @@ class TeacherOverviewPage extends HookConsumerWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _OverviewStatCard(
-                icon: Icons.event_available_outlined,
-                label: '今日课程',
-                value: '${schedule.length} 节',
-                color: theme.colorScheme.primary,
+              _ScheduleStatCard(
+                scheduleAsync: scheduleAsync,
                 onTap: () => context.go(TeacherSection.schedule.path),
-              ),
-              _OverviewStatCard(
-                icon: Icons.assignment_turned_in_outlined,
-                label: '待处理任务',
-                value: '${tasks.length} 项',
-                color: theme.colorScheme.secondary,
-                onTap: () => context.go('/teacher/assignments'),
               ),
               conversationsAsync.when(
                 data: (conversations) => _OverviewStatCard(
@@ -85,198 +78,133 @@ class TeacherOverviewPage extends HookConsumerWidget {
           ),
           const SizedBox(height: 24),
           _SectionCard(
-            icon: Icons.apps_outlined,
-            title: '快捷访问',
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 4,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              children: [
-                _QuickAccessItem(
-                  icon: Icons.assignment_turned_in_outlined,
-                  label: '作业考试',
-                  onTap: () => context.go('/teacher/assignments'),
-                ),
-                _QuickAccessItem(
-                  icon: Icons.note_alt_outlined,
-                  label: '笔记',
-                  onTap: () => context.go('/teacher/notes'),
-                ),
-              ],
+            icon: Icons.class_outlined,
+            title: '我的班级与课程',
+            child: classesAsync.when(
+              data: (classes) {
+                if (classes.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: Text('暂无班级信息')),
+                  );
+                }
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: classes.map((c) {
+                    return Chip(
+                      avatar: CircleAvatar(
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        child: Text(
+                          c.name.isNotEmpty ? c.name.substring(0, 1) : '?',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      label: Text('${c.name} - ${c.courseName}'),
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('加载失败: $err')),
             ),
           ),
           const SizedBox(height: 24),
           _SectionCard(
-            icon: Icons.insights_outlined,
-            title: '教学洞察',
-            child: Column(
-              children: [
-                for (var index = 0; index < insights.length; index++) ...[
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            insights[index].icon,
-                            color: insights[index].barColor(theme),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  insights[index].label,
-                                  style: theme.textTheme.titleSmall,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  insights[index].hint,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            insights[index].value,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: insights[index].progress,
-                          backgroundColor: theme
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withValues(alpha: 0.5),
-                          valueColor: AlwaysStoppedAnimation(
-                            insights[index].barColor(theme),
-                          ),
-                          minHeight: 8,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (index < insights.length - 1) const Divider(height: 24),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
             icon: Icons.schedule_outlined,
             title: '今日课表',
-            child: Column(
-              children: [
-                for (var index = 0; index < schedule.length; index++) ...[
-                  ListTile(
-                    isThreeLine: schedule[index].isOnline,
-                    leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Text(
-                        schedule[index].startTime,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
+            child: scheduleAsync.when(
+              data: (schedule) {
+                final now = DateTime.now();
+                final today = now.weekday;
+                final todayClasses = schedule
+                    .where((item) => item.weekDay == today)
+                    .toList();
+                todayClasses.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+
+                if (todayClasses.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: Text('今日无课')),
+                  );
+                }
+
+                return Column(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < todayClasses.length;
+                      index++
+                    ) ...[
+                      ListTile(
+                        isThreeLine: false,
+                        leading: CircleAvatar(
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          child: Text(
+                            todayClasses[index].startTimeStr,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        title: Text(todayClasses[index].courseName),
+                        subtitle: Text(
+                          '${todayClasses[index].timeRange} · ${todayClasses[index].className}',
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: 100),
+                              child: Text(
+                                todayClasses[index].location,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.end,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    title: Text(schedule[index].course),
-                    subtitle: Text(
-                      '${schedule[index].timeRange} · ${schedule[index].className}',
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          constraints: const BoxConstraints(maxWidth: 100),
-                          child: Text(
-                            schedule[index].location,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                          ),
-                        ),
-                        if (schedule[index].isOnline)
-                          Container(
-                            margin: const EdgeInsets.only(top: 4),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '线上',
-                              style: theme.textTheme.labelSmall,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (index < schedule.length - 1) const Divider(height: 12),
-                ],
-              ],
+                      if (index < todayClasses.length - 1)
+                        const Divider(height: 12),
+                    ],
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => const Center(child: Text('加载失败')),
             ),
           ),
           const SizedBox(height: 16),
           _SectionCard(
-            icon: Icons.task_alt_outlined,
-            title: '待处理事项',
+            icon: Icons.assignment_outlined,
+            title: '作业情况',
             trailing: TextButton(
-              onPressed: () => context.go('/teacher/assignments'),
-              child: const Text('查看全部'),
+              onPressed: () => context.go(TeacherSection.assignments.path),
+              child: const Text('全部作业'),
             ),
-            child: Column(
-              children: [
-                for (var index = 0; index < tasks.length; index++) ...[
-                  ListTile(
-                    leading: Icon(
-                      tasks[index].icon,
-                      color: tasks[index].iconColor(theme),
-                    ),
-                    title: Text(tasks[index].title),
-                    subtitle: Text(tasks[index].subtitle),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          tasks[index].deadlineLabel,
-                          style: theme.textTheme.labelMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            tasks[index].statusLabel,
-                            style: theme.textTheme.labelSmall,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (index < tasks.length - 1) const Divider(height: 12),
-                ],
-              ],
+            child: assignmentsAsync.when(
+              data: (assignments) {
+                if (assignments.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: Text('暂无作业')),
+                  );
+                }
+                final recent = assignments.take(3).toList();
+                return Column(
+                  children: [
+                    for (var index = 0; index < recent.length; index++) ...[
+                      _AssignmentItem(assignment: recent[index]),
+                      if (index < recent.length - 1) const Divider(height: 24),
+                    ],
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => const Center(child: Text('加载失败')),
             ),
           ),
           const SizedBox(height: 16),
@@ -362,222 +290,179 @@ class TeacherOverviewPage extends HookConsumerWidget {
               error: (e, s) => const Center(child: Text('加载失败')),
             ),
           ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            icon: Icons.flash_on_outlined,
-            title: '快捷入口',
-            child: Column(
-              children: [
-                for (final link in quickLinks) ...[
-                  ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Icon(
-                        link.icon,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                    title: Text(link.title),
-                    subtitle: Text(link.subtitle),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go(link.route),
-                  ),
-                  if (quickLinks.last != link) const Divider(height: 12),
-                ],
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-enum _ScheduleFilter { all, keyCourse, online, offline }
-
-enum _ScheduleSort { startTimeAscending, startTimeDescending }
-
-class TeacherSchedulePage extends HookWidget {
+class TeacherSchedulePage extends HookConsumerWidget {
   const TeacherSchedulePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final filter = useState(_ScheduleFilter.all);
-    final sort = useState(_ScheduleSort.startTimeAscending);
-    final query = useState('');
-    final controller = useTextEditingController();
+    final scheduleAsync = ref.watch(teacherScheduleProvider);
+    final timeSlotsAsync = ref.watch(teacherTimeSlotsProvider);
 
-    useEffect(() {
-      controller.value = TextEditingValue(
-        text: query.value,
-        selection: TextSelection.collapsed(offset: query.value.length),
-      );
-      return null;
-    }, [query.value]);
-
-    final filtered = teacherScheduleItems.where((item) {
-      final filterMatch = switch (filter.value) {
-        _ScheduleFilter.all => true,
-        _ScheduleFilter.keyCourse => item.isKeyCourse,
-        _ScheduleFilter.online => item.isOnline,
-        _ScheduleFilter.offline => !item.isOnline,
-      };
-      return filterMatch && item.matchesQuery(query.value);
-    }).toList();
-
-    filtered.sort((a, b) {
-      final compare = a.startTime.compareTo(b.startTime);
-      return sort.value == _ScheduleSort.startTimeAscending
-          ? compare
-          : -compare;
-    });
-
-    final grouped = <String, List<TeacherScheduleItem>>{};
-    for (final item in filtered) {
-      grouped.putIfAbsent(item.dayLabel, () => []).add(item);
-    }
+    final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
     return ColoredBox(
       color: theme.scaffoldBackgroundColor,
-      child: ListView(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        children: [
-          Text('课程与课表', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(
-            '查看本周教学安排，可快速筛选线上课程与重点课堂。',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            elevation: 0,
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: '搜索课程、班级或地点…',
-                suffixIcon: query.value.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: '清除',
-                        onPressed: () => query.value = '',
-                        icon: const Icon(Icons.close),
-                      ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('课程与课表', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text(
+              '查看本周教学安排。',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[700],
               ),
-              onChanged: (value) => query.value = value,
             ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _ScheduleFilter.values
-                .map(
-                  (value) => ChoiceChip(
-                    label: Text(_scheduleFilterLabel(value)),
-                    selected: filter.value == value,
-                    onSelected: (selected) {
-                      if (selected) {
-                        filter.value = value;
-                      }
-                    },
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 12),
-          DropdownButton<_ScheduleSort>(
-            value: sort.value,
-            items: _ScheduleSort.values
-                .map(
-                  (value) => DropdownMenuItem(
-                    value: value,
-                    child: Text(_scheduleSortLabel(value)),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value != null) {
-                sort.value = value;
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-          if (filtered.isEmpty)
-            const _EmptyPlaceholder(
-              icon: Icons.event_busy,
-              title: '未找到匹配的课程',
-              description: '调整筛选条件或清空搜索关键词后再试试。',
-            )
-          else
-            ...grouped.entries.expand(
-              (entry) => [
-                _SectionCard(
-                  icon: Icons.calendar_today_outlined,
-                  title: entry.key,
-                  child: Column(
-                    children: [
-                      for (
-                        var index = 0;
-                        index < entry.value.length;
-                        index++
-                      ) ...[
-                        ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: theme.colorScheme.primaryContainer,
-                            child: Text(
-                              entry.value[index].startTime,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                          title: Text(entry.value[index].course),
-                          subtitle: Text(
-                            '${entry.value[index].timeRange} · ${entry.value[index].className}',
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                entry.value[index].location,
-                                style: theme.textTheme.labelMedium,
-                              ),
-                              if (entry.value[index].isOnline)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Chip(
-                                    label: Text(
-                                      '线上',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.labelSmall,
-                                    ),
-                                    backgroundColor: theme
-                                        .colorScheme
-                                        .surfaceContainerHighest,
-                                    side: BorderSide.none,
-                                  ),
-                                ),
-                            ],
+            const SizedBox(height: 24),
+            scheduleAsync.when(
+              data: (scheduleItems) => timeSlotsAsync.when(
+                data: (timeSlots) {
+                  final sortedSlots = List.of(timeSlots)
+                    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+                  return Card(
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(
+                          theme.colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.5,
                           ),
                         ),
-                        if (index < entry.value.length - 1)
-                          const Divider(height: 12),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
+                        dataRowMinHeight: 100,
+                        dataRowMaxHeight: 140,
+                        columnSpacing: 24,
+                        columns: [
+                          const DataColumn(label: Text('时间 / 节次')),
+                          ...weekDays.map(
+                            (day) => DataColumn(label: Text(day)),
+                          ),
+                        ],
+                        rows: sortedSlots.map((slot) {
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                SizedBox(
+                                  width: 100,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        slot.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        slot.timeRange,
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              ...List.generate(7, (index) {
+                                final day = index + 1;
+                                final item = scheduleItems
+                                    .where(
+                                      (item) =>
+                                          item.weekDay == day &&
+                                          item.slotId == slot.id,
+                                    )
+                                    .firstOrNull;
+
+                                if (item == null) {
+                                  return const DataCell(SizedBox(width: 140));
+                                }
+
+                                return DataCell(
+                                  Container(
+                                    width: 140,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          item.courseName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${item.className}\n${item.location}',
+                                          style: theme.textTheme.bodySmall,
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (item.isOnline)
+                                          Container(
+                                            margin: const EdgeInsets.only(
+                                              top: 4,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: theme
+                                                  .colorScheme
+                                                  .primaryContainer,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              '线上',
+                                              style: theme.textTheme.labelSmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onPrimaryContainer,
+                                                    fontSize: 10,
+                                                  ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, s) => Center(child: Text('加载时间表失败: $e')),
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('加载失败: $err')),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -589,126 +474,6 @@ class TeacherConversationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ConversationListWidget();
-  }
-}
-
-enum _NoteVisibilityFilter { all, personal, public }
-
-class TeacherNotesPage extends HookWidget {
-  const TeacherNotesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final query = useState('');
-    final filter = useState(_NoteVisibilityFilter.all);
-
-    final filtered = teacherNotes.where((note) {
-      final matchesQuery = note.matchesQuery(query.value);
-      final matchesFilter = switch (filter.value) {
-        _NoteVisibilityFilter.all => true,
-        _NoteVisibilityFilter.personal => note.visibility.contains('自己'),
-        _NoteVisibilityFilter.public => !note.visibility.contains('自己'),
-      };
-      return matchesQuery && matchesFilter;
-    }).toList();
-
-    return ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text('教学笔记', style: theme.textTheme.headlineSmall),
-        const SizedBox(height: 8),
-        Text(
-          '整理授课大纲、课堂资料与反馈总结，随时回顾。',
-          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.search),
-            hintText: '搜索笔记标题或标签…',
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) => query.value = value,
-        ),
-        const SizedBox(height: 12),
-        DropdownButton<_NoteVisibilityFilter>(
-          value: filter.value,
-          items: _NoteVisibilityFilter.values
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(_noteFilterLabel(value)),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value != null) {
-              filter.value = value;
-            }
-          },
-        ),
-        const SizedBox(height: 12),
-        if (filtered.isEmpty)
-          const _EmptyPlaceholder(
-            icon: Icons.sticky_note_2_outlined,
-            title: '暂无笔记',
-            description: '可以从课堂笔记或教学总结开始记录。',
-          )
-        else
-          ...filtered.map(
-            (note) => Card(
-              elevation: 0,
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Icon(
-                    Icons.description_outlined,
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                title: Text(note.title),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(note.updatedAt),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Chip(
-                          label: Text(note.visibility),
-                          backgroundColor:
-                              theme.colorScheme.surfaceContainerHighest,
-                          side: BorderSide.none,
-                        ),
-                        const SizedBox(width: 8),
-                        if (note.tag != null)
-                          Chip(
-                            label: Text(note.tag!),
-                            backgroundColor:
-                                theme.colorScheme.secondaryContainer,
-                            side: BorderSide.none,
-                          ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${note.wordCount} 字',
-                          style: theme.textTheme.labelMedium,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                trailing: IconButton(
-                  tooltip: '编辑笔记',
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: () {},
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
   }
 }
 
@@ -813,99 +578,206 @@ class _OverviewStatCard extends StatelessWidget {
   }
 }
 
-class _EmptyPlaceholder extends StatelessWidget {
-  const _EmptyPlaceholder({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
+class _ScheduleStatCard extends StatelessWidget {
+  const _ScheduleStatCard({required this.scheduleAsync, required this.onTap});
 
-  final IconData icon;
-  final String title;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Column(
-          children: [
-            Icon(icon, size: 48, color: theme.colorScheme.outline),
-            const SizedBox(height: 12),
-            Text(title, style: theme.textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-String _scheduleFilterLabel(_ScheduleFilter value) {
-  return switch (value) {
-    _ScheduleFilter.all => '全部',
-    _ScheduleFilter.keyCourse => '重点课程',
-    _ScheduleFilter.online => '线上课程',
-    _ScheduleFilter.offline => '线下课程',
-  };
-}
-
-String _scheduleSortLabel(_ScheduleSort value) {
-  return switch (value) {
-    _ScheduleSort.startTimeAscending => '按开始时间升序',
-    _ScheduleSort.startTimeDescending => '按开始时间降序',
-  };
-}
-
-String _noteFilterLabel(_NoteVisibilityFilter value) {
-  return switch (value) {
-    _NoteVisibilityFilter.all => '全部可见性',
-    _NoteVisibilityFilter.personal => '仅自己可见',
-    _NoteVisibilityFilter.public => '对外公开/共享',
-  };
-}
-
-class _QuickAccessItem extends StatelessWidget {
-  const _QuickAccessItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
+  final AsyncValue<List<TeacherScheduleItem>> scheduleAsync;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: theme.colorScheme.primary),
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: 220,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.event_available_outlined,
+                  color: theme.colorScheme.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(height: 16),
+              scheduleAsync.when(
+                data: (schedule) {
+                  final now = DateTime.now();
+                  final today = now.weekday;
+                  final todayClasses = schedule
+                      .where((item) => item.weekDay == today)
+                      .toList();
+                  todayClasses.sort((a, b) => a.startsAt.compareTo(b.startsAt));
+
+                  final nextClass = todayClasses
+                      .where((item) => item.endsAt.isAfter(now))
+                      .firstOrNull;
+
+                  if (todayClasses.isEmpty) {
+                    return _buildContent(theme, '今日无课', '好好休息');
+                  }
+
+                  if (nextClass == null) {
+                    return _buildContent(theme, '今日课程', '已全部结束');
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        nextClass.courseName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${nextClass.slotName} ${nextClass.timeRange}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => _buildContent(theme, '加载中...', ''),
+                error: (err, stack) => _buildContent(theme, '加载失败', ''),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(label, style: theme.textTheme.labelMedium),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildContent(ThemeData theme, String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: theme.colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _AssignmentItem extends StatelessWidget {
+  const _AssignmentItem({required this.assignment});
+  final TeacherAssignment assignment;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final pending = assignment.submissionCount - assignment.submittedCount;
+    final dueText = assignment.dueAt != null
+        ? DateFormat('MM-dd HH:mm').format(assignment.dueAt!)
+        : '无截止时间';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                assignment.title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              dueText,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color:
+                    assignment.dueAt != null &&
+                        assignment.dueAt!.isBefore(DateTime.now())
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${assignment.courseName} · ${assignment.className}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _StatBadge(label: '总人数', value: '${assignment.submissionCount}'),
+            _StatBadge(
+              label: '已交',
+              value: '${assignment.submittedCount}',
+              color: Colors.green,
+            ),
+            _StatBadge(label: '待交', value: '$pending', color: Colors.orange),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatBadge extends StatelessWidget {
+  const _StatBadge({required this.label, required this.value, this.color});
+
+  final String label;
+  final String value;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Text(
+          '$label: ',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -185,7 +185,6 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
       final controller = dashboardController;
       final pendingReminders = data.pendingReminders;
       final completedReminders = data.completedReminders;
-      final upcomingExams = data.upcomingExams;
       final schedule = data.todaySchedule;
       final pendingAssignments = data.pendingAssignments;
       final insights = data.insights;
@@ -215,18 +214,6 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
           route: '/student/assignments',
         ),
       ];
-
-      if (upcomingExams.isNotEmpty) {
-        stats.add(
-          _OverviewStat(
-            icon: Icons.timer_outlined,
-            label: '最近考试',
-            value: upcomingExams.first.countdownLabel,
-            color: theme.colorScheme.error,
-            route: '/student/exams',
-          ),
-        );
-      }
 
       return ListView(
         padding: const EdgeInsets.all(24),
@@ -268,16 +255,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
                     label: '作业',
                     onTap: () => context.go('/student/assignments'),
                   ),
-                  _QuickAccessItem(
-                    icon: Icons.quiz_outlined,
-                    label: '考试',
-                    onTap: () => context.go('/student/exams'),
-                  ),
-                  _QuickAccessItem(
-                    icon: Icons.note_alt_outlined,
-                    label: '笔记',
-                    onTap: () => context.go('/student/notes'),
-                  ),
+
                   _QuickAccessItem(
                     icon: Icons.notifications_outlined,
                     label: '提醒',
@@ -1028,220 +1006,6 @@ class _StudentAssignmentsPageState
         ],
       );
     });
-  }
-}
-
-class StudentExamsPage extends ConsumerWidget {
-  const StudentExamsPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dashboard = ref.watch(studentDashboardProvider);
-
-    return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final upcoming = data.upcomingExams;
-      final history = data.examHistory;
-
-      return ListView(
-        padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Text('考试安排', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          Text(
-            '关注考试倒计时与考场安排，提前确认准考证与座位号。',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.alarm_on_outlined,
-            title: '即将开始',
-            description: '请在考前一日再次确认考试物品与行程。',
-          ),
-          const SizedBox(height: 12),
-          if (upcoming.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.sentiment_satisfied_alt_outlined,
-              title: '暂无近期考试',
-              description: '仍需保持复习节奏，巩固已学内容。',
-            )
-          else
-            for (final exam in upcoming)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _ExamCard(exam: exam),
-              ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.history_toggle_off,
-            title: '历史记录',
-            description: '查看已完成考试的成绩与通过情况。',
-          ),
-          const SizedBox(height: 12),
-          if (history.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.timelapse_outlined,
-              title: '暂无历史考试',
-              description: '完成首次考试后将自动记录成绩。',
-            )
-          else
-            for (final exam in history)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ExamHistoryTile(exam: exam),
-              ),
-          const SizedBox(height: 36),
-        ],
-      );
-    });
-  }
-}
-
-class StudentNotesPage extends ConsumerStatefulWidget {
-  const StudentNotesPage({super.key});
-
-  @override
-  ConsumerState<StudentNotesPage> createState() => _StudentNotesPageState();
-}
-
-class _StudentNotesPageState extends ConsumerState<StudentNotesPage> {
-  final TextEditingController _queryController = TextEditingController();
-  bool _onlyPinned = false;
-
-  @override
-  void dispose() {
-    _queryController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dashboard = ref.watch(studentDashboardProvider);
-
-    return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final controller = ref.read(studentDashboardProvider.notifier);
-      var notes = data.notes.where(
-        (note) => note.matches(_queryController.text),
-      );
-      if (_onlyPinned) {
-        notes = notes.where((note) => note.pinned);
-      }
-      final filtered = notes.toList(growable: false)
-        ..sort((a, b) {
-          if (a.pinned == b.pinned) {
-            return a.title.compareTo(b.title);
-          }
-          return a.pinned ? -1 : 1;
-        });
-
-      return ListView(
-        padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Text('随手笔记', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          Text(
-            '整理课堂重点，支持快速检索与云端同步。',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _queryController,
-            decoration: InputDecoration(
-              labelText: '搜索笔记',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _queryController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: '清除',
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() => _queryController.clear());
-                      },
-                    ),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('仅查看置顶笔记'),
-            value: _onlyPinned,
-            onChanged: (value) => setState(() => _onlyPinned = value),
-          ),
-          const SizedBox(height: 12),
-          if (filtered.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.note_alt_outlined,
-              title: '暂无符合条件的笔记',
-              description: '可以尝试修改检索词或添加新笔记。',
-            )
-          else
-            for (final note in filtered)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _NoteCard(
-                  note: note,
-                  onTogglePinned: () => controller.toggleNotePinned(note),
-                ),
-              ),
-          const SizedBox(height: 36),
-        ],
-      );
-    });
-  }
-}
-
-class StudentMessagesPage extends StatelessWidget {
-  const StudentMessagesPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const ConversationListWidget();
-  }
-}
-
-class _DashboardErrorView extends StatelessWidget {
-  const _DashboardErrorView({required this.onRetry});
-
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.wifi_off_outlined,
-              size: 48,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text('数据加载失败', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(
-              '请检查网络连接或稍后重试。',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('重新加载')),
-          ],
-        ),
-      ),
-    );
   }
 }
 
@@ -2083,101 +1847,6 @@ class _ExamCard extends StatelessWidget {
   }
 }
 
-class _ExamHistoryTile extends StatelessWidget {
-  const _ExamHistoryTile({required this.exam});
-
-  final student_data.StudentExamItem exam;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      child: ListTile(
-        leading: const Icon(Icons.history_outlined),
-        title: Text(exam.course),
-        subtitle: Text('${exam.dateLabel} · ${exam.timeRange}'),
-        trailing: exam.scoreLabel == null
-            ? const Text('待公布')
-            : Text(
-                exam.scoreLabel!,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _NoteCard extends StatelessWidget {
-  const _NoteCard({required this.note, this.onTogglePinned});
-
-  final student_data.StudentNoteItem note;
-  final VoidCallback? onTogglePinned;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(note.title, style: theme.textTheme.titleMedium),
-                ),
-                if (onTogglePinned != null)
-                  IconButton(
-                    tooltip: note.pinned ? '取消置顶' : '置顶笔记',
-                    icon: Icon(
-                      note.pinned ? Icons.push_pin : Icons.push_pin_outlined,
-                      color: note.pinned
-                          ? theme.colorScheme.tertiary
-                          : theme.colorScheme.outline,
-                    ),
-                    onPressed: onTogglePinned,
-                  )
-                else if (note.pinned)
-                  Icon(
-                    Icons.push_pin_outlined,
-                    color: theme.colorScheme.tertiary,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(note.preview, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Chip(
-                  label: Text(note.updatedAtLabel),
-                  avatar: const Icon(Icons.update, size: 16),
-                ),
-                ...note.tags.map(
-                  (tag) => Chip(
-                    label: Text(tag),
-                    backgroundColor: theme.colorScheme.secondary.withValues(
-                      alpha: 0.12,
-                    ),
-                    labelStyle: TextStyle(color: theme.colorScheme.secondary),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ViewMoreButton extends StatelessWidget {
   const _ViewMoreButton({required this.label, required this.route});
 
@@ -2274,6 +1943,328 @@ class _QuickAccessItem extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class StudentExamsPage extends ConsumerWidget {
+  const StudentExamsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashboard = ref.watch(studentDashboardProvider);
+
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final upcoming = data.upcomingExams;
+      final history = data.examHistory;
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('考试安排', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          Text(
+            '关注考试倒计时与考场安排，提前确认准考证与座位号。',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.alarm_on_outlined,
+            title: '即将开始',
+            description: '请按时参加以下考试。',
+          ),
+          const SizedBox(height: 12),
+          if (upcoming.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.event_available_outlined,
+              title: '暂无考试',
+              description: '近期没有即将开始的考试安排。',
+            )
+          else
+            for (final exam in upcoming)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ExamCard(exam: exam),
+              ),
+          const SizedBox(height: 32),
+          _SectionHeader(
+            icon: Icons.history_outlined,
+            title: '历史考试',
+            description: '查看过往考试记录与成绩。',
+          ),
+          const SizedBox(height: 12),
+          if (history.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.history_toggle_off_outlined,
+              title: '暂无记录',
+              description: '完成首次考试后将自动记录成绩。',
+            )
+          else
+            for (final exam in history)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _ExamHistoryTile(exam: exam),
+              ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
+  }
+}
+
+class _ExamHistoryTile extends StatelessWidget {
+  const _ExamHistoryTile({required this.exam});
+
+  final student_data.StudentExamItem exam;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+          child: Icon(
+            Icons.assignment_turned_in_outlined,
+            color: Colors.grey[700],
+          ),
+        ),
+        title: Text(exam.course),
+        subtitle: Text(
+          '${exam.dateLabel} ${exam.timeRange} · ${exam.location}',
+        ),
+        trailing: exam.scoreLabel != null
+            ? Text(
+                exam.scoreLabel!,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : const Text('未出分'),
+      ),
+    );
+  }
+}
+
+class StudentNotesPage extends ConsumerStatefulWidget {
+  const StudentNotesPage({super.key});
+
+  @override
+  ConsumerState<StudentNotesPage> createState() => _StudentNotesPageState();
+}
+
+class _StudentNotesPageState extends ConsumerState<StudentNotesPage> {
+  final TextEditingController _queryController = TextEditingController();
+  bool _onlyPinned = false;
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dashboard = ref.watch(studentDashboardProvider);
+
+    return _buildStudentDashboardPage(ref, dashboard, (data) {
+      final theme = Theme.of(context);
+      final controller = ref.read(studentDashboardProvider.notifier);
+      var notes = data.notes.where((n) => n.matches(_queryController.text));
+      if (_onlyPinned) {
+        notes = notes.where((n) => n.pinned);
+      }
+      final noteList = notes.toList();
+
+      return ListView(
+        padding: const EdgeInsets.all(24),
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          Text('学习笔记', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _queryController,
+                  decoration: InputDecoration(
+                    hintText: '搜索笔记...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilterChip(
+                label: const Text('仅看置顶'),
+                selected: _onlyPinned,
+                onSelected: (v) => setState(() => _onlyPinned = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (noteList.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.note_alt_outlined,
+              title: '暂无笔记',
+              description: '记录学习心得，构建知识体系。',
+            )
+          else
+            for (final note in noteList)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _NoteCard(
+                  note: note,
+                  onTogglePinned: () => controller.toggleNotePinned(note),
+                ),
+              ),
+          const SizedBox(height: 36),
+        ],
+      );
+    });
+  }
+}
+
+class _NoteCard extends StatelessWidget {
+  const _NoteCard({required this.note, required this.onTogglePinned});
+
+  final student_data.StudentNoteItem note;
+  final VoidCallback onTogglePinned;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {}, // TODO: Open note detail
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      note.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      note.pinned ? Icons.push_pin : Icons.push_pin_outlined,
+                      color: note.pinned ? theme.colorScheme.primary : null,
+                    ),
+                    onPressed: onTogglePinned,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                note.preview,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[700],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text(
+                    note.updatedAtLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const Spacer(),
+                  for (final tag in note.tags)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Chip(
+                        label: Text(tag),
+                        labelStyle: theme.textTheme.labelSmall,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        backgroundColor: theme
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
+                        side: BorderSide.none,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class StudentMessagesPage extends StatelessWidget {
+  const StudentMessagesPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const ConversationListWidget();
+  }
+}
+
+class _DashboardErrorView extends StatelessWidget {
+  const _DashboardErrorView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.wifi_off_outlined,
+              size: 48,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text('数据加载失败', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              '请检查网络连接后重试',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('重试'),
             ),
           ],
         ),

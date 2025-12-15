@@ -51,6 +51,20 @@ class TeacherAssignment {
       dueAt: DateTime.tryParse(json['due_at'] as String? ?? '')?.toLocal(),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'course_name': courseName,
+      'class_name': className,
+      'submission_count': submissionCount,
+      'submitted_count': submittedCount,
+      'graded_count': gradedCount,
+      'pending_grade_count': pendingGradeCount,
+      'due_at': dueAt?.toIso8601String(),
+    };
+  }
 }
 
 class SubmissionSummary {
@@ -205,6 +219,38 @@ class CreateAssignmentRequest {
       if (maxScore != null) 'max_score': maxScore,
       'allow_resubmit': allowResubmit,
       'questions': questions.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+class UpdateAssignmentRequest {
+  const UpdateAssignmentRequest({
+    required this.teacherId,
+    this.title,
+    this.description,
+    this.startAt,
+    this.dueAt,
+    this.maxScore,
+    this.allowResubmit,
+  });
+
+  final String teacherId;
+  final String? title;
+  final String? description;
+  final DateTime? startAt;
+  final DateTime? dueAt;
+  final double? maxScore;
+  final bool? allowResubmit;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'teacher_id': teacherId,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (startAt != null) 'start_at': startAt!.toUtc().toIso8601String(),
+      if (dueAt != null) 'due_at': dueAt!.toUtc().toIso8601String(),
+      if (maxScore != null) 'max_score': maxScore,
+      if (allowResubmit != null) 'allow_resubmit': allowResubmit,
     };
   }
 }

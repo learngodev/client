@@ -5,9 +5,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/domain/account.dart';
 import '../../features/auth/presentation/sign_in_page.dart';
+import '../../features/auth/presentation/password_reset_page.dart';
 import '../../features/admin/presentation/admin_shell.dart';
 import '../../features/admin/presentation/pages/admin_pages.dart';
 import '../../features/admin/presentation/pages/admin_ai_settings_page.dart';
+import '../../features/admin/presentation/pages/course_management_page.dart';
 import '../../features/student/presentation/pages/assignment_detail_page.dart';
 import '../../features/student/presentation/pages/submission_detail_page.dart';
 import '../../features/student/presentation/pages/student_pages.dart';
@@ -69,6 +71,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/sign-in',
         name: 'signIn',
         builder: (context, state) => const SignInPage(),
+      ),
+      GoRoute(
+        path: '/password-reset',
+        name: 'passwordReset',
+        builder: (context, state) => const PasswordResetPage(),
       ),
       GoRoute(
         path: '/',
@@ -138,6 +145,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AdminStructuresPage(),
           ),
           GoRoute(
+            path: '/admin/courses',
+            name: 'adminCourses',
+            builder: (context, state) => const CourseManagementPage(),
+          ),
+          GoRoute(
             path: '/admin/oss',
             name: 'adminOss',
             builder: (context, state) => const AdminOssSettingsPage(),
@@ -198,11 +210,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'teacherConversations',
             builder: (context, state) => const TeacherConversationsPage(),
           ),
-          GoRoute(
-            path: '/teacher/notes',
-            name: 'teacherNotes',
-            builder: (context, state) => const TeacherNotesPage(),
-          ),
+
           GoRoute(
             path: '/teacher/ai-chat',
             name: 'teacherAIChat',
@@ -245,16 +253,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'studentAssignments',
             builder: (context, state) => const StudentAssignmentsPage(),
           ),
-          GoRoute(
-            path: '/student/exams',
-            name: 'studentExams',
-            builder: (context, state) => const StudentExamsPage(),
-          ),
-          GoRoute(
-            path: '/student/notes',
-            name: 'studentNotes',
-            builder: (context, state) => const StudentNotesPage(),
-          ),
+
           GoRoute(
             path: '/student/messages',
             name: 'studentMessages',

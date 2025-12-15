@@ -216,6 +216,7 @@ class GradeAssignmentResult {
     required this.score,
     required this.summary,
     required this.suggestions,
+    this.itemScores = const [],
   });
 
   factory GradeAssignmentResult.fromJson(Map<String, dynamic> json) {
@@ -223,10 +224,12 @@ class GradeAssignmentResult {
       score: json['score'] as int? ?? 0,
       summary: json['summary'] as String? ?? '',
       suggestions: List<String>.from(json['suggestions'] ?? []),
+      itemScores: List<int>.from(json['item_scores'] ?? []),
     );
   }
 
   final int score;
   final String summary;
   final List<String> suggestions;
+  final List<int> itemScores;
 }
