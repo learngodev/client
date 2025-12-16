@@ -31,8 +31,28 @@ abstract class CourseSchedule with _$CourseSchedule {
     String? location,
     @JsonKey(name: 'start_date') required DateTime startDate,
     @JsonKey(name: 'end_date') required DateTime endDate,
+    @JsonKey(name: 'course_name') String? courseName,
+    @JsonKey(name: 'class_name') String? className,
+    @JsonKey(name: 'teacher_name') String? teacherName,
+    @JsonKey(name: 'slot_name') String? slotName,
   }) = _CourseSchedule;
 
   factory CourseSchedule.fromJson(Map<String, dynamic> json) =>
       _$CourseScheduleFromJson(json);
+}
+
+@freezed
+abstract class ScheduleStats with _$ScheduleStats {
+  const factory ScheduleStats({
+    @JsonKey(name: 'total_rules') required int totalRules,
+    @JsonKey(name: 'total_courses') required int totalCourses,
+    @JsonKey(name: 'scheduled_courses_count')
+    required int scheduledCoursesCount,
+    @JsonKey(name: 'unscheduled_courses_count')
+    required int unscheduledCoursesCount,
+    @JsonKey(name: 'rules_by_day') required Map<int, int> rulesByDay,
+  }) = _ScheduleStats;
+
+  factory ScheduleStats.fromJson(Map<String, dynamic> json) =>
+      _$ScheduleStatsFromJson(json);
 }

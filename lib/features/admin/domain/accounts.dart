@@ -206,6 +206,9 @@ class AdminAccount {
     if (trimmedClass.isNotEmpty) {
       return trimmedClass;
     }
+    if (role == AdminAccountRole.teacher) {
+      return '';
+    }
     return '未分配班级';
   }
 

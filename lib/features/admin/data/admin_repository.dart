@@ -416,8 +416,7 @@ class AdminRepository {
     required String name,
     required String email,
     String? phone,
-    required String classId,
-    required List<String> teacherIds,
+    String? classId,
     required String defaultPassword,
   }) async {
     try {
@@ -429,8 +428,7 @@ class AdminRepository {
           'name': name,
           'email': email,
           'phone': phone,
-          'class_id': classId,
-          'teacher_ids': teacherIds,
+          'class_id': classId ?? '',
           'default_password': defaultPassword,
         },
       );
@@ -2086,6 +2084,61 @@ class AdminRepository {
         );
       }
       return CourseSchedule.fromJson(body['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<List<CourseSchedule>> listScheduleRules({
+    required String schoolId,
+    String? courseId,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/rules',
+        queryParameters: {
+          'school_id': schoolId,
+          if (courseId != null) 'course_id': courseId,
+        },
+      );
+      final body = response.data;
+      if (body == null)
+        throw const AppException('Failed to fetch schedule rules');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to fetch schedule rules',
+        );
+      }
+      final data = body['data'];
+      if (data is List) {
+        return data
+            .map((e) => CourseSchedule.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<ScheduleStats> getScheduleStats({required String schoolId}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/stats',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('Failed to fetch stats');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to fetch stats',
+        );
+      }
+      return ScheduleStats.fromJson(body['data'] as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

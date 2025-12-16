@@ -10,6 +10,22 @@ final timeSlotsProvider = FutureProvider.family<List<TimeSlot>, String>((
   return ref.watch(adminRepositoryProvider).listTimeSlots(schoolId: schoolId);
 });
 
+final scheduleRulesProvider =
+    FutureProvider.family<List<CourseSchedule>, String>((ref, schoolId) {
+      return ref
+          .watch(adminRepositoryProvider)
+          .listScheduleRules(schoolId: schoolId);
+    });
+
+final scheduleStatsProvider = FutureProvider.family<ScheduleStats, String>((
+  ref,
+  schoolId,
+) {
+  return ref
+      .watch(adminRepositoryProvider)
+      .getScheduleStats(schoolId: schoolId);
+});
+
 class ScheduleController extends StateNotifier<AsyncValue<void>> {
   ScheduleController(this._ref) : super(const AsyncData(null));
 
@@ -61,6 +77,7 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
             startDate: startDate,
             endDate: endDate,
           );
+      _ref.invalidate(scheduleRulesProvider(schoolId));
     });
   }
 

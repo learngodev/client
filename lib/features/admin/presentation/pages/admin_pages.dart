@@ -4435,11 +4435,13 @@ class _AccountTile extends StatelessWidget {
                       style: theme.textTheme.bodySmall,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '所属：${account.structureLabel}',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 4),
+                    if (account.structureLabel.isNotEmpty) ...[
+                      Text(
+                        '所属：${account.structureLabel}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Text(
                       '最近活跃：${account.lastActiveLabel}',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -4527,143 +4529,6 @@ class _AccountTile extends StatelessWidget {
 
 enum _AccountTileAction { viewDetails, copyIdentifier, copyEmail, copyPhone }
 
-class _EditAccountStructureSheet extends HookConsumerWidget {
-  const _EditAccountStructureSheet({
-    required this.account,
-    required this.departmentNodes,
-  });
-
-  final AdminAccount account;
-  final List<DepartmentNode> departmentNodes;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final selectedDepartmentId = useState<String?>(account.departmentId);
-    final selectedClassId = useState<String?>(account.classId);
-    final isSubmitting = useState(false);
-
-    final availableClasses = useMemoized(() {
-      if (selectedDepartmentId.value == null) {
-        return <ClassInfo>[];
-      }
-      final node = departmentNodes.firstWhere(
-        (n) => n.department.id == selectedDepartmentId.value,
-        orElse: () => const DepartmentNode(
-          department: Department(id: '', name: '', schoolId: ''),
-          classes: [],
-        ),
-      );
-      return node.classes;
-    }, [selectedDepartmentId.value, departmentNodes]);
-
-    // Reset class selection if department changes and current class is not in new department
-    useEffect(() {
-      if (selectedClassId.value != null &&
-          !availableClasses.any((c) => c.id == selectedClassId.value)) {
-        selectedClassId.value = null;
-      }
-      return null;
-    }, [availableClasses]);
-
-    Future<void> handleSubmit() async {
-      if (isSubmitting.value) return;
-
-      final authState = ref.read(authStateProvider);
-      final schoolId = authState.account?.schoolId ?? '';
-      if (schoolId.isEmpty) return;
-
-      isSubmitting.value = true;
-      try {
-        await ref
-            .read(adminRepositoryProvider)
-            .updateAccountStructure(
-              schoolId: schoolId,
-              accountId: account.id,
-              departmentId: selectedDepartmentId.value,
-              classId: selectedClassId.value,
-            );
-        if (context.mounted) {
-          Navigator.of(context).pop(true);
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e is AppException ? e.message : e.toString()),
-              backgroundColor: theme.colorScheme.error,
-            ),
-          );
-        }
-      } finally {
-        isSubmitting.value = false;
-      }
-    }
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('修改所属结构', style: theme.textTheme.titleLarge),
-          const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            initialValue: selectedDepartmentId.value,
-            decoration: const InputDecoration(
-              labelText: '所属院系',
-              border: OutlineInputBorder(),
-            ),
-            items: [
-              for (final node in departmentNodes)
-                DropdownMenuItem(
-                  value: node.department.id,
-                  child: Text(node.department.name),
-                ),
-            ],
-            onChanged: (value) {
-              selectedDepartmentId.value = value;
-            },
-          ),
-          const SizedBox(height: 16),
-          if (account.role == AdminAccountRole.student) ...[
-            DropdownButtonFormField<String>(
-              initialValue: selectedClassId.value,
-              decoration: const InputDecoration(
-                labelText: '所属班级',
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                for (final cls in availableClasses)
-                  DropdownMenuItem(value: cls.id, child: Text(cls.name)),
-              ],
-              onChanged: (value) {
-                selectedClassId.value = value;
-              },
-            ),
-            const SizedBox(height: 24),
-          ],
-          FilledButton(
-            onPressed: isSubmitting.value ? null : handleSubmit,
-            child: isSubmitting.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('保存'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AccountDetailSheet extends HookConsumerWidget {
   const _AccountDetailSheet({
     required this.account,
@@ -4748,27 +4613,6 @@ class _AccountDetailSheet extends HookConsumerWidget {
       loadingAction.value = action.type;
       try {
         switch (action.type) {
-          case _AccountActionType.editStructure:
-            final departmentTreeAsync = ref.read(adminDepartmentTreeProvider);
-            final departmentNodes =
-                departmentTreeAsync.asData?.value ?? const <DepartmentNode>[];
-            final result = await showModalBottomSheet<bool>(
-              context: context,
-              isScrollControlled: true,
-              showDragHandle: true,
-              builder: (context) => _EditAccountStructureSheet(
-                account: currentAccount.value,
-                departmentNodes: departmentNodes,
-              ),
-            );
-            if (result == true) {
-              ref.invalidate(adminAccountListProvider);
-              if (context.mounted) {
-                showSnack('所属结构已更新'); // ignore: use_build_context_synchronously
-                Navigator.of(context).pop();
-              }
-            }
-            break;
           case _AccountActionType.resetPassword:
             await repository.resetAccountPassword(
               schoolId: schoolId,
@@ -4835,11 +4679,6 @@ class _AccountDetailSheet extends HookConsumerWidget {
     ).format(accountValue.createdAt.toLocal());
 
     final actions = <_AccountSheetAction>[
-      const _AccountSheetAction(
-        label: '修改所属',
-        type: _AccountActionType.editStructure,
-        icon: Icons.edit_note_outlined,
-      ),
       const _AccountSheetAction(
         label: '重置密码',
         type: _AccountActionType.resetPassword,
@@ -5038,7 +4877,7 @@ class _AccountDetailSheet extends HookConsumerWidget {
   }
 }
 
-enum _AccountActionType { editStructure, resetPassword, lock, unlock, delete }
+enum _AccountActionType { resetPassword, lock, unlock, delete }
 
 class _AccountSheetAction {
   const _AccountSheetAction({
@@ -6359,7 +6198,6 @@ class _CreateAccountDialog extends HookConsumerWidget {
     final phoneController = useTextEditingController();
     final passwordController = useTextEditingController(text: '123456');
     final selectedClassId = useState<String?>(null);
-    final selectedTeacherIds = useState<List<String>>([]);
     final isSubmitting = useState(false);
 
     final authState = ref.watch(authStateProvider);
@@ -6374,37 +6212,9 @@ class _CreateAccountDialog extends HookConsumerWidget {
       allClasses.addAll(node.classes);
     }
 
-    // Fetch teachers for selection
-    final teachersAsync = ref.watch(
-      adminAccountListProvider(
-        AdminAccountListRequest(
-          schoolId: schoolId,
-          role: AdminAccountRole.teacher,
-          page: 1,
-          pageSize: 1000,
-        ),
-      ),
-    );
-
-    final teachers = teachersAsync.asData?.value.accounts ?? [];
-
     Future<void> submit() async {
       if (!formKey.currentState!.validate()) {
         return;
-      }
-      if (role.value == AdminAccountRole.student) {
-        if (selectedClassId.value == null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('请选择班级')));
-          return;
-        }
-        if (selectedTeacherIds.value.isEmpty) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('请至少选择一位关联教师')));
-          return;
-        }
       }
 
       isSubmitting.value = true;
@@ -6430,8 +6240,7 @@ class _CreateAccountDialog extends HookConsumerWidget {
             phone: phoneController.text.trim().isEmpty
                 ? null
                 : phoneController.text.trim(),
-            classId: selectedClassId.value!,
-            teacherIds: selectedTeacherIds.value,
+            classId: null,
             defaultPassword: passwordController.text,
           );
         }
@@ -6509,56 +6318,6 @@ class _CreateAccountDialog extends HookConsumerWidget {
                   decoration: const InputDecoration(labelText: '默认密码'),
                   validator: (v) => v?.isEmpty == true ? '请输入默认密码' : null,
                 ),
-                if (role.value == AdminAccountRole.student) ...[
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedClassId.value,
-                    decoration: const InputDecoration(labelText: '班级'),
-                    items: allClasses
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.id,
-                            child: Text(c.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => selectedClassId.value = v,
-                    validator: (v) => v == null ? '请选择班级' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  InputDecorator(
-                    decoration: const InputDecoration(labelText: '关联教师'),
-                    child: teachersAsync.when(
-                      data: (_) => Wrap(
-                        spacing: 8,
-                        children: teachers.map((t) {
-                          final isSelected = selectedTeacherIds.value.contains(
-                            t.id,
-                          );
-                          return FilterChip(
-                            label: Text(t.name),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                selectedTeacherIds.value = [
-                                  ...selectedTeacherIds.value,
-                                  t.id,
-                                ];
-                              } else {
-                                selectedTeacherIds.value = selectedTeacherIds
-                                    .value
-                                    .where((id) => id != t.id)
-                                    .toList();
-                              }
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => Text('加载教师失败: $e'),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

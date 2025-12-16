@@ -27,6 +27,7 @@ final courseListProvider = FutureProvider.autoDispose<List<Course>>((
     schoolId: user.schoolId,
     departmentId: filter.departmentId,
     classId: filter.classId,
+    size: 1000,
   );
 });
 
@@ -40,7 +41,7 @@ final teacherListProvider = FutureProvider.autoDispose<List<AdminAccount>>((
   final page = await repo.fetchAccounts(
     schoolId: user.schoolId,
     role: AdminAccountRole.teacher,
-    pageSize: 100,
+    pageSize: 1000,
   );
   return page.accounts;
 });
