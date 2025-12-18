@@ -290,7 +290,7 @@ as String,
 /// @nodoc
 mixin _$CourseSchedule {
 
- String get id;@JsonKey(name: 'school_id') String get schoolId;@JsonKey(name: 'course_id') String get courseId;@JsonKey(name: 'class_id') String get classId;@JsonKey(name: 'teacher_id') String get teacherId;@JsonKey(name: 'slot_id') String get slotId;@JsonKey(name: 'day_of_week') int get dayOfWeek; String? get location;@JsonKey(name: 'start_date') DateTime get startDate;@JsonKey(name: 'end_date') DateTime get endDate;@JsonKey(name: 'course_name') String? get courseName;@JsonKey(name: 'class_name') String? get className;@JsonKey(name: 'teacher_name') String? get teacherName;@JsonKey(name: 'slot_name') String? get slotName;
+ String get id;@JsonKey(name: 'school_id') String get schoolId;@JsonKey(name: 'course_id') String get courseId;@JsonKey(name: 'class_id') String get classId;@JsonKey(name: 'teacher_id') String get teacherId;@JsonKey(name: 'slot_id') String get slotId;@JsonKey(name: 'classroom_id') String? get classroomId;@JsonKey(name: 'day_of_week') int get dayOfWeek; String? get location;@JsonKey(name: 'start_date') DateTime get startDate;@JsonKey(name: 'end_date') DateTime get endDate;@JsonKey(name: 'course_name') String? get courseName;@JsonKey(name: 'class_name') String? get className;@JsonKey(name: 'teacher_name') String? get teacherName;@JsonKey(name: 'slot_name') String? get slotName;@JsonKey(name: 'classroom_location') String? get classroomLocation;
 /// Create a copy of CourseSchedule
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -303,16 +303,16 @@ $CourseScheduleCopyWith<CourseSchedule> get copyWith => _$CourseScheduleCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CourseSchedule&&(identical(other.id, id) || other.id == id)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.slotId, slotId) || other.slotId == slotId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.location, location) || other.location == location)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.className, className) || other.className == className)&&(identical(other.teacherName, teacherName) || other.teacherName == teacherName)&&(identical(other.slotName, slotName) || other.slotName == slotName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CourseSchedule&&(identical(other.id, id) || other.id == id)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.slotId, slotId) || other.slotId == slotId)&&(identical(other.classroomId, classroomId) || other.classroomId == classroomId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.location, location) || other.location == location)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.className, className) || other.className == className)&&(identical(other.teacherName, teacherName) || other.teacherName == teacherName)&&(identical(other.slotName, slotName) || other.slotName == slotName)&&(identical(other.classroomLocation, classroomLocation) || other.classroomLocation == classroomLocation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,schoolId,courseId,classId,teacherId,slotId,dayOfWeek,location,startDate,endDate,courseName,className,teacherName,slotName);
+int get hashCode => Object.hash(runtimeType,id,schoolId,courseId,classId,teacherId,slotId,classroomId,dayOfWeek,location,startDate,endDate,courseName,className,teacherName,slotName,classroomLocation);
 
 @override
 String toString() {
-  return 'CourseSchedule(id: $id, schoolId: $schoolId, courseId: $courseId, classId: $classId, teacherId: $teacherId, slotId: $slotId, dayOfWeek: $dayOfWeek, location: $location, startDate: $startDate, endDate: $endDate, courseName: $courseName, className: $className, teacherName: $teacherName, slotName: $slotName)';
+  return 'CourseSchedule(id: $id, schoolId: $schoolId, courseId: $courseId, classId: $classId, teacherId: $teacherId, slotId: $slotId, classroomId: $classroomId, dayOfWeek: $dayOfWeek, location: $location, startDate: $startDate, endDate: $endDate, courseName: $courseName, className: $className, teacherName: $teacherName, slotName: $slotName, classroomLocation: $classroomLocation)';
 }
 
 
@@ -323,7 +323,7 @@ abstract mixin class $CourseScheduleCopyWith<$Res>  {
   factory $CourseScheduleCopyWith(CourseSchedule value, $Res Function(CourseSchedule) _then) = _$CourseScheduleCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'school_id') String schoolId,@JsonKey(name: 'course_id') String courseId,@JsonKey(name: 'class_id') String classId,@JsonKey(name: 'teacher_id') String teacherId,@JsonKey(name: 'slot_id') String slotId,@JsonKey(name: 'day_of_week') int dayOfWeek, String? location,@JsonKey(name: 'start_date') DateTime startDate,@JsonKey(name: 'end_date') DateTime endDate,@JsonKey(name: 'course_name') String? courseName,@JsonKey(name: 'class_name') String? className,@JsonKey(name: 'teacher_name') String? teacherName,@JsonKey(name: 'slot_name') String? slotName
+ String id,@JsonKey(name: 'school_id') String schoolId,@JsonKey(name: 'course_id') String courseId,@JsonKey(name: 'class_id') String classId,@JsonKey(name: 'teacher_id') String teacherId,@JsonKey(name: 'slot_id') String slotId,@JsonKey(name: 'classroom_id') String? classroomId,@JsonKey(name: 'day_of_week') int dayOfWeek, String? location,@JsonKey(name: 'start_date') DateTime startDate,@JsonKey(name: 'end_date') DateTime endDate,@JsonKey(name: 'course_name') String? courseName,@JsonKey(name: 'class_name') String? className,@JsonKey(name: 'teacher_name') String? teacherName,@JsonKey(name: 'slot_name') String? slotName,@JsonKey(name: 'classroom_location') String? classroomLocation
 });
 
 
@@ -340,7 +340,7 @@ class _$CourseScheduleCopyWithImpl<$Res>
 
 /// Create a copy of CourseSchedule
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? schoolId = null,Object? courseId = null,Object? classId = null,Object? teacherId = null,Object? slotId = null,Object? dayOfWeek = null,Object? location = freezed,Object? startDate = null,Object? endDate = null,Object? courseName = freezed,Object? className = freezed,Object? teacherName = freezed,Object? slotName = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? schoolId = null,Object? courseId = null,Object? classId = null,Object? teacherId = null,Object? slotId = null,Object? classroomId = freezed,Object? dayOfWeek = null,Object? location = freezed,Object? startDate = null,Object? endDate = null,Object? courseName = freezed,Object? className = freezed,Object? teacherName = freezed,Object? slotName = freezed,Object? classroomLocation = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,schoolId: null == schoolId ? _self.schoolId : schoolId // ignore: cast_nullable_to_non_nullable
@@ -348,7 +348,8 @@ as String,courseId: null == courseId ? _self.courseId : courseId // ignore: cast
 as String,classId: null == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
 as String,teacherId: null == teacherId ? _self.teacherId : teacherId // ignore: cast_nullable_to_non_nullable
 as String,slotId: null == slotId ? _self.slotId : slotId // ignore: cast_nullable_to_non_nullable
-as String,dayOfWeek: null == dayOfWeek ? _self.dayOfWeek : dayOfWeek // ignore: cast_nullable_to_non_nullable
+as String,classroomId: freezed == classroomId ? _self.classroomId : classroomId // ignore: cast_nullable_to_non_nullable
+as String?,dayOfWeek: null == dayOfWeek ? _self.dayOfWeek : dayOfWeek // ignore: cast_nullable_to_non_nullable
 as int,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String?,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
@@ -356,6 +357,7 @@ as DateTime,courseName: freezed == courseName ? _self.courseName : courseName //
 as String?,className: freezed == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
 as String?,teacherName: freezed == teacherName ? _self.teacherName : teacherName // ignore: cast_nullable_to_non_nullable
 as String?,slotName: freezed == slotName ? _self.slotName : slotName // ignore: cast_nullable_to_non_nullable
+as String?,classroomLocation: freezed == classroomLocation ? _self.classroomLocation : classroomLocation // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -441,10 +443,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId, @JsonKey(name: 'course_id')  String courseId, @JsonKey(name: 'class_id')  String classId, @JsonKey(name: 'teacher_id')  String teacherId, @JsonKey(name: 'slot_id')  String slotId, @JsonKey(name: 'day_of_week')  int dayOfWeek,  String? location, @JsonKey(name: 'start_date')  DateTime startDate, @JsonKey(name: 'end_date')  DateTime endDate, @JsonKey(name: 'course_name')  String? courseName, @JsonKey(name: 'class_name')  String? className, @JsonKey(name: 'teacher_name')  String? teacherName, @JsonKey(name: 'slot_name')  String? slotName)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId, @JsonKey(name: 'course_id')  String courseId, @JsonKey(name: 'class_id')  String classId, @JsonKey(name: 'teacher_id')  String teacherId, @JsonKey(name: 'slot_id')  String slotId, @JsonKey(name: 'classroom_id')  String? classroomId, @JsonKey(name: 'day_of_week')  int dayOfWeek,  String? location, @JsonKey(name: 'start_date')  DateTime startDate, @JsonKey(name: 'end_date')  DateTime endDate, @JsonKey(name: 'course_name')  String? courseName, @JsonKey(name: 'class_name')  String? className, @JsonKey(name: 'teacher_name')  String? teacherName, @JsonKey(name: 'slot_name')  String? slotName, @JsonKey(name: 'classroom_location')  String? classroomLocation)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CourseSchedule() when $default != null:
-return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teacherId,_that.slotId,_that.dayOfWeek,_that.location,_that.startDate,_that.endDate,_that.courseName,_that.className,_that.teacherName,_that.slotName);case _:
+return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teacherId,_that.slotId,_that.classroomId,_that.dayOfWeek,_that.location,_that.startDate,_that.endDate,_that.courseName,_that.className,_that.teacherName,_that.slotName,_that.classroomLocation);case _:
   return orElse();
 
 }
@@ -462,10 +464,10 @@ return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teach
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId, @JsonKey(name: 'course_id')  String courseId, @JsonKey(name: 'class_id')  String classId, @JsonKey(name: 'teacher_id')  String teacherId, @JsonKey(name: 'slot_id')  String slotId, @JsonKey(name: 'day_of_week')  int dayOfWeek,  String? location, @JsonKey(name: 'start_date')  DateTime startDate, @JsonKey(name: 'end_date')  DateTime endDate, @JsonKey(name: 'course_name')  String? courseName, @JsonKey(name: 'class_name')  String? className, @JsonKey(name: 'teacher_name')  String? teacherName, @JsonKey(name: 'slot_name')  String? slotName)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId, @JsonKey(name: 'course_id')  String courseId, @JsonKey(name: 'class_id')  String classId, @JsonKey(name: 'teacher_id')  String teacherId, @JsonKey(name: 'slot_id')  String slotId, @JsonKey(name: 'classroom_id')  String? classroomId, @JsonKey(name: 'day_of_week')  int dayOfWeek,  String? location, @JsonKey(name: 'start_date')  DateTime startDate, @JsonKey(name: 'end_date')  DateTime endDate, @JsonKey(name: 'course_name')  String? courseName, @JsonKey(name: 'class_name')  String? className, @JsonKey(name: 'teacher_name')  String? teacherName, @JsonKey(name: 'slot_name')  String? slotName, @JsonKey(name: 'classroom_location')  String? classroomLocation)  $default,) {final _that = this;
 switch (_that) {
 case _CourseSchedule():
-return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teacherId,_that.slotId,_that.dayOfWeek,_that.location,_that.startDate,_that.endDate,_that.courseName,_that.className,_that.teacherName,_that.slotName);case _:
+return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teacherId,_that.slotId,_that.classroomId,_that.dayOfWeek,_that.location,_that.startDate,_that.endDate,_that.courseName,_that.className,_that.teacherName,_that.slotName,_that.classroomLocation);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -482,10 +484,10 @@ return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teach
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'school_id')  String schoolId, @JsonKey(name: 'course_id')  String courseId, @JsonKey(name: 'class_id')  String classId, @JsonKey(name: 'teacher_id')  String teacherId, @JsonKey(name: 'slot_id')  String slotId, @JsonKey(name: 'day_of_week')  int dayOfWeek,  String? location, @JsonKey(name: 'start_date')  DateTime startDate, @JsonKey(name: 'end_date')  DateTime endDate, @JsonKey(name: 'course_name')  String? courseName, @JsonKey(name: 'class_name')  String? className, @JsonKey(name: 'teacher_name')  String? teacherName, @JsonKey(name: 'slot_name')  String? slotName)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'school_id')  String schoolId, @JsonKey(name: 'course_id')  String courseId, @JsonKey(name: 'class_id')  String classId, @JsonKey(name: 'teacher_id')  String teacherId, @JsonKey(name: 'slot_id')  String slotId, @JsonKey(name: 'classroom_id')  String? classroomId, @JsonKey(name: 'day_of_week')  int dayOfWeek,  String? location, @JsonKey(name: 'start_date')  DateTime startDate, @JsonKey(name: 'end_date')  DateTime endDate, @JsonKey(name: 'course_name')  String? courseName, @JsonKey(name: 'class_name')  String? className, @JsonKey(name: 'teacher_name')  String? teacherName, @JsonKey(name: 'slot_name')  String? slotName, @JsonKey(name: 'classroom_location')  String? classroomLocation)?  $default,) {final _that = this;
 switch (_that) {
 case _CourseSchedule() when $default != null:
-return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teacherId,_that.slotId,_that.dayOfWeek,_that.location,_that.startDate,_that.endDate,_that.courseName,_that.className,_that.teacherName,_that.slotName);case _:
+return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teacherId,_that.slotId,_that.classroomId,_that.dayOfWeek,_that.location,_that.startDate,_that.endDate,_that.courseName,_that.className,_that.teacherName,_that.slotName,_that.classroomLocation);case _:
   return null;
 
 }
@@ -497,7 +499,7 @@ return $default(_that.id,_that.schoolId,_that.courseId,_that.classId,_that.teach
 @JsonSerializable()
 
 class _CourseSchedule implements CourseSchedule {
-  const _CourseSchedule({required this.id, @JsonKey(name: 'school_id') required this.schoolId, @JsonKey(name: 'course_id') required this.courseId, @JsonKey(name: 'class_id') required this.classId, @JsonKey(name: 'teacher_id') required this.teacherId, @JsonKey(name: 'slot_id') required this.slotId, @JsonKey(name: 'day_of_week') required this.dayOfWeek, this.location, @JsonKey(name: 'start_date') required this.startDate, @JsonKey(name: 'end_date') required this.endDate, @JsonKey(name: 'course_name') this.courseName, @JsonKey(name: 'class_name') this.className, @JsonKey(name: 'teacher_name') this.teacherName, @JsonKey(name: 'slot_name') this.slotName});
+  const _CourseSchedule({required this.id, @JsonKey(name: 'school_id') required this.schoolId, @JsonKey(name: 'course_id') required this.courseId, @JsonKey(name: 'class_id') required this.classId, @JsonKey(name: 'teacher_id') required this.teacherId, @JsonKey(name: 'slot_id') required this.slotId, @JsonKey(name: 'classroom_id') this.classroomId, @JsonKey(name: 'day_of_week') required this.dayOfWeek, this.location, @JsonKey(name: 'start_date') required this.startDate, @JsonKey(name: 'end_date') required this.endDate, @JsonKey(name: 'course_name') this.courseName, @JsonKey(name: 'class_name') this.className, @JsonKey(name: 'teacher_name') this.teacherName, @JsonKey(name: 'slot_name') this.slotName, @JsonKey(name: 'classroom_location') this.classroomLocation});
   factory _CourseSchedule.fromJson(Map<String, dynamic> json) => _$CourseScheduleFromJson(json);
 
 @override final  String id;
@@ -506,6 +508,7 @@ class _CourseSchedule implements CourseSchedule {
 @override@JsonKey(name: 'class_id') final  String classId;
 @override@JsonKey(name: 'teacher_id') final  String teacherId;
 @override@JsonKey(name: 'slot_id') final  String slotId;
+@override@JsonKey(name: 'classroom_id') final  String? classroomId;
 @override@JsonKey(name: 'day_of_week') final  int dayOfWeek;
 @override final  String? location;
 @override@JsonKey(name: 'start_date') final  DateTime startDate;
@@ -514,6 +517,7 @@ class _CourseSchedule implements CourseSchedule {
 @override@JsonKey(name: 'class_name') final  String? className;
 @override@JsonKey(name: 'teacher_name') final  String? teacherName;
 @override@JsonKey(name: 'slot_name') final  String? slotName;
+@override@JsonKey(name: 'classroom_location') final  String? classroomLocation;
 
 /// Create a copy of CourseSchedule
 /// with the given fields replaced by the non-null parameter values.
@@ -528,16 +532,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CourseSchedule&&(identical(other.id, id) || other.id == id)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.slotId, slotId) || other.slotId == slotId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.location, location) || other.location == location)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.className, className) || other.className == className)&&(identical(other.teacherName, teacherName) || other.teacherName == teacherName)&&(identical(other.slotName, slotName) || other.slotName == slotName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CourseSchedule&&(identical(other.id, id) || other.id == id)&&(identical(other.schoolId, schoolId) || other.schoolId == schoolId)&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.slotId, slotId) || other.slotId == slotId)&&(identical(other.classroomId, classroomId) || other.classroomId == classroomId)&&(identical(other.dayOfWeek, dayOfWeek) || other.dayOfWeek == dayOfWeek)&&(identical(other.location, location) || other.location == location)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.endDate, endDate) || other.endDate == endDate)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.className, className) || other.className == className)&&(identical(other.teacherName, teacherName) || other.teacherName == teacherName)&&(identical(other.slotName, slotName) || other.slotName == slotName)&&(identical(other.classroomLocation, classroomLocation) || other.classroomLocation == classroomLocation));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,schoolId,courseId,classId,teacherId,slotId,dayOfWeek,location,startDate,endDate,courseName,className,teacherName,slotName);
+int get hashCode => Object.hash(runtimeType,id,schoolId,courseId,classId,teacherId,slotId,classroomId,dayOfWeek,location,startDate,endDate,courseName,className,teacherName,slotName,classroomLocation);
 
 @override
 String toString() {
-  return 'CourseSchedule(id: $id, schoolId: $schoolId, courseId: $courseId, classId: $classId, teacherId: $teacherId, slotId: $slotId, dayOfWeek: $dayOfWeek, location: $location, startDate: $startDate, endDate: $endDate, courseName: $courseName, className: $className, teacherName: $teacherName, slotName: $slotName)';
+  return 'CourseSchedule(id: $id, schoolId: $schoolId, courseId: $courseId, classId: $classId, teacherId: $teacherId, slotId: $slotId, classroomId: $classroomId, dayOfWeek: $dayOfWeek, location: $location, startDate: $startDate, endDate: $endDate, courseName: $courseName, className: $className, teacherName: $teacherName, slotName: $slotName, classroomLocation: $classroomLocation)';
 }
 
 
@@ -548,7 +552,7 @@ abstract mixin class _$CourseScheduleCopyWith<$Res> implements $CourseScheduleCo
   factory _$CourseScheduleCopyWith(_CourseSchedule value, $Res Function(_CourseSchedule) _then) = __$CourseScheduleCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'school_id') String schoolId,@JsonKey(name: 'course_id') String courseId,@JsonKey(name: 'class_id') String classId,@JsonKey(name: 'teacher_id') String teacherId,@JsonKey(name: 'slot_id') String slotId,@JsonKey(name: 'day_of_week') int dayOfWeek, String? location,@JsonKey(name: 'start_date') DateTime startDate,@JsonKey(name: 'end_date') DateTime endDate,@JsonKey(name: 'course_name') String? courseName,@JsonKey(name: 'class_name') String? className,@JsonKey(name: 'teacher_name') String? teacherName,@JsonKey(name: 'slot_name') String? slotName
+ String id,@JsonKey(name: 'school_id') String schoolId,@JsonKey(name: 'course_id') String courseId,@JsonKey(name: 'class_id') String classId,@JsonKey(name: 'teacher_id') String teacherId,@JsonKey(name: 'slot_id') String slotId,@JsonKey(name: 'classroom_id') String? classroomId,@JsonKey(name: 'day_of_week') int dayOfWeek, String? location,@JsonKey(name: 'start_date') DateTime startDate,@JsonKey(name: 'end_date') DateTime endDate,@JsonKey(name: 'course_name') String? courseName,@JsonKey(name: 'class_name') String? className,@JsonKey(name: 'teacher_name') String? teacherName,@JsonKey(name: 'slot_name') String? slotName,@JsonKey(name: 'classroom_location') String? classroomLocation
 });
 
 
@@ -565,7 +569,7 @@ class __$CourseScheduleCopyWithImpl<$Res>
 
 /// Create a copy of CourseSchedule
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? schoolId = null,Object? courseId = null,Object? classId = null,Object? teacherId = null,Object? slotId = null,Object? dayOfWeek = null,Object? location = freezed,Object? startDate = null,Object? endDate = null,Object? courseName = freezed,Object? className = freezed,Object? teacherName = freezed,Object? slotName = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? schoolId = null,Object? courseId = null,Object? classId = null,Object? teacherId = null,Object? slotId = null,Object? classroomId = freezed,Object? dayOfWeek = null,Object? location = freezed,Object? startDate = null,Object? endDate = null,Object? courseName = freezed,Object? className = freezed,Object? teacherName = freezed,Object? slotName = freezed,Object? classroomLocation = freezed,}) {
   return _then(_CourseSchedule(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,schoolId: null == schoolId ? _self.schoolId : schoolId // ignore: cast_nullable_to_non_nullable
@@ -573,7 +577,8 @@ as String,courseId: null == courseId ? _self.courseId : courseId // ignore: cast
 as String,classId: null == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
 as String,teacherId: null == teacherId ? _self.teacherId : teacherId // ignore: cast_nullable_to_non_nullable
 as String,slotId: null == slotId ? _self.slotId : slotId // ignore: cast_nullable_to_non_nullable
-as String,dayOfWeek: null == dayOfWeek ? _self.dayOfWeek : dayOfWeek // ignore: cast_nullable_to_non_nullable
+as String,classroomId: freezed == classroomId ? _self.classroomId : classroomId // ignore: cast_nullable_to_non_nullable
+as String?,dayOfWeek: null == dayOfWeek ? _self.dayOfWeek : dayOfWeek // ignore: cast_nullable_to_non_nullable
 as int,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
 as String?,startDate: null == startDate ? _self.startDate : startDate // ignore: cast_nullable_to_non_nullable
 as DateTime,endDate: null == endDate ? _self.endDate : endDate // ignore: cast_nullable_to_non_nullable
@@ -581,6 +586,7 @@ as DateTime,courseName: freezed == courseName ? _self.courseName : courseName //
 as String?,className: freezed == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
 as String?,teacherName: freezed == teacherName ? _self.teacherName : teacherName // ignore: cast_nullable_to_non_nullable
 as String?,slotName: freezed == slotName ? _self.slotName : slotName // ignore: cast_nullable_to_non_nullable
+as String?,classroomLocation: freezed == classroomLocation ? _self.classroomLocation : classroomLocation // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

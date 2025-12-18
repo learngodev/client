@@ -7,29 +7,50 @@ import '../../auth/application/auth_controller.dart';
 class CourseFilter {
   final String? departmentId;
   final String? classId;
+  final String? keyword;
+  final String? slotId;
 
-  const CourseFilter({this.departmentId, this.classId});
+  const CourseFilter({
+    this.departmentId,
+    this.classId,
+    this.keyword,
+    this.slotId,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CourseFilter &&
+          runtimeType == other.runtimeType &&
+          departmentId == other.departmentId &&
+          classId == other.classId &&
+          keyword == other.keyword &&
+          slotId == other.slotId;
+
+  @override
+  int get hashCode =>
+      departmentId.hashCode ^
+      classId.hashCode ^
+      keyword.hashCode ^
+      slotId.hashCode;
 }
 
 final courseFilterProvider = StateProvider<CourseFilter>(
   (ref) => const CourseFilter(),
 );
 
-final courseListProvider = FutureProvider.autoDispose<List<Course>>((
-  ref,
-) async {
-  final repo = ref.watch(adminRepositoryProvider);
-  final user = ref.watch(currentUserProvider);
-  final filter = ref.watch(courseFilterProvider);
+final courseListProvider = FutureProvider.autoDispose
+    .family<List<Course>, String>((ref, schoolId) async {
+      final repo = ref.watch(adminRepositoryProvider);
+      final filter = ref.watch(courseFilterProvider);
 
-  if (user == null) return [];
-  return repo.fetchCourses(
-    schoolId: user.schoolId,
-    departmentId: filter.departmentId,
-    classId: filter.classId,
-    size: 1000,
-  );
-});
+      return repo.fetchCourses(
+        schoolId: schoolId,
+        departmentId: filter.departmentId,
+        classId: filter.classId,
+        size: 1000,
+      );
+    });
 
 final teacherListProvider = FutureProvider.autoDispose<List<AdminAccount>>((
   ref,

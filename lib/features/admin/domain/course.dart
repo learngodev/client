@@ -1,4 +1,5 @@
 class Course {
+  final String? assignmentId;
   final String id;
   final String schoolId;
   final String name;
@@ -10,6 +11,7 @@ class Course {
   final int studentCount;
 
   Course({
+    this.assignmentId,
     required this.id,
     required this.schoolId,
     required this.name,
@@ -28,6 +30,7 @@ class Course {
     // We will prioritize the new format.
 
     return Course(
+      assignmentId: json['assignment_id'],
       id: json['course_id'] ?? json['ID'] ?? '',
       schoolId: json['school_id'] ?? json['SchoolID'] ?? '',
       name: json['course_name'] ?? json['Name'] ?? '',
@@ -51,7 +54,6 @@ class TeachingAssignment {
   final String? className;
   final String? teacherName;
   final String? courseName;
-  final int teacherCount;
   final int studentCount;
   final List<String> assignmentIds;
 
@@ -65,7 +67,6 @@ class TeachingAssignment {
     this.className,
     this.teacherName,
     this.courseName,
-    this.teacherCount = 0,
     this.studentCount = 0,
     this.assignmentIds = const [],
   });
@@ -83,7 +84,6 @@ class TeachingAssignment {
       className: json['class_name'],
       teacherName: json['teacher_name'],
       courseName: json['course_name'],
-      teacherCount: json['teacher_count'] ?? 0,
       studentCount: json['student_count'] ?? 0,
       assignmentIds:
           (json['assignment_ids'] as List?)

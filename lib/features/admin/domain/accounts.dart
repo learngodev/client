@@ -93,6 +93,7 @@ extension AdminAccountStatusX on AdminAccountStatus {
 class AdminAccount {
   const AdminAccount({
     required this.id,
+    this.profileId,
     required this.role,
     required this.name,
     required this.identifier,
@@ -108,6 +109,7 @@ class AdminAccount {
   });
 
   final String id;
+  final String? profileId;
   final AdminAccountRole role;
   final String name;
   final String identifier;
@@ -123,6 +125,7 @@ class AdminAccount {
 
   AdminAccount copyWith({
     String? id,
+    String? profileId,
     AdminAccountRole? role,
     String? name,
     String? identifier,
@@ -138,6 +141,7 @@ class AdminAccount {
   }) {
     return AdminAccount(
       id: id ?? this.id,
+      profileId: profileId ?? this.profileId,
       role: role ?? this.role,
       name: name ?? this.name,
       identifier: identifier ?? this.identifier,
@@ -162,6 +166,7 @@ class AdminAccount {
     final departmentValue = json['department']?.toString();
     final classIdValue = json['class_id']?.toString();
     final classNameValue = json['class_name']?.toString();
+    final profileIdValue = json['profile_id']?.toString();
 
     DateTime? lastActive;
     final lastActiveRaw = json['last_active_at'];
@@ -177,6 +182,7 @@ class AdminAccount {
 
     return AdminAccount(
       id: (json['id'] ?? '').toString(),
+      profileId: profileIdValue?.isEmpty ?? true ? null : profileIdValue,
       role: AdminAccountRoleX.fromApiValue(roleValue),
       name: (json['name'] ?? '').toString(),
       identifier: (json['identifier'] ?? '').toString(),
@@ -234,6 +240,63 @@ class AdminAccount {
     }
     return DateFormat('yyyy-MM-dd HH:mm').format(reference);
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'profile_id': profileId,
+      'role': role.apiValue,
+      'name': name,
+      'identifier': identifier,
+      'email': email,
+      'phone': phone,
+      'department_id': departmentId,
+      'department': department,
+      'class_id': classId,
+      'class_name': className,
+      'status': status.apiValue,
+      'last_active_at': lastActiveAt?.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is AdminAccount &&
+        other.id == id &&
+        other.profileId == profileId &&
+        other.role == role &&
+        other.name == name &&
+        other.identifier == identifier &&
+        other.email == email &&
+        other.phone == phone &&
+        other.departmentId == departmentId &&
+        other.department == department &&
+        other.classId == classId &&
+        other.className == className &&
+        other.status == status &&
+        other.lastActiveAt == lastActiveAt &&
+        other.createdAt == createdAt;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    profileId,
+    role,
+    name,
+    identifier,
+    email,
+    phone,
+    departmentId,
+    department,
+    classId,
+    className,
+    status,
+    lastActiveAt,
+    createdAt,
+  );
 }
 
 class AdminAccountPage {

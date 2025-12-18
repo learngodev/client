@@ -27,6 +27,7 @@ abstract class CourseSchedule with _$CourseSchedule {
     @JsonKey(name: 'class_id') required String classId,
     @JsonKey(name: 'teacher_id') required String teacherId,
     @JsonKey(name: 'slot_id') required String slotId,
+    @JsonKey(name: 'classroom_id') String? classroomId,
     @JsonKey(name: 'day_of_week') required int dayOfWeek,
     String? location,
     @JsonKey(name: 'start_date') required DateTime startDate,
@@ -35,6 +36,7 @@ abstract class CourseSchedule with _$CourseSchedule {
     @JsonKey(name: 'class_name') String? className,
     @JsonKey(name: 'teacher_name') String? teacherName,
     @JsonKey(name: 'slot_name') String? slotName,
+    @JsonKey(name: 'classroom_location') String? classroomLocation,
   }) = _CourseSchedule;
 
   factory CourseSchedule.fromJson(Map<String, dynamic> json) =>

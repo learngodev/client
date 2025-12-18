@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/admin_providers.dart';
@@ -6,6 +7,7 @@ import '../../domain/accounts.dart';
 import '../../domain/course.dart';
 import '../../domain/models.dart';
 import '../../../auth/application/auth_controller.dart';
+import 'class_detail_page.dart';
 
 class CourseDetailPage extends ConsumerStatefulWidget {
   const CourseDetailPage({super.key, required this.course});
@@ -23,7 +25,7 @@ class _CourseDetailPageState extends ConsumerState<CourseDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -40,7 +42,6 @@ class _CourseDetailPageState extends ConsumerState<CourseDetailPage>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: '学生列表'),
             Tab(text: '教师列表'),
             Tab(text: '班级分配'),
           ],
@@ -49,79 +50,10 @@ class _CourseDetailPageState extends ConsumerState<CourseDetailPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _StudentListTab(course: widget.course),
           _TeacherListTab(course: widget.course),
           _ClassAssignmentTab(course: widget.course),
         ],
       ),
-    );
-  }
-}
-
-class _StudentListTab extends ConsumerWidget {
-  const _StudentListTab({required this.course});
-
-  final Course course;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final schoolId = ref.watch(authStateProvider).account?.schoolId ?? '';
-    final request = AdminAccountListRequest(
-      schoolId: schoolId,
-      role: AdminAccountRole.student,
-      courseId: course.id,
-      page: 1,
-      pageSize: 100,
-    );
-
-    final studentsAsync = ref.watch(adminAccountListProvider(request));
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () => _showAssignStudentDialog(context, ref, course),
-                icon: const Icon(Icons.person_add),
-                label: const Text('分配学生'),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: studentsAsync.when(
-            data: (page) {
-              if (page.accounts.isEmpty) {
-                return const Center(child: Text('暂无学生数据'));
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: page.accounts.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final student = page.accounts[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      child: Text(
-                        student.name.isNotEmpty ? student.name[0] : '?',
-                      ),
-                    ),
-                    title: Text(student.name),
-                    subtitle: Text(
-                      '${student.identifier} - ${student.className ?? "未分配班级"}',
-                    ),
-                  );
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, stack) => Center(child: Text('加载失败: $err')),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -146,19 +78,6 @@ class _TeacherListTab extends ConsumerWidget {
 
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () => _showAssignTeacherDialog(context, ref, course),
-                icon: const Icon(Icons.person_add),
-                label: const Text('分配教师'),
-              ),
-            ],
-          ),
-        ),
         Expanded(
           child: teachersAsync.when(
             data: (page) {
@@ -166,7 +85,10 @@ class _TeacherListTab extends ConsumerWidget {
                 return const Center(child: Text('暂无教师数据'));
               }
               return ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 itemCount: page.accounts.length,
                 separatorBuilder: (context, index) => const Divider(),
                 itemBuilder: (context, index) {
@@ -178,9 +100,7 @@ class _TeacherListTab extends ConsumerWidget {
                       ),
                     ),
                     title: Text(teacher.name),
-                    subtitle: Text(
-                      '${teacher.identifier} - ${teacher.department ?? "未分配院系"}',
-                    ),
+                    subtitle: Text(teacher.identifier),
                   );
                 },
               );
@@ -217,6 +137,7 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
       courseId: widget.course.id,
     );
     final assignmentsAsync = ref.watch(adminCourseAssignmentsProvider(request));
+    final departmentTreeAsync = ref.watch(adminDepartmentTreeProvider);
 
     return Column(
       children: [
@@ -293,6 +214,39 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
                 itemBuilder: (context, index) {
                   final assignment = assignments[index];
                   return ListTile(
+                    onTap: _isSelectionMode
+                        ? null
+                        : () {
+                            final tree = departmentTreeAsync.valueOrNull;
+                            if (tree != null) {
+                              for (final node in tree) {
+                                final classInfo = node.classes
+                                    .where((c) => c.id == assignment.classId)
+                                    .firstOrNull;
+                                if (classInfo != null) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => ClassDetailPage(
+                                        department: node.department,
+                                        classInfo: classInfo,
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('未找到班级详细信息')),
+                              );
+                            } else {
+                              ref
+                                  .read(adminDepartmentTreeProvider.notifier)
+                                  .refresh();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('正在加载班级信息，请稍后重试')),
+                              );
+                            }
+                          },
                     leading: _isSelectionMode
                         ? Checkbox(
                             value: _selectedAssignmentIds.contains(
@@ -310,9 +264,17 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
                           )
                         : const Icon(Icons.class_),
                     title: Text(assignment.className ?? assignment.classId),
-                    subtitle: Text(
-                      '分配教师: ${assignment.teacherCount} 人, 学生: ${assignment.studentCount} 人',
-                    ),
+                    subtitle: Text('学生: ${assignment.studentCount} 人'),
+                    trailing: _isSelectionMode
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _removeSingleAssignment(
+                              context,
+                              ref,
+                              assignment,
+                            ),
+                          ),
                   );
                 },
               );
@@ -323,6 +285,68 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
         ),
       ],
     );
+  }
+
+  Future<void> _removeSingleAssignment(
+    BuildContext context,
+    WidgetRef ref,
+    TeachingAssignment assignment,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认移除'),
+        content: Text('确定要移除班级 ${assignment.className} 的分配吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('移除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref
+            .read(adminRepositoryProvider)
+            .batchRemoveAssignments(assignmentIds: assignment.assignmentIds);
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('移除成功')));
+          ref.invalidate(
+            adminCourseAssignmentsProvider(
+              AdminCourseAssignmentsRequest(
+                schoolId: ref.read(authStateProvider).account?.schoolId ?? '',
+                courseId: widget.course.id,
+              ),
+            ),
+          );
+          ref.invalidate(
+            adminAccountListProvider(
+              AdminAccountListRequest(
+                schoolId: ref.read(authStateProvider).account?.schoolId ?? '',
+                role: AdminAccountRole.student,
+                courseId: widget.course.id,
+                page: 1,
+                pageSize: 100,
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('移除失败: $e')));
+        }
+      }
+    }
   }
 
   Future<void> _batchRemove(
@@ -576,607 +600,5 @@ class _AssignDialogState extends ConsumerState<_AssignDialog> {
         ).showSnackBar(SnackBar(content: Text('分配失败: $e')));
       }
     }
-  }
-}
-
-void _showAssignStudentDialog(
-  BuildContext context,
-  WidgetRef ref,
-  Course course,
-) {
-  showDialog(
-    context: context,
-    builder: (context) => _AssignStudentDialog(course: course),
-  );
-}
-
-void _showAssignTeacherDialog(
-  BuildContext context,
-  WidgetRef ref,
-  Course course,
-) {
-  showDialog(
-    context: context,
-    builder: (context) => _AssignTeacherDialog(course: course),
-  );
-}
-
-class _AssignStudentDialog extends ConsumerStatefulWidget {
-  const _AssignStudentDialog({required this.course});
-  final Course course;
-
-  @override
-  ConsumerState<_AssignStudentDialog> createState() =>
-      _AssignStudentDialogState();
-}
-
-class _AssignStudentDialogState extends ConsumerState<_AssignStudentDialog>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
-  final Set<AdminAccount> _selectedStudents = {};
-  String? _selectedDepartmentId;
-  String? _selectedClassId;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final deptTreeAsync = ref.watch(adminDepartmentTreeProvider);
-
-    return AlertDialog(
-      title: const Text('分配学生'),
-      content: SizedBox(
-        width: 600,
-        height: 500,
-        child: Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: Theme.of(context).primaryColor,
-              tabs: const [
-                Tab(text: '选择学生'),
-                Tab(text: '按班级'),
-                Tab(text: '按院系'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Select Students
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: const InputDecoration(
-                            labelText: '搜索学生 (姓名/学号)',
-                            prefixIcon: Icon(Icons.search),
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (val) {
-                            setState(() {
-                              _searchQuery = val;
-                            });
-                          },
-                        ),
-                      ),
-                      if (_selectedStudents.isNotEmpty)
-                        Container(
-                          height: 50,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children: _selectedStudents.map((s) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Chip(
-                                  label: Text(s.name),
-                                  onDeleted: () {
-                                    setState(() {
-                                      _selectedStudents.remove(s);
-                                    });
-                                  },
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      Expanded(child: _buildStudentList()),
-                    ],
-                  ),
-                  // By Class
-                  deptTreeAsync.when(
-                    data: (nodes) {
-                      final departments = nodes
-                          .map((n) => n.department)
-                          .toList();
-                      final classes = nodes
-                          .where(
-                            (n) => n.department.id == _selectedDepartmentId,
-                          )
-                          .expand((n) => n.classes)
-                          .toList();
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: '选择院系',
-                              ),
-                              items: departments
-                                  .map(
-                                    (d) => DropdownMenuItem(
-                                      value: d.id,
-                                      child: Text(d.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) => setState(() {
-                                _selectedDepartmentId = val;
-                                _selectedClassId = null;
-                              }),
-                              initialValue: _selectedDepartmentId,
-                            ),
-                            const SizedBox(height: 16),
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: '选择班级',
-                              ),
-                              items: classes
-                                  .map(
-                                    (c) => DropdownMenuItem(
-                                      value: c.id,
-                                      child: Text(c.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) =>
-                                  setState(() => _selectedClassId = val),
-                              initialValue: _selectedClassId,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, s) => Text('Error: $e'),
-                  ),
-                  // By Department
-                  deptTreeAsync.when(
-                    data: (nodes) {
-                      final departments = nodes
-                          .map((n) => n.department)
-                          .toList();
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: '选择院系',
-                              ),
-                              items: departments
-                                  .map(
-                                    (d) => DropdownMenuItem(
-                                      value: d.id,
-                                      child: Text(d.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) =>
-                                  setState(() => _selectedDepartmentId = val),
-                              initialValue: _selectedDepartmentId,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, s) => Text('Error: $e'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        FilledButton(
-          onPressed: () async {
-            try {
-              final repo = ref.read(adminRepositoryProvider);
-              if (_tabController.index == 0) {
-                final ids = _selectedStudents.map((e) => e.id).toList();
-                if (ids.isEmpty) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('请选择学生')));
-                  return;
-                }
-                await repo.assignStudents(
-                  courseId: widget.course.id,
-                  studentIds: ids,
-                );
-              } else if (_tabController.index == 1) {
-                if (_selectedClassId == null) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('请选择班级')));
-                  return;
-                }
-                await repo.assignStudents(
-                  courseId: widget.course.id,
-                  classId: _selectedClassId,
-                );
-              } else {
-                if (_selectedDepartmentId == null) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('请选择院系')));
-                  return;
-                }
-                await repo.assignStudents(
-                  courseId: widget.course.id,
-                  departmentId: _selectedDepartmentId,
-                );
-              }
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('分配成功')));
-                final schoolId =
-                    ref.read(authStateProvider).account?.schoolId ?? '';
-                ref.invalidate(
-                  adminAccountListProvider(
-                    AdminAccountListRequest(
-                      schoolId: schoolId,
-                      role: AdminAccountRole.student,
-                      courseId: widget.course.id,
-                      page: 1,
-                      pageSize: 100,
-                    ),
-                  ),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('分配失败: $e')));
-              }
-            }
-          },
-          child: const Text('确定'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStudentList() {
-    final schoolId = ref.watch(authStateProvider).account?.schoolId ?? '';
-    final request = AdminAccountListRequest(
-      schoolId: schoolId,
-      role: AdminAccountRole.student,
-      page: 1,
-      pageSize: 20,
-      query: _searchQuery,
-    );
-
-    final accountsAsync = ref.watch(adminAccountListProvider(request));
-
-    return accountsAsync.when(
-      data: (page) {
-        if (page.accounts.isEmpty) {
-          return const Center(child: Text('未找到学生'));
-        }
-        return ListView.builder(
-          itemCount: page.accounts.length,
-          itemBuilder: (context, index) {
-            final student = page.accounts[index];
-            final isSelected = _selectedStudents.any((s) => s.id == student.id);
-            return ListTile(
-              leading: CircleAvatar(
-                child: Text(student.name.isNotEmpty ? student.name[0] : '?'),
-              ),
-              title: Text(student.name),
-              subtitle: Text(
-                '${student.identifier} - ${student.className ?? "未分配班级"}',
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: Colors.green)
-                  : const Icon(Icons.circle_outlined),
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedStudents.removeWhere((s) => s.id == student.id);
-                  } else {
-                    _selectedStudents.add(student);
-                  }
-                });
-              },
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('加载失败: $err')),
-    );
-  }
-}
-
-class _AssignTeacherDialog extends ConsumerStatefulWidget {
-  const _AssignTeacherDialog({required this.course});
-  final Course course;
-
-  @override
-  ConsumerState<_AssignTeacherDialog> createState() =>
-      _AssignTeacherDialogState();
-}
-
-class _AssignTeacherDialogState extends ConsumerState<_AssignTeacherDialog>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
-  final Set<AdminAccount> _selectedTeachers = {};
-  String? _selectedDepartmentId;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final deptTreeAsync = ref.watch(adminDepartmentTreeProvider);
-
-    return AlertDialog(
-      title: const Text('分配教师'),
-      content: SizedBox(
-        width: 600,
-        height: 500,
-        child: Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: Theme.of(context).primaryColor,
-              tabs: const [
-                Tab(text: '选择教师'),
-                Tab(text: '按院系'),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // Select Teachers
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: const InputDecoration(
-                            labelText: '搜索教师 (姓名/工号)',
-                            prefixIcon: Icon(Icons.search),
-                            border: OutlineInputBorder(),
-                          ),
-                          onChanged: (val) {
-                            setState(() {
-                              _searchQuery = val;
-                            });
-                          },
-                        ),
-                      ),
-                      if (_selectedTeachers.isNotEmpty)
-                        Container(
-                          height: 50,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
-                            children: _selectedTeachers.map((t) {
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Chip(
-                                  label: Text(t.name),
-                                  onDeleted: () {
-                                    setState(() {
-                                      _selectedTeachers.remove(t);
-                                    });
-                                  },
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      Expanded(child: _buildTeacherList()),
-                    ],
-                  ),
-                  // By Department
-                  deptTreeAsync.when(
-                    data: (nodes) {
-                      final departments = nodes
-                          .map((n) => n.department)
-                          .toList();
-                      return Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                labelText: '选择院系',
-                              ),
-                              items: departments
-                                  .map(
-                                    (d) => DropdownMenuItem(
-                                      value: d.id,
-                                      child: Text(d.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) =>
-                                  setState(() => _selectedDepartmentId = val),
-                              initialValue: _selectedDepartmentId,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (e, s) => Text('Error: $e'),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        FilledButton(
-          onPressed: () async {
-            try {
-              final repo = ref.read(adminRepositoryProvider);
-              if (_tabController.index == 0) {
-                final ids = _selectedTeachers.map((e) => e.id).toList();
-                if (ids.isEmpty) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('请选择教师')));
-                  return;
-                }
-                await repo.assignTeachers(
-                  courseId: widget.course.id,
-                  teacherIds: ids,
-                );
-              } else {
-                if (_selectedDepartmentId == null) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('请选择院系')));
-                  return;
-                }
-                await repo.assignTeachers(
-                  courseId: widget.course.id,
-                  departmentId: _selectedDepartmentId,
-                );
-              }
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('分配成功')));
-                final schoolId =
-                    ref.read(authStateProvider).account?.schoolId ?? '';
-                ref.invalidate(
-                  adminAccountListProvider(
-                    AdminAccountListRequest(
-                      schoolId: schoolId,
-                      role: AdminAccountRole.teacher,
-                      courseId: widget.course.id,
-                      page: 1,
-                      pageSize: 100,
-                    ),
-                  ),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('分配失败: $e')));
-              }
-            }
-          },
-          child: const Text('确定'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTeacherList() {
-    final schoolId = ref.watch(authStateProvider).account?.schoolId ?? '';
-    final request = AdminAccountListRequest(
-      schoolId: schoolId,
-      role: AdminAccountRole.teacher,
-      page: 1,
-      pageSize: 20,
-      query: _searchQuery,
-    );
-
-    final accountsAsync = ref.watch(adminAccountListProvider(request));
-
-    return accountsAsync.when(
-      data: (page) {
-        if (page.accounts.isEmpty) {
-          return const Center(child: Text('未找到教师'));
-        }
-        return ListView.builder(
-          itemCount: page.accounts.length,
-          itemBuilder: (context, index) {
-            final teacher = page.accounts[index];
-            final isSelected = _selectedTeachers.any((t) => t.id == teacher.id);
-            return ListTile(
-              leading: CircleAvatar(
-                child: Text(teacher.name.isNotEmpty ? teacher.name[0] : '?'),
-              ),
-              title: Text(teacher.name),
-              subtitle: Text(
-                '${teacher.identifier} - ${teacher.department ?? "未分配院系"}',
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check_circle, color: Colors.green)
-                  : const Icon(Icons.circle_outlined),
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    _selectedTeachers.removeWhere((t) => t.id == teacher.id);
-                  } else {
-                    _selectedTeachers.add(teacher);
-                  }
-                });
-              },
-            );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('加载失败: $err')),
-    );
   }
 }

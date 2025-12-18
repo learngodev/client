@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../data/teacher_repository.dart';
 import '../domain/teacher_schedule_model.dart';
@@ -29,10 +31,11 @@ final teacherScheduleProvider = FutureProvider.autoDispose<List<TeacherScheduleI
   return repository.listSchedule(start, end);
 });
 
-class TeacherScheduleController extends StateNotifier<AsyncValue<void>> {
-  TeacherScheduleController(this._ref) : super(const AsyncData(null));
-
-  final Ref _ref;
+class TeacherScheduleController extends AutoDisposeAsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {
+    // no-op
+  }
 
   Future<void> updateSession(
     String sessionId, {
@@ -41,15 +44,15 @@ class TeacherScheduleController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await _ref
+      await ref
           .read(teacherRepositoryProvider)
           .updateSession(sessionId, location: location, status: status);
-      _ref.invalidate(teacherScheduleProvider);
+      ref.invalidate(teacherScheduleProvider);
     });
   }
 }
 
 final teacherScheduleControllerProvider =
-    StateNotifierProvider<TeacherScheduleController, AsyncValue<void>>((ref) {
-      return TeacherScheduleController(ref);
-    });
+    AsyncNotifierProvider.autoDispose<TeacherScheduleController, void>(
+      TeacherScheduleController.new,
+    );

@@ -12,7 +12,11 @@ class CourseManagementPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final coursesAsync = ref.watch(courseListProvider);
+    final user = ref.watch(currentUserProvider);
+    if (user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    final coursesAsync = ref.watch(courseListProvider(user.schoolId));
     final deptTreeAsync = ref.watch(adminDepartmentTreeProvider);
     final filter = ref.watch(courseFilterProvider);
 
@@ -187,7 +191,12 @@ class CourseManagementPage extends ConsumerWidget {
                         itemCount: courses.length,
                         itemBuilder: (context, index) {
                           final course = courses[index];
-                          return _buildCourseCard(context, ref, course);
+                          return _buildCourseCard(
+                            context,
+                            ref,
+                            course,
+                            user.schoolId,
+                          );
                         },
                       ),
                     ),
@@ -203,7 +212,12 @@ class CourseManagementPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildCourseCard(BuildContext context, WidgetRef ref, Course course) {
+  Widget _buildCourseCard(
+    BuildContext context,
+    WidgetRef ref,
+    Course course,
+    String schoolId,
+  ) {
     final theme = Theme.of(context);
 
     return Card(
@@ -239,29 +253,36 @@ class CourseManagementPage extends ConsumerWidget {
                     icon: const Icon(Icons.more_vert),
                     onSelected: (value) {
                       if (value == 'assign') {
-                        _showAssignDialog(context, ref, course);
+                        _showAssignDialog(context, ref, schoolId, course);
                       } else if (value == 'delete') {
-                        _deleteCourse(context, ref, course.id);
+                        _deleteCourse(context, ref, schoolId, course);
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'assign',
                         child: Row(
                           children: [
-                            Icon(Icons.assignment_ind, size: 20),
-                            SizedBox(width: 8),
-                            Text('分配课程'),
+                            const Icon(Icons.assignment_ind, size: 20),
+                            const SizedBox(width: 8),
+                            Text(course.assignmentId != null ? '编辑分配' : '分配课程'),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, color: Colors.red, size: 20),
-                            SizedBox(width: 8),
-                            Text('删除课程', style: TextStyle(color: Colors.red)),
+                            const Icon(
+                              Icons.delete,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              course.assignmentId != null ? '移除分配' : '删除课程',
+                              style: const TextStyle(color: Colors.red),
+                            ),
                           ],
                         ),
                       ),
@@ -466,7 +487,7 @@ class CourseManagementPage extends ConsumerWidget {
                       name: nameController.text,
                       description: descController.text,
                     );
-                ref.invalidate(courseListProvider);
+                ref.invalidate(courseListProvider(user.schoolId));
                 if (context.mounted) Navigator.pop(context);
               } catch (e) {
                 if (context.mounted) {
@@ -486,13 +507,15 @@ class CourseManagementPage extends ConsumerWidget {
   Future<void> _deleteCourse(
     BuildContext context,
     WidgetRef ref,
-    String id,
+    String schoolId,
+    Course course,
   ) async {
+    final isAssignment = course.assignmentId != null;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这个课程吗？'),
+        title: Text(isAssignment ? '确认移除分配' : '确认删除课程'),
+        content: Text(isAssignment ? '确定要移除这个课程分配吗？' : '确定要删除这个课程吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -508,8 +531,14 @@ class CourseManagementPage extends ConsumerWidget {
 
     if (confirm == true) {
       try {
-        await ref.read(adminRepositoryProvider).deleteCourse(id: id);
-        ref.invalidate(courseListProvider);
+        if (isAssignment) {
+          await ref
+              .read(adminRepositoryProvider)
+              .removeAssignment(id: course.assignmentId!);
+        } else {
+          await ref.read(adminRepositoryProvider).deleteCourse(id: course.id);
+        }
+        ref.invalidate(courseListProvider(schoolId));
       } catch (e) {
         if (context.mounted) {
           ScaffoldMessenger.of(
@@ -523,10 +552,12 @@ class CourseManagementPage extends ConsumerWidget {
   Future<void> _showAssignDialog(
     BuildContext context,
     WidgetRef ref,
+    String schoolId,
     Course course,
   ) async {
-    String? selectedTeacherId;
-    String? selectedClassId;
+    String? selectedTeacherId = course.teacherId;
+    String? selectedClassId = course.classId;
+    final isEdit = course.assignmentId != null;
 
     await showDialog(
       context: context,
@@ -536,13 +567,16 @@ class CourseManagementPage extends ConsumerWidget {
           final deptTreeAsync = ref.watch(adminDepartmentTreeProvider);
 
           return AlertDialog(
-            title: Text('分配课程: ${course.name}'),
+            title: Text(
+              isEdit ? '编辑分配: ${course.name}' : '分配课程: ${course.name}',
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 teachersAsync.when(
                   data: (teachers) => DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: '选择教师'),
+                    value: selectedTeacherId,
                     items: teachers
                         .map(
                           (t) => DropdownMenuItem(
@@ -574,6 +608,7 @@ class CourseManagementPage extends ConsumerWidget {
                     }
                     return DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: '选择班级'),
+                      value: selectedClassId,
                       items: items,
                       onChanged: (v) => selectedClassId = v,
                     );
@@ -597,22 +632,31 @@ class CourseManagementPage extends ConsumerWidget {
                     return;
                   }
 
-                  final user = ref.read(currentUserProvider);
-                  if (user == null) return;
                   try {
-                    await ref
-                        .read(adminRepositoryProvider)
-                        .assignCourse(
-                          schoolId: user.schoolId,
-                          courseId: course.id,
-                          teacherId: selectedTeacherId!,
-                          classId: selectedClassId!,
-                        );
+                    if (isEdit) {
+                      await ref
+                          .read(adminRepositoryProvider)
+                          .updateAssignment(
+                            id: course.assignmentId!,
+                            teacherId: selectedTeacherId!,
+                            classId: selectedClassId!,
+                          );
+                    } else {
+                      await ref
+                          .read(adminRepositoryProvider)
+                          .assignCourse(
+                            schoolId: schoolId,
+                            courseId: course.id,
+                            teacherId: selectedTeacherId!,
+                            classId: selectedClassId!,
+                          );
+                    }
+                    ref.invalidate(courseListProvider(schoolId));
                     if (context.mounted) {
                       Navigator.pop(context);
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('分配成功')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(isEdit ? '更新成功' : '分配成功')),
+                      );
                     }
                   } catch (e) {
                     if (context.mounted) {
@@ -622,7 +666,7 @@ class CourseManagementPage extends ConsumerWidget {
                     }
                   }
                 },
-                child: const Text('分配'),
+                child: Text(isEdit ? '更新' : '分配'),
               ),
             ],
           );

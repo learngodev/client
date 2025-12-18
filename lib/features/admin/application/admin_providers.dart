@@ -289,7 +289,8 @@ class AdminSystemSettingsNotifier
   }
 }
 
-class AdminExpandedDepartmentsNotifier extends Notifier<Set<String>> {
+class AdminExpandedDepartmentsNotifier
+    extends AutoDisposeNotifier<Set<String>> {
   static const _prefsKey = 'admin.expanded_departments';
 
   String? _currentSchoolId;
@@ -304,6 +305,7 @@ class AdminExpandedDepartmentsNotifier extends Notifier<Set<String>> {
   }
 
   void setExpanded(String id, bool expanded) {
+    final state = this.state;
     if (expanded) {
       if (state.contains(id)) return;
       _emit({...state, id});
@@ -481,20 +483,18 @@ class AdminDepartmentViewPreferences {
 }
 
 class AdminDepartmentViewPreferencesNotifier
-    extends StateNotifier<AdminDepartmentViewPreferences> {
-  AdminDepartmentViewPreferencesNotifier(this.ref)
-    : super(const AdminDepartmentViewPreferences()) {
-    _authSubscription = ref.listen<AuthState>(authStateProvider, (
-      previous,
-      next,
-    ) {
+    extends AutoDisposeNotifier<AdminDepartmentViewPreferences> {
+  @override
+  AdminDepartmentViewPreferences build() {
+    _authSubscription = ref.listen(authStateProvider, (previous, next) {
       Future.microtask(() => _handleAuthStateChange(previous, next));
     }, fireImmediately: true);
+    ref.onDispose(() => _authSubscription?.close());
+    return const AdminDepartmentViewPreferences();
   }
 
   static const _prefsKey = 'admin.department_view_preferences';
 
-  final Ref ref;
   ProviderSubscription<AuthState>? _authSubscription;
   String? _currentAccountId;
   var _isHydrating = false;
@@ -516,12 +516,6 @@ class AdminDepartmentViewPreferencesNotifier
 
   void reset() {
     _emit(const AdminDepartmentViewPreferences());
-  }
-
-  @override
-  void dispose() {
-    _authSubscription?.close();
-    super.dispose();
   }
 
   void _emit(AdminDepartmentViewPreferences next) {
@@ -1013,16 +1007,13 @@ final adminOssProvider = AsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
   AdminOssNotifier.new,
 );
 
-final adminExpandedDepartmentsProvider =
-    NotifierProvider<AdminExpandedDepartmentsNotifier, Set<String>>(
-      AdminExpandedDepartmentsNotifier.new,
-    );
+final adminExpandedDepartmentsProvider = AutoDisposeNotifierProvider(
+  AdminExpandedDepartmentsNotifier.new,
+);
 
-final adminDepartmentViewPreferencesProvider =
-    StateNotifierProvider<
-      AdminDepartmentViewPreferencesNotifier,
-      AdminDepartmentViewPreferences
-    >((ref) => AdminDepartmentViewPreferencesNotifier(ref));
+final adminDepartmentViewPreferencesProvider = AutoDisposeNotifierProvider(
+  AdminDepartmentViewPreferencesNotifier.new,
+);
 
 final adminDepartmentTreeProvider =
     AsyncNotifierProvider<AdminDepartmentTreeNotifier, List<DepartmentNode>>(

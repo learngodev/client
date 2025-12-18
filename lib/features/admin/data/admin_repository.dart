@@ -10,6 +10,7 @@ import '../domain/system_settings.dart';
 import '../domain/ai_settings.dart';
 import '../domain/course.dart';
 import '../domain/schedule.dart';
+import '../domain/classroom.dart';
 
 class AdminRepository {
   const AdminRepository(this._dio);
@@ -1751,6 +1752,28 @@ class AdminRepository {
     }
   }
 
+  Future<void> updateAssignment({
+    required String id,
+    required String teacherId,
+    required String classId,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/courses/assignments/$id',
+        data: {'teacher_id': teacherId, 'class_id': classId},
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('未能更新分配');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(error?['message']?.toString() ?? '更新分配失败');
+      }
+    } on DioException catch (e) {
+      throw AppException(e.message ?? '网络错误');
+    }
+  }
+
   Future<void> removeAssignment({required String id}) async {
     try {
       final response = await _dio.delete<Map<String, dynamic>>(
@@ -1949,43 +1972,6 @@ class AdminRepository {
     }
   }
 
-  Future<void> assignTeachers({
-    required String courseId,
-    List<String>? teacherIds,
-    String? departmentId,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/admin/courses/$courseId/assign/teachers',
-        data: {'teacher_ids': teacherIds, 'department_id': departmentId},
-      );
-      final body = response.data;
-      if (body == null) {
-        throw const AppException('分配教师失败');
-      }
-      final success = body['success'] as bool? ?? false;
-      if (!success) {
-        final error = body['error'] as Map<String, dynamic>?;
-        throw AppException(
-          error?['message']?.toString() ?? '分配教师失败',
-          details: error?['details']?.toString(),
-        );
-      }
-    } on DioException catch (error) {
-      final body = error.response?.data;
-      String? message;
-      String? details;
-      if (body is Map<String, dynamic>) {
-        final map = body['error'] as Map<String, dynamic>?;
-        message = map?['message']?.toString();
-        details = map?['details']?.toString();
-      }
-      message ??= error.message ?? '网络错误';
-      details ??= body?.toString();
-      throw AppException(message, details: details);
-    }
-  }
-
   // Schedule Management
 
   Future<List<TimeSlot>> listTimeSlots({required String schoolId}) async {
@@ -2004,6 +1990,11 @@ class AdminRepository {
         );
       }
       final data = body['data'];
+      if (data is Map<String, dynamic> && data['time_slots'] is List) {
+        return (data['time_slots'] as List)
+            .map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
       if (data is List) {
         return data
             .map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
@@ -2046,6 +2037,50 @@ class AdminRepository {
     }
   }
 
+  Future<void> updateTimeSlot({
+    required String id,
+    required String name,
+    required String startTime,
+    required String endTime,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/time-slots/$id',
+        data: {'name': name, 'start_time': startTime, 'end_time': endTime},
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('Failed to update time slot');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to update time slot',
+        );
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> deleteTimeSlot({required String id}) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/time-slots/$id',
+      );
+      final body = response.data;
+      if (body == null) throw const AppException('Failed to delete time slot');
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to delete time slot',
+        );
+      }
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
   Future<CourseSchedule> createScheduleRule({
     required String schoolId,
     required String courseId,
@@ -2054,6 +2089,7 @@ class AdminRepository {
     required String slotId,
     required int dayOfWeek,
     required String location,
+    String? classroomId,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
@@ -2068,8 +2104,9 @@ class AdminRepository {
           'slot_id': slotId,
           'day_of_week': dayOfWeek,
           'location': location,
-          'start_date': startDate.toIso8601String(),
-          'end_date': endDate.toIso8601String(),
+          'classroom_id': classroomId,
+          'start_date': _toRfc3339(startDate),
+          'end_date': _toRfc3339(endDate),
         },
       );
       final body = response.data;
@@ -2102,8 +2139,9 @@ class AdminRepository {
         },
       );
       final body = response.data;
-      if (body == null)
+      if (body == null) {
         throw const AppException('Failed to fetch schedule rules');
+      }
       final success = body['success'] as bool? ?? false;
       if (!success) {
         throw AppException(
@@ -2118,6 +2156,31 @@ class AdminRepository {
             .toList();
       }
       return [];
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<void> deleteScheduleRule({
+    required String schoolId,
+    required String ruleId,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/schedules/rules/$ruleId',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('Failed to delete schedule rule');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        throw AppException(
+          (body['error'] as Map<String, dynamic>?)?['message']?.toString() ??
+              'Failed to delete schedule rule',
+        );
+      }
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -2154,8 +2217,8 @@ class AdminRepository {
         '/api/v1/admin/schedules/generate',
         data: {
           'school_id': schoolId,
-          'start': start.toIso8601String(),
-          'end': end.toIso8601String(),
+          'start': _toRfc3339(start),
+          'end': _toRfc3339(end),
         },
       );
       final body = response.data;
@@ -2170,6 +2233,18 @@ class AdminRepository {
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
+  }
+
+  String _toRfc3339(DateTime dt) {
+    final iso = dt.toIso8601String();
+    if (dt.isUtc) {
+      return iso;
+    }
+    final offset = dt.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final hours = offset.inHours.abs().toString().padLeft(2, '0');
+    final minutes = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
+    return '$iso$sign$hours:$minutes';
   }
 
   AppException _handleDioError(DioException error) {
@@ -2211,6 +2286,164 @@ class AdminRepository {
       return data;
     }
     return null;
+  }
+
+  // Classrooms
+  Future<List<Classroom>> fetchClassrooms({
+    required String schoolId,
+    int page = 1,
+    int size = 20,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/admin/classrooms',
+        queryParameters: {'school_id': schoolId, 'page': page, 'size': size},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能获取教室列表');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '获取教室列表失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      final list = _extractMapList(
+        data,
+        nestedKey: 'classrooms',
+      ).map(Classroom.fromJson).toList();
+      return list;
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<Classroom> createClassroom({
+    required String schoolId,
+    required String location,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/classrooms',
+        data: {'school_id': schoolId, 'location': location},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能创建教室');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '创建教室失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return Classroom.fromJson(data);
+      }
+      throw const AppException('创建教室返回数据格式错误');
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<Classroom> updateClassroom({
+    required String id,
+    required String location,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/classrooms/$id',
+        data: {'location': location},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能更新教室');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新教室失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return Classroom.fromJson(data);
+      }
+      throw const AppException('更新教室返回数据格式错误');
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> deleteClassroom({required String id}) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/classrooms/$id',
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能删除教室');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '删除教室失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
   }
 }
 

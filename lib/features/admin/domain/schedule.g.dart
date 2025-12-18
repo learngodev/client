@@ -30,6 +30,7 @@ _CourseSchedule _$CourseScheduleFromJson(Map<String, dynamic> json) =>
       classId: json['class_id'] as String,
       teacherId: json['teacher_id'] as String,
       slotId: json['slot_id'] as String,
+      classroomId: json['classroom_id'] as String?,
       dayOfWeek: (json['day_of_week'] as num).toInt(),
       location: json['location'] as String?,
       startDate: DateTime.parse(json['start_date'] as String),
@@ -38,6 +39,7 @@ _CourseSchedule _$CourseScheduleFromJson(Map<String, dynamic> json) =>
       className: json['class_name'] as String?,
       teacherName: json['teacher_name'] as String?,
       slotName: json['slot_name'] as String?,
+      classroomLocation: json['classroom_location'] as String?,
     );
 
 Map<String, dynamic> _$CourseScheduleToJson(_CourseSchedule instance) =>
@@ -48,6 +50,7 @@ Map<String, dynamic> _$CourseScheduleToJson(_CourseSchedule instance) =>
       'class_id': instance.classId,
       'teacher_id': instance.teacherId,
       'slot_id': instance.slotId,
+      'classroom_id': instance.classroomId,
       'day_of_week': instance.dayOfWeek,
       'location': instance.location,
       'start_date': instance.startDate.toIso8601String(),
@@ -56,6 +59,7 @@ Map<String, dynamic> _$CourseScheduleToJson(_CourseSchedule instance) =>
       'class_name': instance.className,
       'teacher_name': instance.teacherName,
       'slot_name': instance.slotName,
+      'classroom_location': instance.classroomLocation,
     };
 
 _ScheduleStats _$ScheduleStatsFromJson(Map<String, dynamic> json) =>

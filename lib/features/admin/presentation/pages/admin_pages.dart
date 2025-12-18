@@ -18,6 +18,8 @@ import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../domain/oss.dart' as oss;
 import '../../domain/system_settings.dart' as system;
+import '../widgets/assign_student_dialog.dart';
+import 'class_detail_page.dart';
 
 int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
   final nameCompare = a.department.name.toLowerCase().compareTo(
@@ -2256,6 +2258,23 @@ class AdminStructuresPage extends HookConsumerWidget {
       }
     }
 
+    Future<void> showAssignStudentDialog(
+      DepartmentNode node,
+      ClassInfo clazz,
+    ) async {
+      if (!canManageStructures) return;
+
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) =>
+            AssignStudentDialog(department: node.department, classInfo: clazz),
+      );
+
+      if (result == true) {
+        await refreshStructures();
+      }
+    }
+
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: filteredTree.when(
@@ -2441,6 +2460,7 @@ class AdminStructuresPage extends HookConsumerWidget {
                         onDeleteDepartment: confirmDeleteDepartment,
                         onRenameClass: showRenameClassDialog,
                         onDeleteClass: confirmDeleteClass,
+                        onAssignStudent: showAssignStudentDialog,
                       );
                     }).toList();
                   })(),
@@ -3981,6 +4001,7 @@ class _DepartmentExpansion extends StatelessWidget {
     required this.onDeleteDepartment,
     required this.onRenameClass,
     required this.onDeleteClass,
+    required this.onAssignStudent,
   });
 
   final DepartmentNode node;
@@ -3993,6 +4014,7 @@ class _DepartmentExpansion extends StatelessWidget {
   final Future<void> Function(DepartmentNode) onDeleteDepartment;
   final Future<void> Function(DepartmentNode, ClassInfo) onRenameClass;
   final Future<void> Function(DepartmentNode, ClassInfo) onDeleteClass;
+  final Future<void> Function(DepartmentNode, ClassInfo) onAssignStudent;
 
   @override
   Widget build(BuildContext context) {
@@ -4047,6 +4069,16 @@ class _DepartmentExpansion extends StatelessWidget {
                   dense: true,
                   visualDensity: VisualDensity.compact,
                   contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ClassDetailPage(
+                          department: node.department,
+                          classInfo: clazz,
+                        ),
+                      ),
+                    );
+                  },
                   leading: Icon(
                     Icons.class_outlined,
                     size: 18,
@@ -4084,6 +4116,9 @@ class _DepartmentExpansion extends StatelessWidget {
                         case 'rename':
                           unawaited(onRenameClass(node, clazz));
                           break;
+                        case 'assign':
+                          unawaited(onAssignStudent(node, clazz));
+                          break;
                         case 'delete':
                           unawaited(onDeleteClass(node, clazz));
                           break;
@@ -4093,6 +4128,10 @@ class _DepartmentExpansion extends StatelessWidget {
                       const PopupMenuItem<String>(
                         value: 'rename',
                         child: Text('重命名班级'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'assign',
+                        child: Text('分配学生'),
                       ),
                       PopupMenuItem<String>(
                         value: 'delete',
@@ -6197,7 +6236,6 @@ class _CreateAccountDialog extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final phoneController = useTextEditingController();
     final passwordController = useTextEditingController(text: '123456');
-    final selectedClassId = useState<String?>(null);
     final isSubmitting = useState(false);
 
     final authState = ref.watch(authStateProvider);

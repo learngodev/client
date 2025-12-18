@@ -1,35 +1,36 @@
+import 'dart:async';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../data/admin_repository.dart';
 import '../domain/schedule.dart';
 
-final timeSlotsProvider = FutureProvider.family<List<TimeSlot>, String>((
-  ref,
-  schoolId,
-) {
-  return ref.watch(adminRepositoryProvider).listTimeSlots(schoolId: schoolId);
-});
+final timeSlotsProvider = FutureProvider.autoDispose
+    .family<List<TimeSlot>, String>((ref, schoolId) {
+      return ref
+          .watch(adminRepositoryProvider)
+          .listTimeSlots(schoolId: schoolId);
+    });
 
-final scheduleRulesProvider =
-    FutureProvider.family<List<CourseSchedule>, String>((ref, schoolId) {
+final scheduleRulesProvider = FutureProvider.autoDispose
+    .family<List<CourseSchedule>, String>((ref, schoolId) {
       return ref
           .watch(adminRepositoryProvider)
           .listScheduleRules(schoolId: schoolId);
     });
 
-final scheduleStatsProvider = FutureProvider.family<ScheduleStats, String>((
-  ref,
-  schoolId,
-) {
-  return ref
-      .watch(adminRepositoryProvider)
-      .getScheduleStats(schoolId: schoolId);
-});
+final scheduleStatsProvider = FutureProvider.autoDispose
+    .family<ScheduleStats, String>((ref, schoolId) {
+      return ref
+          .watch(adminRepositoryProvider)
+          .getScheduleStats(schoolId: schoolId);
+    });
 
-class ScheduleController extends StateNotifier<AsyncValue<void>> {
-  ScheduleController(this._ref) : super(const AsyncData(null));
-
-  final Ref _ref;
+class ScheduleController extends AutoDisposeAsyncNotifier<void> {
+  @override
+  FutureOr<void> build() {
+    // no-op
+  }
 
   Future<void> createTimeSlot({
     required String schoolId,
@@ -39,7 +40,7 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await _ref
+      await ref
           .read(adminRepositoryProvider)
           .createTimeSlot(
             schoolId: schoolId,
@@ -47,7 +48,39 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
             startTime: startTime,
             endTime: endTime,
           );
-      _ref.invalidate(timeSlotsProvider(schoolId));
+      ref.invalidate(timeSlotsProvider(schoolId));
+    });
+  }
+
+  Future<void> updateTimeSlot({
+    required String schoolId,
+    required String id,
+    required String name,
+    required String startTime,
+    required String endTime,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(adminRepositoryProvider)
+          .updateTimeSlot(
+            id: id,
+            name: name,
+            startTime: startTime,
+            endTime: endTime,
+          );
+      ref.invalidate(timeSlotsProvider(schoolId));
+    });
+  }
+
+  Future<void> deleteTimeSlot({
+    required String schoolId,
+    required String id,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref.read(adminRepositoryProvider).deleteTimeSlot(id: id);
+      ref.invalidate(timeSlotsProvider(schoolId));
     });
   }
 
@@ -59,12 +92,13 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
     required String slotId,
     required int dayOfWeek,
     required String location,
+    String? classroomId,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await _ref
+      await ref
           .read(adminRepositoryProvider)
           .createScheduleRule(
             schoolId: schoolId,
@@ -74,10 +108,26 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
             slotId: slotId,
             dayOfWeek: dayOfWeek,
             location: location,
+            classroomId: classroomId,
             startDate: startDate,
             endDate: endDate,
           );
-      _ref.invalidate(scheduleRulesProvider(schoolId));
+      ref.invalidate(scheduleRulesProvider(schoolId));
+      ref.invalidate(scheduleStatsProvider(schoolId));
+    });
+  }
+
+  Future<void> deleteScheduleRule({
+    required String schoolId,
+    required String ruleId,
+  }) async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      await ref
+          .read(adminRepositoryProvider)
+          .deleteScheduleRule(schoolId: schoolId, ruleId: ruleId);
+      ref.invalidate(scheduleRulesProvider(schoolId));
+      ref.invalidate(scheduleStatsProvider(schoolId));
     });
   }
 
@@ -88,7 +138,7 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      await _ref
+      await ref
           .read(adminRepositoryProvider)
           .generateSessions(schoolId: schoolId, start: start, end: end);
     });
@@ -96,6 +146,6 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
 }
 
 final scheduleControllerProvider =
-    StateNotifierProvider<ScheduleController, AsyncValue<void>>((ref) {
-      return ScheduleController(ref);
-    });
+    AsyncNotifierProvider.autoDispose<ScheduleController, void>(
+      ScheduleController.new,
+    );
