@@ -66,11 +66,3 @@ final teacherListProvider = FutureProvider.autoDispose<List<AdminAccount>>((
   );
   return page.accounts;
 });
-
-final assignmentListProvider = FutureProvider.autoDispose
-    .family<List<TeachingAssignment>, String?>((ref, courseId) async {
-      final repo = ref.watch(adminRepositoryProvider);
-      final user = ref.watch(currentUserProvider);
-      if (user == null) return [];
-      return repo.fetchAssignments(schoolId: user.schoolId, courseId: courseId);
-    });

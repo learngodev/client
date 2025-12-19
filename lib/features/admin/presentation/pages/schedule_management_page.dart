@@ -92,6 +92,9 @@ class _CoursesTab extends ConsumerWidget {
     final statsAsync = ref.watch(scheduleStatsProvider(schoolId));
     final timeSlotsAsync = ref.watch(timeSlotsProvider(schoolId));
 
+    // Keep controller alive
+    ref.watch(scheduleControllerProvider);
+
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateCourseDialog(context, ref, schoolId),
@@ -321,12 +324,20 @@ class _CoursesTab extends ConsumerWidget {
                   if (filter.keyword != null && filter.keyword!.isNotEmpty) {
                     final k = filter.keyword!.toLowerCase();
                     final matchesName = course.name.toLowerCase().contains(k);
-                    final matchesTeacher = (course.teacherName ?? '')
-                        .toLowerCase()
-                        .contains(k);
-                    final matchesClass = (course.className ?? '')
-                        .toLowerCase()
-                        .contains(k);
+
+                    final courseRules =
+                        rulesAsync.valueOrNull?.where(
+                          (r) => r.courseId == course.id,
+                        ) ??
+                        [];
+
+                    final matchesTeacher = courseRules.any(
+                      (r) => (r.teacherName ?? '').toLowerCase().contains(k),
+                    );
+                    final matchesClass = courseRules.any(
+                      (r) => (r.className ?? '').toLowerCase().contains(k),
+                    );
+
                     if (!matchesName && !matchesTeacher && !matchesClass) {
                       return false;
                     }
@@ -447,8 +458,8 @@ class _CoursesTab extends ConsumerWidget {
                                             ),
                                         ],
                                       ),
-                                      onTap: () {
-                                        Navigator.of(context).push(
+                                      onTap: () async {
+                                        await Navigator.of(context).push(
                                           MaterialPageRoute(
                                             builder: (context) =>
                                                 CourseDetailPage(
@@ -456,14 +467,51 @@ class _CoursesTab extends ConsumerWidget {
                                                 ),
                                           ),
                                         );
+                                        ref.invalidate(
+                                          courseListProvider(schoolId),
+                                        );
                                       },
                                     ),
-                                    DataCell(Text(course.teacherName ?? '-')),
                                     DataCell(
-                                      Text(
-                                        course.className != null
-                                            ? '${course.className} (${course.studentCount}人)'
-                                            : '-',
+                                      Builder(
+                                        builder: (context) {
+                                          if (rules.isEmpty) {
+                                            return const Text('-');
+                                          }
+                                          final teachers = rules
+                                              .map((r) => r.teacherName)
+                                              .where(
+                                                (n) =>
+                                                    n != null && n.isNotEmpty,
+                                              )
+                                              .toSet()
+                                              .join(', ');
+                                          return Text(
+                                            teachers.isEmpty ? '-' : teachers,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Builder(
+                                        builder: (context) {
+                                          if (rules.isEmpty) {
+                                            return const Text('-');
+                                          }
+                                          final classNames = rules
+                                              .map((r) => r.className)
+                                              .where(
+                                                (n) =>
+                                                    n != null && n.isNotEmpty,
+                                              )
+                                              .toSet()
+                                              .join(', ');
+                                          return Text(
+                                            classNames.isEmpty
+                                                ? '-'
+                                                : classNames,
+                                          );
+                                        },
                                       ),
                                     ),
                                     DataCell(
@@ -547,16 +595,37 @@ class _CoursesTab extends ConsumerWidget {
                                                       );
 
                                                       if (confirm == true) {
-                                                        await ref
-                                                            .read(
-                                                              scheduleControllerProvider
-                                                                  .notifier,
-                                                            )
-                                                            .deleteScheduleRule(
-                                                              schoolId:
-                                                                  schoolId,
-                                                              ruleId: rule.id,
+                                                        try {
+                                                          await ref
+                                                              .read(
+                                                                scheduleControllerProvider
+                                                                    .notifier,
+                                                              )
+                                                              .deleteScheduleRule(
+                                                                schoolId:
+                                                                    schoolId,
+                                                                ruleId: rule.id,
+                                                              );
+
+                                                          final state = ref.read(
+                                                            scheduleControllerProvider,
+                                                          );
+                                                          if (state.hasError) {
+                                                            throw state.error!;
+                                                          }
+                                                        } catch (e) {
+                                                          if (context.mounted) {
+                                                            ScaffoldMessenger.of(
+                                                              context,
+                                                            ).showSnackBar(
+                                                              SnackBar(
+                                                                content: Text(
+                                                                  '删除失败: $e',
+                                                                ),
+                                                              ),
                                                             );
+                                                          }
+                                                        }
                                                       }
                                                     },
                                                     child: Container(
@@ -708,20 +777,10 @@ class _CoursesTab extends ConsumerWidget {
     String schoolId,
     Course course,
   ) {
-    if (course.classId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请先完善课程信息（班级）')));
-      return;
-    }
     showDialog(
       context: context,
-      builder: (context) => _AddCourseTimeDialog(
-        schoolId: schoolId,
-        courseId: course.id,
-        classId: course.classId!,
-        teacherId: course.teacherId,
-      ),
+      builder: (context) =>
+          _AddCourseTimeDialog(schoolId: schoolId, courseId: course.id),
     );
   }
 
@@ -1181,23 +1240,18 @@ class _ModifyScheduleInfoDialog extends HookConsumerWidget {
 }
 
 class _AddCourseTimeDialog extends HookConsumerWidget {
-  const _AddCourseTimeDialog({
-    required this.schoolId,
-    required this.courseId,
-    required this.classId,
-    this.teacherId,
-  });
+  const _AddCourseTimeDialog({required this.schoolId, required this.courseId});
 
   final String schoolId;
   final String courseId;
-  final String classId;
-  final String? teacherId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedSlotId = useState<String?>(null);
     final selectedDayOfWeek = useState<int>(1);
     final selectedClassroomId = useState<String?>(null);
+    final selectedTeacherId = useState<String?>(null);
+    final selectedClassId = useState<String?>(null);
     final startDate = useState<DateTime>(DateTime.now());
     final endDate = useState<DateTime>(
       DateTime.now().add(const Duration(days: 365)),
@@ -1209,14 +1263,38 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
     final classroomsAsync = ref.watch(classroomsProvider);
     final classrooms = classroomsAsync.asData?.value ?? [];
 
+    final teachersAsync = ref.watch(teacherListProvider);
+    final teachers = teachersAsync.asData?.value ?? [];
+
+    final deptTreeAsync = ref.watch(adminDepartmentTreeProvider);
+    final classes =
+        deptTreeAsync.asData?.value.expand((n) => n.classes).toList() ?? [];
+
+    // Watch the controller state to handle loading and errors
+    final scheduleState = ref.watch(scheduleControllerProvider);
+
     return AlertDialog(
-      title: const Text('添加上课时间'),
+      title: const Text('新增排课信息'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: selectedSlotId.value,
+              value: classes.any((c) => c.id == selectedClassId.value)
+                  ? selectedClassId.value
+                  : null,
+              decoration: const InputDecoration(labelText: '班级'),
+              items: classes
+                  .map(
+                    (c) => DropdownMenuItem(value: c.id, child: Text(c.name)),
+                  )
+                  .toList(),
+              onChanged: (v) => selectedClassId.value = v,
+            ),
+            DropdownButtonFormField<String>(
+              value: timeSlots.any((s) => s.id == selectedSlotId.value)
+                  ? selectedSlotId.value
+                  : null,
               decoration: const InputDecoration(labelText: '时间段'),
               items: timeSlots
                   .map(
@@ -1241,7 +1319,9 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               onChanged: (v) => selectedDayOfWeek.value = v!,
             ),
             DropdownButtonFormField<String>(
-              value: selectedClassroomId.value,
+              value: classrooms.any((c) => c.id == selectedClassroomId.value)
+                  ? selectedClassroomId.value
+                  : null,
               decoration: const InputDecoration(labelText: '教室 (可选)'),
               items: [
                 const DropdownMenuItem<String>(value: null, child: Text('无')),
@@ -1251,6 +1331,21 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               ],
               onChanged: (v) {
                 selectedClassroomId.value = v;
+              },
+            ),
+            DropdownButtonFormField<String>(
+              value: teachers.any((t) => t.id == selectedTeacherId.value)
+                  ? selectedTeacherId.value
+                  : null,
+              decoration: const InputDecoration(labelText: '教师 (可选)'),
+              items: [
+                const DropdownMenuItem<String>(value: null, child: Text('无')),
+                ...teachers.map(
+                  (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
+                ),
+              ],
+              onChanged: (v) {
+                selectedTeacherId.value = v;
               },
             ),
             ListTile(
@@ -1288,53 +1383,86 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
           child: const Text('取消'),
         ),
         TextButton(
-          onPressed: () async {
-            if (selectedSlotId.value == null) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('请选择时间段')));
-              return;
-            }
+          onPressed: scheduleState.isLoading
+              ? null
+              : () async {
+                  if (selectedClassId.value == null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('请选择班级')));
+                    return;
+                  }
+                  if (selectedSlotId.value == null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('请选择时间段')));
+                    return;
+                  }
 
-            try {
-              String location = '';
-              if (selectedClassroomId.value != null) {
-                final classroom = classrooms.firstWhere(
-                  (c) => c.id == selectedClassroomId.value,
-                );
-                location = classroom.location;
-              }
+                  try {
+                    String location = '';
+                    if (selectedClassroomId.value != null) {
+                      final classroom = classrooms.firstWhere(
+                        (c) => c.id == selectedClassroomId.value,
+                      );
+                      location = classroom.location;
+                    }
 
-              await ref
-                  .read(scheduleControllerProvider.notifier)
-                  .createScheduleRule(
-                    schoolId: schoolId,
-                    courseId: courseId,
-                    classId: classId,
-                    teacherId: teacherId ?? '',
-                    slotId: selectedSlotId.value!,
-                    dayOfWeek: selectedDayOfWeek.value,
-                    location: location,
-                    classroomId: selectedClassroomId.value,
-                    startDate: startDate.value,
-                    endDate: endDate.value,
-                  );
-              ref.invalidate(courseListProvider(schoolId));
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('上课时间已添加')));
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(e.toString())));
-              }
-            }
-          },
-          child: const Text('添加'),
+                    await ref
+                        .read(scheduleControllerProvider.notifier)
+                        .createScheduleRule(
+                          schoolId: schoolId,
+                          courseId: courseId,
+                          classId: selectedClassId.value!,
+                          teacherId: selectedTeacherId.value,
+                          slotId: selectedSlotId.value!,
+                          dayOfWeek: selectedDayOfWeek.value,
+                          location: location,
+                          classroomId: selectedClassroomId.value,
+                          startDate: startDate.value,
+                          endDate: endDate.value,
+                        );
+
+                    // Check for error in the state
+                    final currentState = ref.read(scheduleControllerProvider);
+                    if (currentState.hasError) {
+                      throw currentState.error!;
+                    }
+
+                    ref.invalidate(courseListProvider(schoolId));
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(const SnackBar(content: Text('上课时间已添加')));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      String message = e.toString();
+                      if (message.contains('classroom is already booked')) {
+                        message = '该教室在此时间段已被占用';
+                      } else if (message.contains(
+                        'teacher is already booked',
+                      )) {
+                        message = '该教师在此时间段已有课程';
+                      } else if (message.contains('class is already booked')) {
+                        message = '该班级在此时间段已有课程';
+                      } else {
+                        message = '添加失败: $message';
+                      }
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(message)));
+                    }
+                  }
+                },
+          child: scheduleState.isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('添加'),
         ),
       ],
     );

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/admin_providers.dart';
+import '../../application/course_providers.dart';
 import '../../data/admin_repository.dart';
 import '../../domain/accounts.dart';
 import '../../domain/course.dart';
@@ -114,27 +115,18 @@ class _TeacherListTab extends ConsumerWidget {
   }
 }
 
-class _ClassAssignmentTab extends ConsumerStatefulWidget {
+class _ClassAssignmentTab extends ConsumerWidget {
   const _ClassAssignmentTab({required this.course});
 
   final Course course;
 
   @override
-  ConsumerState<_ClassAssignmentTab> createState() =>
-      _ClassAssignmentTabState();
-}
-
-class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
-  bool _isSelectionMode = false;
-  final Set<String> _selectedAssignmentIds = {};
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final schoolId = ref.watch(authStateProvider).account?.schoolId ?? '';
     final request = AdminCourseAssignmentsRequest(
       schoolId: schoolId,
-      courseId: widget.course.id,
+      courseId: course.id,
     );
     final assignmentsAsync = ref.watch(adminCourseAssignmentsProvider(request));
     final departmentTreeAsync = ref.watch(adminDepartmentTreeProvider);
@@ -152,51 +144,9 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Spacer(),
-              Flexible(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_isSelectionMode) ...[
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            _isSelectionMode = false;
-                            _selectedAssignmentIds.clear();
-                          });
-                        },
-                        child: const Text('取消'),
-                      ),
-                      FilledButton.tonal(
-                        onPressed: _selectedAssignmentIds.isEmpty
-                            ? null
-                            : () {
-                                final list = assignmentsAsync.valueOrNull ?? [];
-                                if (list.isNotEmpty) {
-                                  _batchRemove(context, ref, list);
-                                }
-                              },
-                        child: Text('移除(${_selectedAssignmentIds.length})'),
-                      ),
-                    ] else ...[
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _isSelectionMode = true;
-                          });
-                        },
-                        icon: const Icon(Icons.checklist),
-                        label: const Text('批量管理'),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: () => _showAssignDialog(context, ref),
-                        icon: const Icon(Icons.add),
-                        label: const Text('分配班级'),
-                      ),
-                    ],
-                  ],
-                ),
+              const Text(
+                '（请在排课管理中调整分配）',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),
@@ -214,67 +164,51 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
                 itemBuilder: (context, index) {
                   final assignment = assignments[index];
                   return ListTile(
-                    onTap: _isSelectionMode
-                        ? null
-                        : () {
-                            final tree = departmentTreeAsync.valueOrNull;
-                            if (tree != null) {
-                              for (final node in tree) {
-                                final classInfo = node.classes
-                                    .where((c) => c.id == assignment.classId)
-                                    .firstOrNull;
-                                if (classInfo != null) {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => ClassDetailPage(
-                                        department: node.department,
-                                        classInfo: classInfo,
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                              }
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('未找到班级详细信息')),
-                              );
-                            } else {
-                              ref
-                                  .read(adminDepartmentTreeProvider.notifier)
-                                  .refresh();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('正在加载班级信息，请稍后重试')),
-                              );
-                            }
-                          },
-                    leading: _isSelectionMode
-                        ? Checkbox(
-                            value: _selectedAssignmentIds.contains(
-                              assignment.id,
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                if (value == true) {
-                                  _selectedAssignmentIds.add(assignment.id);
-                                } else {
-                                  _selectedAssignmentIds.remove(assignment.id);
-                                }
-                              });
-                            },
-                          )
-                        : const Icon(Icons.class_),
-                    title: Text(assignment.className ?? assignment.classId),
-                    subtitle: Text('学生: ${assignment.studentCount} 人'),
-                    trailing: _isSelectionMode
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _removeSingleAssignment(
-                              context,
-                              ref,
-                              assignment,
-                            ),
-                          ),
+                    onTap: () {
+                      final tree = departmentTreeAsync.valueOrNull;
+                      if (tree != null) {
+                        for (final node in tree) {
+                          final classInfo = node.classes
+                              .where((c) => c.id == assignment.classId)
+                              .firstOrNull;
+                          if (classInfo != null) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => ClassDetailPage(
+                                  department: node.department,
+                                  classInfo: classInfo,
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('未找到班级详细信息')),
+                        );
+                      } else {
+                        ref
+                            .read(adminDepartmentTreeProvider.notifier)
+                            .refresh();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('正在加载班级信息，请稍后重试')),
+                        );
+                      }
+                    },
+                    leading: const Icon(Icons.class_),
+                    title: Text(
+                      assignment.className.isNotEmpty
+                          ? assignment.className
+                          : assignment.classId,
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('学生: ${assignment.studentCount} 人'),
+                        if (assignment.teacherNames.isNotEmpty)
+                          Text('任课教师: ${assignment.teacherNames.join(", ")}'),
+                      ],
+                    ),
                   );
                 },
               );
@@ -285,320 +219,5 @@ class _ClassAssignmentTabState extends ConsumerState<_ClassAssignmentTab> {
         ),
       ],
     );
-  }
-
-  Future<void> _removeSingleAssignment(
-    BuildContext context,
-    WidgetRef ref,
-    TeachingAssignment assignment,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认移除'),
-        content: Text('确定要移除班级 ${assignment.className} 的分配吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('移除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await ref
-            .read(adminRepositoryProvider)
-            .batchRemoveAssignments(assignmentIds: assignment.assignmentIds);
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('移除成功')));
-          ref.invalidate(
-            adminCourseAssignmentsProvider(
-              AdminCourseAssignmentsRequest(
-                schoolId: ref.read(authStateProvider).account?.schoolId ?? '',
-                courseId: widget.course.id,
-              ),
-            ),
-          );
-          ref.invalidate(
-            adminAccountListProvider(
-              AdminAccountListRequest(
-                schoolId: ref.read(authStateProvider).account?.schoolId ?? '',
-                role: AdminAccountRole.student,
-                courseId: widget.course.id,
-                page: 1,
-                pageSize: 100,
-              ),
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('移除失败: $e')));
-        }
-      }
-    }
-  }
-
-  Future<void> _batchRemove(
-    BuildContext context,
-    WidgetRef ref,
-    List<TeachingAssignment> assignments,
-  ) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认移除'),
-        content: Text('确定要移除选中的 ${_selectedAssignmentIds.length} 个班级分配吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('移除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final idsToRemove = <String>[];
-      for (final assignment in assignments) {
-        if (_selectedAssignmentIds.contains(assignment.id)) {
-          idsToRemove.addAll(assignment.assignmentIds);
-        }
-      }
-
-      try {
-        await ref
-            .read(adminRepositoryProvider)
-            .batchRemoveAssignments(assignmentIds: idsToRemove);
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('移除成功')));
-          setState(() {
-            _isSelectionMode = false;
-            _selectedAssignmentIds.clear();
-          });
-          ref.invalidate(
-            adminCourseAssignmentsProvider(
-              AdminCourseAssignmentsRequest(
-                schoolId: ref.read(authStateProvider).account?.schoolId ?? '',
-                courseId: widget.course.id,
-              ),
-            ),
-          );
-          ref.invalidate(
-            adminAccountListProvider(
-              AdminAccountListRequest(
-                schoolId: ref.read(authStateProvider).account?.schoolId ?? '',
-                role: AdminAccountRole.student,
-                courseId: widget.course.id,
-                page: 1,
-                pageSize: 100,
-              ),
-            ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('移除失败: $e')));
-        }
-      }
-    }
-  }
-
-  void _showAssignDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => _AssignDialog(course: widget.course),
-    );
-  }
-}
-
-class _AssignDialog extends ConsumerStatefulWidget {
-  const _AssignDialog({required this.course});
-
-  final Course course;
-
-  @override
-  ConsumerState<_AssignDialog> createState() => _AssignDialogState();
-}
-
-class _AssignDialogState extends ConsumerState<_AssignDialog> {
-  String? _selectedDepartmentId;
-  final Set<String> _selectedClassIds = {};
-  bool _assignToWholeDepartment = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final departmentsAsync = ref.watch(adminDepartmentTreeProvider);
-
-    return AlertDialog(
-      title: const Text('分配班级'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: departmentsAsync.when(
-          data: (nodes) {
-            final departments = nodes.map((n) => n.department).toList();
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: '选择院系'),
-                  items: departments.map((dept) {
-                    return DropdownMenuItem(
-                      value: dept.id,
-                      child: Text(dept.name),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedDepartmentId = value;
-                      _selectedClassIds.clear();
-                      _assignToWholeDepartment = false;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (_selectedDepartmentId != null) ...[
-                  CheckboxListTile(
-                    title: const Text('分配给该院系所有班级'),
-                    value: _assignToWholeDepartment,
-                    onChanged: (value) {
-                      setState(() {
-                        _assignToWholeDepartment = value ?? false;
-                        if (_assignToWholeDepartment) {
-                          _selectedClassIds.clear();
-                        }
-                      });
-                    },
-                  ),
-                  if (!_assignToWholeDepartment) ...[
-                    const SizedBox(height: 8),
-                    const Text('选择班级:'),
-                    const SizedBox(height: 8),
-                    SizedBox(height: 200, child: _buildClassList(nodes)),
-                  ],
-                ],
-              ],
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Text('加载失败: $err'),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        FilledButton(
-          onPressed:
-              (_selectedDepartmentId == null ||
-                  (!_assignToWholeDepartment && _selectedClassIds.isEmpty))
-              ? null
-              : () => _submit(context, ref),
-          child: const Text('确定'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildClassList(List<DepartmentNode> nodes) {
-    final node = nodes.firstWhere(
-      (n) => n.department.id == _selectedDepartmentId,
-      orElse: () => nodes.first,
-    );
-
-    if (node.classes.isEmpty) {
-      return const Text('该院系暂无班级');
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: node.classes.length,
-      itemBuilder: (context, index) {
-        final cls = node.classes[index];
-        return CheckboxListTile(
-          title: Text(cls.name),
-          value: _selectedClassIds.contains(cls.id),
-          onChanged: (value) {
-            setState(() {
-              if (value == true) {
-                _selectedClassIds.add(cls.id);
-              } else {
-                _selectedClassIds.remove(cls.id);
-              }
-            });
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _submit(BuildContext context, WidgetRef ref) async {
-    try {
-      final schoolId = ref.read(authStateProvider).account?.schoolId ?? '';
-      await ref
-          .read(adminRepositoryProvider)
-          .batchAssignCourse(
-            schoolId: schoolId,
-            courseId: widget.course.id,
-            teacherId: widget.course.teacherId ?? '',
-            departmentId: _assignToWholeDepartment
-                ? _selectedDepartmentId
-                : null,
-            classIds: _assignToWholeDepartment
-                ? null
-                : _selectedClassIds.toList(),
-          );
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('分配成功')));
-        ref.invalidate(
-          adminCourseAssignmentsProvider(
-            AdminCourseAssignmentsRequest(
-              schoolId: schoolId,
-              courseId: widget.course.id,
-            ),
-          ),
-        );
-        ref.invalidate(
-          adminAccountListProvider(
-            AdminAccountListRequest(
-              schoolId: schoolId,
-              role: AdminAccountRole.student,
-              courseId: widget.course.id,
-              page: 1,
-              pageSize: 100,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('分配失败: $e')));
-      }
-    }
   }
 }

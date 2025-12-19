@@ -1723,35 +1723,6 @@ class AdminRepository {
     }
   }
 
-  Future<TeachingAssignment> assignCourse({
-    required String schoolId,
-    required String courseId,
-    required String teacherId,
-    required String classId,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/admin/courses/assign',
-        data: {
-          'course_id': courseId,
-          'teacher_id': teacherId,
-          'class_id': classId,
-        },
-        queryParameters: {'school_id': schoolId},
-      );
-      final body = response.data;
-      if (body == null) throw const AppException('未能分配课程');
-      final success = body['success'] as bool? ?? false;
-      if (!success) {
-        final error = body['error'] as Map<String, dynamic>?;
-        throw AppException(error?['message']?.toString() ?? '分配课程失败');
-      }
-      return TeachingAssignment.fromJson(body['data']);
-    } on DioException catch (e) {
-      throw AppException(e.message ?? '网络错误');
-    }
-  }
-
   Future<void> updateAssignment({
     required String id,
     required String teacherId,
@@ -1791,13 +1762,13 @@ class AdminRepository {
     }
   }
 
-  Future<List<TeachingAssignment>> fetchAssignments({
+  Future<List<CourseAssignment>> fetchCourseAssignments({
     required String schoolId,
     String? courseId,
-    String? teacherId,
+    String? departmentId,
     String? classId,
     int page = 1,
-    int pageSize = 100,
+    int pageSize = 20,
   }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -1805,7 +1776,7 @@ class AdminRepository {
         queryParameters: {
           'school_id': schoolId,
           if (courseId != null) 'course_id': courseId,
-          if (teacherId != null) 'teacher_id': teacherId,
+          if (departmentId != null) 'department_id': departmentId,
           if (classId != null) 'class_id': classId,
           'page': page,
           'size': pageSize,
@@ -1831,90 +1802,10 @@ class AdminRepository {
       if (items is List) {
         return items
             .whereType<Map<String, dynamic>>()
-            .map(TeachingAssignment.fromJson)
+            .map(CourseAssignment.fromJson)
             .toList();
       }
       return [];
-    } on DioException catch (error) {
-      final body = error.response?.data;
-      String? message;
-      String? details;
-      if (body is Map<String, dynamic>) {
-        final map = body['error'] as Map<String, dynamic>?;
-        message = map?['message']?.toString();
-        details = map?['details']?.toString();
-      }
-      message ??= error.message ?? '网络错误';
-      details ??= body?.toString();
-      throw AppException(message, details: details);
-    }
-  }
-
-  Future<void> batchAssignCourse({
-    required String schoolId,
-    required String courseId,
-    required String teacherId,
-    List<String>? classIds,
-    String? departmentId,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/admin/courses/assign/batch',
-        queryParameters: {'school_id': schoolId},
-        data: {
-          'course_id': courseId,
-          'teacher_id': teacherId,
-          'class_ids': classIds,
-          'department_id': departmentId,
-        },
-      );
-      final body = response.data;
-      if (body == null) {
-        throw const AppException('批量分配课程失败');
-      }
-      final success = body['success'] as bool? ?? false;
-      if (!success) {
-        final error = body['error'] as Map<String, dynamic>?;
-        throw AppException(
-          error?['message']?.toString() ?? '批量分配课程失败',
-          details: error?['details']?.toString(),
-        );
-      }
-    } on DioException catch (error) {
-      final body = error.response?.data;
-      String? message;
-      String? details;
-      if (body is Map<String, dynamic>) {
-        final map = body['error'] as Map<String, dynamic>?;
-        message = map?['message']?.toString();
-        details = map?['details']?.toString();
-      }
-      message ??= error.message ?? '网络错误';
-      details ??= body?.toString();
-      throw AppException(message, details: details);
-    }
-  }
-
-  Future<void> batchRemoveAssignments({
-    required List<String> assignmentIds,
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/admin/courses/assignments/batch-remove',
-        data: {'assignment_ids': assignmentIds},
-      );
-      final body = response.data;
-      if (body == null) {
-        throw const AppException('批量移除分配失败');
-      }
-      final success = body['success'] as bool? ?? false;
-      if (!success) {
-        final error = body['error'] as Map<String, dynamic>?;
-        throw AppException(
-          error?['message']?.toString() ?? '批量移除分配失败',
-          details: error?['details']?.toString(),
-        );
-      }
     } on DioException catch (error) {
       final body = error.response?.data;
       String? message;
@@ -2085,7 +1976,7 @@ class AdminRepository {
     required String schoolId,
     required String courseId,
     required String classId,
-    required String teacherId,
+    String? teacherId,
     required String slotId,
     required int dayOfWeek,
     required String location,

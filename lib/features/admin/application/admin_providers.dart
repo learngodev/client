@@ -1047,12 +1047,12 @@ class AdminCourseAssignmentsRequest {
 }
 
 final adminCourseAssignmentsProvider = FutureProvider.autoDispose
-    .family<List<TeachingAssignment>, AdminCourseAssignmentsRequest>((
+    .family<List<CourseAssignment>, AdminCourseAssignmentsRequest>((
       ref,
       request,
     ) async {
       final repository = ref.watch(adminRepositoryProvider);
-      return repository.fetchAssignments(
+      return repository.fetchCourseAssignments(
         schoolId: request.schoolId,
         courseId: request.courseId,
       );

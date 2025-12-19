@@ -226,12 +226,13 @@ class CourseManagementPage extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          await Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => CourseDetailPage(course: course),
             ),
           );
+          ref.invalidate(courseListProvider(schoolId));
         },
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -265,7 +266,7 @@ class CourseManagementPage extends ConsumerWidget {
                           children: [
                             const Icon(Icons.assignment_ind, size: 20),
                             const SizedBox(width: 8),
-                            Text(course.assignmentId != null ? '编辑分配' : '分配课程'),
+                            const Text('分配课程'),
                           ],
                         ),
                       ),
@@ -279,9 +280,9 @@ class CourseManagementPage extends ConsumerWidget {
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              course.assignmentId != null ? '移除分配' : '删除课程',
-                              style: const TextStyle(color: Colors.red),
+                            const Text(
+                              '删除课程',
+                              style: TextStyle(color: Colors.red),
                             ),
                           ],
                         ),
@@ -308,135 +309,34 @@ class CourseManagementPage extends ConsumerWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (course.teacherName != null &&
-                      course.teacherName!.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.2,
-                          ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.person,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            course.teacherName!,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.person_off_outlined,
-                            size: 16,
+                        const SizedBox(width: 6),
+                        Text(
+                          '请在详情页查看分配',
+                          style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '未分配教师',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (course.className != null && course.className!.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.tertiary.withValues(
-                          alpha: 0.1,
                         ),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: theme.colorScheme.tertiary.withValues(
-                            alpha: 0.2,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.class_outlined,
-                            size: 16,
-                            color: theme.colorScheme.tertiary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${course.className} (${course.studentCount}人)',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.tertiary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.meeting_room_outlined,
-                            size: 16,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '未分配班级',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
+                  ),
                 ],
               ),
             ],
@@ -510,12 +410,11 @@ class CourseManagementPage extends ConsumerWidget {
     String schoolId,
     Course course,
   ) async {
-    final isAssignment = course.assignmentId != null;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(isAssignment ? '确认移除分配' : '确认删除课程'),
-        content: Text(isAssignment ? '确定要移除这个课程分配吗？' : '确定要删除这个课程吗？'),
+        title: const Text('确认删除课程'),
+        content: const Text('确定要删除这个课程吗？'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -531,13 +430,7 @@ class CourseManagementPage extends ConsumerWidget {
 
     if (confirm == true) {
       try {
-        if (isAssignment) {
-          await ref
-              .read(adminRepositoryProvider)
-              .removeAssignment(id: course.assignmentId!);
-        } else {
-          await ref.read(adminRepositoryProvider).deleteCourse(id: course.id);
-        }
+        await ref.read(adminRepositoryProvider).deleteCourse(id: course.id);
         ref.invalidate(courseListProvider(schoolId));
       } catch (e) {
         if (context.mounted) {
@@ -555,123 +448,8 @@ class CourseManagementPage extends ConsumerWidget {
     String schoolId,
     Course course,
   ) async {
-    String? selectedTeacherId = course.teacherId;
-    String? selectedClassId = course.classId;
-    final isEdit = course.assignmentId != null;
-
-    await showDialog(
-      context: context,
-      builder: (context) => Consumer(
-        builder: (context, ref, child) {
-          final teachersAsync = ref.watch(teacherListProvider);
-          final deptTreeAsync = ref.watch(adminDepartmentTreeProvider);
-
-          return AlertDialog(
-            title: Text(
-              isEdit ? '编辑分配: ${course.name}' : '分配课程: ${course.name}',
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                teachersAsync.when(
-                  data: (teachers) => DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: '选择教师'),
-                    value: selectedTeacherId,
-                    items: teachers
-                        .map(
-                          (t) => DropdownMenuItem(
-                            value: t.id,
-                            child: Text(t.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => selectedTeacherId = v,
-                  ),
-                  loading: () => const CircularProgressIndicator(),
-                  error: (e, s) => Text('加载教师失败: $e'),
-                ),
-                const SizedBox(height: 16),
-                deptTreeAsync.when(
-                  data: (nodes) {
-                    final items = <DropdownMenuItem<String>>[];
-                    for (final node in nodes) {
-                      for (final cls in node.classes) {
-                        items.add(
-                          DropdownMenuItem(
-                            value: cls.id,
-                            child: Text(
-                              '${node.department.name} - ${cls.name}',
-                            ),
-                          ),
-                        );
-                      }
-                    }
-                    return DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: '选择班级'),
-                      value: selectedClassId,
-                      items: items,
-                      onChanged: (v) => selectedClassId = v,
-                    );
-                  },
-                  loading: () => const CircularProgressIndicator(),
-                  error: (e, s) => Text('加载班级失败: $e'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('取消'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  if (selectedTeacherId == null || selectedClassId == null) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('请选择教师和班级')));
-                    return;
-                  }
-
-                  try {
-                    if (isEdit) {
-                      await ref
-                          .read(adminRepositoryProvider)
-                          .updateAssignment(
-                            id: course.assignmentId!,
-                            teacherId: selectedTeacherId!,
-                            classId: selectedClassId!,
-                          );
-                    } else {
-                      await ref
-                          .read(adminRepositoryProvider)
-                          .assignCourse(
-                            schoolId: schoolId,
-                            courseId: course.id,
-                            teacherId: selectedTeacherId!,
-                            classId: selectedClassId!,
-                          );
-                    }
-                    ref.invalidate(courseListProvider(schoolId));
-                    if (context.mounted) {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(isEdit ? '更新成功' : '分配成功')),
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(e.toString())));
-                    }
-                  }
-                },
-                child: Text(isEdit ? '更新' : '分配'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('请在排课管理中进行课程分配')));
   }
 }

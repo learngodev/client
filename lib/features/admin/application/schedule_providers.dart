@@ -88,7 +88,7 @@ class ScheduleController extends AutoDisposeAsyncNotifier<void> {
     required String schoolId,
     required String courseId,
     required String classId,
-    required String teacherId,
+    String? teacherId,
     required String slotId,
     required int dayOfWeek,
     required String location,

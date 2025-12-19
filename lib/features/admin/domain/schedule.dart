@@ -25,7 +25,7 @@ abstract class CourseSchedule with _$CourseSchedule {
     @JsonKey(name: 'school_id') required String schoolId,
     @JsonKey(name: 'course_id') required String courseId,
     @JsonKey(name: 'class_id') required String classId,
-    @JsonKey(name: 'teacher_id') required String teacherId,
+    @JsonKey(name: 'teacher_id') String? teacherId,
     @JsonKey(name: 'slot_id') required String slotId,
     @JsonKey(name: 'classroom_id') String? classroomId,
     @JsonKey(name: 'day_of_week') required int dayOfWeek,

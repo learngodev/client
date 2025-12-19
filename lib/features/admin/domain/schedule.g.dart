@@ -28,7 +28,7 @@ _CourseSchedule _$CourseScheduleFromJson(Map<String, dynamic> json) =>
       schoolId: json['school_id'] as String,
       courseId: json['course_id'] as String,
       classId: json['class_id'] as String,
-      teacherId: json['teacher_id'] as String,
+      teacherId: json['teacher_id'] as String?,
       slotId: json['slot_id'] as String,
       classroomId: json['classroom_id'] as String?,
       dayOfWeek: (json['day_of_week'] as num).toInt(),
