@@ -1,12 +1,8 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../application/admin_providers.dart';
-import '../../application/course_providers.dart';
-import '../../data/admin_repository.dart';
 import '../../domain/accounts.dart';
 import '../../domain/course.dart';
-import '../../domain/models.dart';
 import '../../../auth/application/auth_controller.dart';
 import 'class_detail_page.dart';
 

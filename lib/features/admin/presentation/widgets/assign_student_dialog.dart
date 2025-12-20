@@ -88,6 +88,7 @@ class AssignStudentDialog extends HookConsumerWidget {
             context,
           ).showSnackBar(const SnackBar(content: Text('已成功更新学生分配')));
           ref.invalidate(adminAccountListProvider);
+          ref.invalidate(adminDepartmentTreeProvider);
         }
       } catch (e) {
         if (context.mounted) {

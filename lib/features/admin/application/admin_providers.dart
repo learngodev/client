@@ -30,7 +30,8 @@ int _compareClassInfos(ClassInfo a, ClassInfo b) {
   return a.id.compareTo(b.id);
 }
 
-class AdminDepartmentTreeNotifier extends AsyncNotifier<List<DepartmentNode>> {
+class AdminDepartmentTreeNotifier
+    extends AutoDisposeAsyncNotifier<List<DepartmentNode>> {
   @override
   Future<List<DepartmentNode>> build() async {
     final authState = ref.watch(authStateProvider);
@@ -133,7 +134,7 @@ class AdminSystemSettingsState {
 }
 
 class AdminSystemSettingsNotifier
-    extends AsyncNotifier<AdminSystemSettingsState> {
+    extends AutoDisposeAsyncNotifier<AdminSystemSettingsState> {
   @override
   Future<AdminSystemSettingsState> build() async {
     final authState = ref.watch(authStateProvider);
@@ -721,7 +722,7 @@ class AdminOssState {
   }
 }
 
-class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
+class AdminOssNotifier extends AutoDisposeAsyncNotifier<AdminOssState> {
   static const int _defaultAuditLimit = 20;
   int _auditLimit = _defaultAuditLimit;
 
@@ -1003,9 +1004,10 @@ class AdminOssNotifier extends AsyncNotifier<AdminOssState> {
   }
 }
 
-final adminOssProvider = AsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
-  AdminOssNotifier.new,
-);
+final adminOssProvider =
+    AutoDisposeAsyncNotifierProvider<AdminOssNotifier, AdminOssState>(
+      AdminOssNotifier.new,
+    );
 
 final adminExpandedDepartmentsProvider = AutoDisposeNotifierProvider(
   AdminExpandedDepartmentsNotifier.new,
@@ -1016,12 +1018,13 @@ final adminDepartmentViewPreferencesProvider = AutoDisposeNotifierProvider(
 );
 
 final adminDepartmentTreeProvider =
-    AsyncNotifierProvider<AdminDepartmentTreeNotifier, List<DepartmentNode>>(
-      AdminDepartmentTreeNotifier.new,
-    );
+    AutoDisposeAsyncNotifierProvider<
+      AdminDepartmentTreeNotifier,
+      List<DepartmentNode>
+    >(AdminDepartmentTreeNotifier.new);
 
 final adminSystemSettingsProvider =
-    AsyncNotifierProvider<
+    AutoDisposeAsyncNotifierProvider<
       AdminSystemSettingsNotifier,
       AdminSystemSettingsState
     >(AdminSystemSettingsNotifier.new);
@@ -1077,13 +1080,13 @@ final adminAccountListProvider = FutureProvider.autoDispose
     });
 
 final adminDepartmentMetricsProvider =
-    Provider<AsyncValue<AdminDepartmentMetrics>>((ref) {
+    Provider.autoDispose<AsyncValue<AdminDepartmentMetrics>>((ref) {
       final tree = ref.watch(adminDepartmentTreeProvider);
       return tree.whenData(AdminDepartmentMetrics.fromNodes);
     });
 
 final adminFilteredDepartmentTreeProvider =
-    Provider<AsyncValue<List<DepartmentNode>>>((ref) {
+    Provider.autoDispose<AsyncValue<List<DepartmentNode>>>((ref) {
       final preferences = ref.watch(adminDepartmentViewPreferencesProvider);
       final filter = preferences.query;
       final onlyEmpty = preferences.onlyEmpty;
@@ -1133,7 +1136,7 @@ final adminFilteredDepartmentTreeProvider =
     });
 
 final adminFilteredDepartmentMetricsProvider =
-    Provider<AsyncValue<AdminDepartmentMetrics>>((ref) {
+    Provider.autoDispose<AsyncValue<AdminDepartmentMetrics>>((ref) {
       final filtered = ref.watch(adminFilteredDepartmentTreeProvider);
       return filtered.whenData(AdminDepartmentMetrics.fromNodes);
     });

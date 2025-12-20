@@ -13,9 +13,9 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] ?? json['ID'] ?? '',
+      id: json['id'] ?? json['ID'] ?? json['course_id'] ?? '',
       schoolId: json['school_id'] ?? json['SchoolID'] ?? '',
-      name: json['name'] ?? json['Name'] ?? '',
+      name: json['name'] ?? json['course_name'] ?? json['CourseName'] ?? '',
       description: json['description'] ?? json['Description'] ?? '',
     );
   }
@@ -44,9 +44,12 @@ class CourseAssignment {
       courseName: json['course_name'] ?? '',
       classId: json['class_id'] ?? '',
       className: json['class_name'] ?? '',
-      teacherNames:
-          (json['teacher_names'] as List?)?.map((e) => e.toString()).toList() ??
-          [],
+      teacherNames: json['teacher_name'] != null
+          ? [json['teacher_name'].toString()]
+          : (json['teacher_names'] as List?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                [],
       studentCount: (json['student_count'] as num?)?.toInt() ?? 0,
     );
   }

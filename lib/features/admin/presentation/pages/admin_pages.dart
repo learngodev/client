@@ -4334,7 +4334,12 @@ List<InlineSpan> _buildClassSubtitleSpans(
   }
 
   addSeparatorIfNeeded();
-  spans.add(TextSpan(text: '${clazz.studentCount} 人', style: baseStyle));
+  spans.add(
+    TextSpan(
+      text: '${clazz.teacherCount} 师 · ${clazz.studentCount} 生',
+      style: baseStyle,
+    ),
+  );
 
   return spans;
 }

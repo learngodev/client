@@ -75,6 +75,7 @@ class ClassInfo {
     this.grade,
     this.description,
     this.studentCount = 0,
+    this.teacherCount = 0,
   });
 
   final String id;
@@ -83,6 +84,7 @@ class ClassInfo {
   final String? grade;
   final String? description;
   final int studentCount;
+  final int teacherCount;
 
   factory ClassInfo.fromJson(Map<String, dynamic> json) {
     return ClassInfo(
@@ -92,6 +94,7 @@ class ClassInfo {
       grade: json['grade']?.toString(),
       description: json['description']?.toString(),
       studentCount: json['student_count'] as int? ?? 0,
+      teacherCount: json['teacher_count'] as int? ?? 0,
     );
   }
 
@@ -102,6 +105,7 @@ class ClassInfo {
     String? grade,
     String? description,
     int? studentCount,
+    int? teacherCount,
   }) {
     return ClassInfo(
       id: id ?? this.id,
@@ -110,6 +114,7 @@ class ClassInfo {
       grade: grade ?? this.grade,
       description: description ?? this.description,
       studentCount: studentCount ?? this.studentCount,
+      teacherCount: teacherCount ?? this.teacherCount,
     );
   }
 
@@ -121,6 +126,7 @@ class ClassInfo {
       if (grade != null) 'grade': grade,
       if (description != null) 'description': description,
       'student_count': studentCount,
+      'teacher_count': teacherCount,
     };
   }
 
@@ -133,12 +139,20 @@ class ClassInfo {
         other.name == name &&
         other.grade == grade &&
         other.description == description &&
-        other.studentCount == studentCount;
+        other.studentCount == studentCount &&
+        other.teacherCount == teacherCount;
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, departmentId, name, grade, description, studentCount);
+  int get hashCode => Object.hash(
+    id,
+    departmentId,
+    name,
+    grade,
+    description,
+    studentCount,
+    teacherCount,
+  );
 }
 
 class DepartmentNode {

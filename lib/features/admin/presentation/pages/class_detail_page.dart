@@ -4,6 +4,7 @@ import '../../application/admin_providers.dart';
 import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../../auth/application/auth_controller.dart';
+import '../widgets/assign_student_dialog.dart';
 
 class ClassDetailPage extends ConsumerStatefulWidget {
   const ClassDetailPage({
@@ -58,6 +59,26 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage>
             Tab(text: '教师列表'),
           ],
         ),
+      ),
+      floatingActionButton: AnimatedBuilder(
+        animation: _tabController,
+        builder: (context, child) {
+          return _tabController.index == 0
+              ? FloatingActionButton.extended(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AssignStudentDialog(
+                        department: widget.department,
+                        classInfo: widget.classInfo,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('分配学生'),
+                )
+              : const SizedBox.shrink();
+        },
       ),
       body: TabBarView(
         controller: _tabController,
