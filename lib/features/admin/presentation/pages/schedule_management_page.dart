@@ -150,7 +150,7 @@ class _CoursesTab extends ConsumerWidget {
                                 ),
                               ),
                               style: Theme.of(context).textTheme.bodyMedium,
-                              value: filter.departmentId,
+                              initialValue: filter.departmentId,
                               isExpanded: true,
                               items: [
                                 const DropdownMenuItem(
@@ -194,7 +194,7 @@ class _CoursesTab extends ConsumerWidget {
                                 ),
                               ),
                               style: Theme.of(context).textTheme.bodyMedium,
-                              value: filter.classId,
+                              initialValue: filter.classId,
                               isExpanded: true,
                               items: [
                                 const DropdownMenuItem(
@@ -270,7 +270,7 @@ class _CoursesTab extends ConsumerWidget {
                                 ),
                               ),
                               style: Theme.of(context).textTheme.bodyMedium,
-                              value: filter.slotId,
+                              initialValue: filter.slotId,
                               isExpanded: true,
                               items: [
                                 const DropdownMenuItem(
@@ -411,7 +411,7 @@ class _CoursesTab extends ConsumerWidget {
                             child: DataTable(
                               dataRowMinHeight: 60,
                               dataRowMaxHeight: double.infinity,
-                              headingRowColor: MaterialStateProperty.all(
+                              headingRowColor: WidgetStateProperty.all(
                                 Colors.grey.shade50,
                               ),
                               columns: const [
@@ -910,9 +910,7 @@ class _TimeSlotsTab extends ConsumerWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(
-                    Colors.grey.shade50,
-                  ),
+                  headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
                   columns: const [
                     DataColumn(label: Text('名称')),
                     DataColumn(label: Text('开始时间')),
@@ -1280,7 +1278,7 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: classes.any((c) => c.id == selectedClassId.value)
+              initialValue: classes.any((c) => c.id == selectedClassId.value)
                   ? selectedClassId.value
                   : null,
               decoration: const InputDecoration(labelText: '班级'),
@@ -1292,7 +1290,7 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               onChanged: (v) => selectedClassId.value = v,
             ),
             DropdownButtonFormField<String>(
-              value: timeSlots.any((s) => s.id == selectedSlotId.value)
+              initialValue: timeSlots.any((s) => s.id == selectedSlotId.value)
                   ? selectedSlotId.value
                   : null,
               decoration: const InputDecoration(labelText: '时间段'),
@@ -1307,7 +1305,7 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               onChanged: (v) => selectedSlotId.value = v,
             ),
             DropdownButtonFormField<int>(
-              value: selectedDayOfWeek.value,
+              initialValue: selectedDayOfWeek.value,
               decoration: const InputDecoration(labelText: '星期'),
               items: List.generate(7, (index) {
                 final day = index + 1;
@@ -1319,7 +1317,8 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               onChanged: (v) => selectedDayOfWeek.value = v!,
             ),
             DropdownButtonFormField<String>(
-              value: classrooms.any((c) => c.id == selectedClassroomId.value)
+              initialValue:
+                  classrooms.any((c) => c.id == selectedClassroomId.value)
                   ? selectedClassroomId.value
                   : null,
               decoration: const InputDecoration(labelText: '教室 (可选)'),
@@ -1334,7 +1333,7 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               },
             ),
             DropdownButtonFormField<String>(
-              value: teachers.any((t) => t.id == selectedTeacherId.value)
+              initialValue: teachers.any((t) => t.id == selectedTeacherId.value)
                   ? selectedTeacherId.value
                   : null,
               decoration: const InputDecoration(labelText: '教师 (可选)'),

@@ -31,10 +31,10 @@ class TeacherScheduleItem {
 
   factory TeacherScheduleItem.fromJson(Map<String, dynamic> json) {
     return TeacherScheduleItem(
-      sessionId: json['session_id'] as String? ?? '',
-      courseId: json['course_id'] as String? ?? '',
+      sessionId: (json['session_id'] as String? ?? '').trim(),
+      courseId: (json['course_id'] as String? ?? '').trim(),
       courseName: json['course_name'] as String? ?? '',
-      classId: json['class_id'] as String? ?? '',
+      classId: (json['class_id'] as String? ?? '').trim(),
       className: json['class_name'] as String? ?? '',
       startsAt:
           DateTime.tryParse(json['starts_at'] as String? ?? '')?.toLocal() ??
@@ -43,7 +43,7 @@ class TeacherScheduleItem {
           DateTime.tryParse(json['ends_at'] as String? ?? '')?.toLocal() ??
           DateTime.now(),
       day: json['day'] as String? ?? '',
-      slotId: json['slot_id'] as String? ?? '',
+      slotId: (json['slot_id'] as String? ?? '').trim(),
       slotName: json['slot_name'] as String? ?? '',
       location: json['location'] as String? ?? '',
       source: json['source'] as String? ?? '',

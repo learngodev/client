@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -308,6 +309,24 @@ class TeacherSchedulePage extends HookConsumerWidget {
 
     final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
+    final courseColors = useMemoized(() => <String, Color>{});
+
+    Color getCourseColor(String courseId) {
+      if (courseColors.containsKey(courseId)) {
+        return courseColors[courseId]!;
+      }
+      final random = Random();
+      // Generate a random pastel color
+      final color = Color.fromARGB(
+        255,
+        200 + random.nextInt(56), // 200-255 for lighter pastel
+        200 + random.nextInt(56),
+        200 + random.nextInt(56),
+      );
+      courseColors[courseId] = color;
+      return color;
+    }
+
     return ColoredBox(
       color: theme.scaffoldBackgroundColor,
       child: SingleChildScrollView(
@@ -392,17 +411,20 @@ class TeacherSchedulePage extends HookConsumerWidget {
 
                                 return DataCell(
                                   InkWell(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) =>
-                                            _EditSessionDialog(session: item),
-                                      );
-                                    },
+                                    // 暂时禁用调整课表功能
+                                    // onTap: () {
+                                    //   showDialog(
+                                    //     context: context,
+                                    //     builder: (context) =>
+                                    //         _EditSessionDialog(session: item),
+                                    //   );
+                                    // },
                                     child: Container(
                                       width: 140,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: getCourseColor(item.courseId),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Column(
                                         crossAxisAlignment:
@@ -414,15 +436,30 @@ class TeacherSchedulePage extends HookConsumerWidget {
                                             item.courseName,
                                             style: const TextStyle(
                                               fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.black87,
                                             ),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '${item.className}\n${item.location}',
-                                            style: theme.textTheme.bodySmall,
-                                            maxLines: 3,
+                                            item.className,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black54,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            item.location,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black87,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                           if (item.isOnline)
@@ -436,23 +473,18 @@ class TeacherSchedulePage extends HookConsumerWidget {
                                                     vertical: 2,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: theme
-                                                    .colorScheme
-                                                    .primaryContainer,
+                                                color: Colors.white.withValues(
+                                                  alpha: 0.6,
+                                                ),
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 '线上',
-                                                style: theme
-                                                    .textTheme
-                                                    .labelSmall
-                                                    ?.copyWith(
-                                                      color: theme
-                                                          .colorScheme
-                                                          .onPrimaryContainer,
-                                                      fontSize: 10,
-                                                    ),
+                                                style: const TextStyle(
+                                                  fontSize: 10,
+                                                  color: Colors.black87,
+                                                ),
                                               ),
                                             ),
                                         ],

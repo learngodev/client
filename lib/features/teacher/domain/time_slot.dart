@@ -15,7 +15,7 @@ class TimeSlot {
 
   factory TimeSlot.fromJson(Map<String, dynamic> json) {
     return TimeSlot(
-      id: json['id'] as String,
+      id: (json['id'] as String).trim(),
       name: json['name'] as String,
       startTime: json['start_time'] as String,
       endTime: json['end_time'] as String,
