@@ -14,6 +14,7 @@ import '../../auth/domain/account.dart';
 import '../domain/assignment_models.dart';
 import '../domain/sample_data.dart' as sample;
 import '../domain/student_repository.dart';
+import '../domain/time_slot.dart';
 
 class StudentApiRepository implements StudentRepository {
   StudentApiRepository({
@@ -27,6 +28,23 @@ class StudentApiRepository implements StudentRepository {
   final Dio _dio;
   final Account? _account;
   final DateTime Function() _clock;
+
+  @override
+  Future<List<TimeSlot>> listTimeSlots() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/student/time-slots',
+      );
+      final data = _extractData(response.data, '未能获取时间段');
+      final list = data['time_slots'] as List?;
+      return list
+              ?.map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载时间段');
+    }
+  }
 
   @override
   Future<StudentDashboardData> fetchDashboard() async {
@@ -406,6 +424,9 @@ class StudentApiRepository implements StudentRepository {
             location: _sanitizeNonEmpty(raw['location']) ?? '地点待定',
             type: _resolveScheduleType(course, raw['source']?.toString()),
             isOnline: _isOnlineLocation(raw['location']),
+            slotId: raw['slot_id']?.toString().trim(),
+            slotName: raw['slot_name']?.toString(),
+            weekDay: _parseDateTime(raw['day'])?.weekday,
           ),
         );
       }
@@ -1098,6 +1119,12 @@ class FakeStudentRepository implements StudentRepository {
       quickLinks: sample.studentQuickLinks,
       insights: sample.studentInsights,
     );
+  }
+
+  @override
+  Future<List<TimeSlot>> listTimeSlots() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return [];
   }
 
   @override

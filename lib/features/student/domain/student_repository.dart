@@ -1,5 +1,6 @@
 import 'assignment_models.dart';
 import 'sample_data.dart';
+import 'time_slot.dart';
 
 class StudentDashboardData {
   const StudentDashboardData({
@@ -103,6 +104,7 @@ class StudentDashboardData {
 
 abstract class StudentRepository {
   Future<StudentDashboardData> fetchDashboard();
+  Future<List<TimeSlot>> listTimeSlots();
   Future<AssignmentDetail> getAssignmentDetail(String id);
   Future<StudentSubmissionDetail> getSubmissionDetail(String assignmentId);
   Future<SubmissionResult> submitAssignment(

@@ -2,17 +2,71 @@ import 'dart:convert';
 
 import '../../student/domain/assignment_models.dart';
 
+class TeacherCourse {
+  const TeacherCourse({
+    required this.id,
+    required this.name,
+    required this.description,
+  });
+
+  final String id;
+  final String name;
+  final String description;
+
+  factory TeacherCourse.fromJson(Map<String, dynamic> json) {
+    return TeacherCourse(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+    );
+  }
+}
+
+class TeacherStudent {
+  const TeacherStudent({
+    required this.id,
+    required this.name, // This might need to be fetched from account or joined
+    required this.number,
+    required this.email,
+  });
+
+  final String id;
+  final String name;
+  final String number;
+  final String email;
+
+  factory TeacherStudent.fromJson(Map<String, dynamic> json) {
+    return TeacherStudent(
+      id: json['id'] as String? ?? '',
+      name:
+          json['name'] as String? ??
+          'Unknown', // Backend might not return name directly in Student struct, need to check
+      number: json['number'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+    );
+  }
+}
+
 class TeacherClass {
   const TeacherClass({
     required this.id,
     required this.name,
-    required this.courseId,
-    required this.courseName,
+    this.courseId,
+    this.courseName,
   });
   final String id;
   final String name;
-  final String courseId;
-  final String courseName;
+  final String? courseId;
+  final String? courseName;
+
+  factory TeacherClass.fromJson(Map<String, dynamic> json) {
+    return TeacherClass(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      courseId: json['course_id'] as String?,
+      courseName: json['course_name'] as String?,
+    );
+  }
 }
 
 class TeacherAssignment {
@@ -26,6 +80,7 @@ class TeacherAssignment {
     required this.gradedCount,
     required this.pendingGradeCount,
     this.dueAt,
+    this.classStudentCount = 0,
   });
 
   final String id;
@@ -37,6 +92,7 @@ class TeacherAssignment {
   final int gradedCount;
   final int pendingGradeCount;
   final DateTime? dueAt;
+  final int classStudentCount;
 
   factory TeacherAssignment.fromJson(Map<String, dynamic> json) {
     return TeacherAssignment(
@@ -49,6 +105,7 @@ class TeacherAssignment {
       gradedCount: json['graded_count'] as int? ?? 0,
       pendingGradeCount: json['pending_grade_count'] as int? ?? 0,
       dueAt: DateTime.tryParse(json['due_at'] as String? ?? '')?.toLocal(),
+      classStudentCount: json['class_student_count'] as int? ?? 0,
     );
   }
 
@@ -63,6 +120,7 @@ class TeacherAssignment {
       'graded_count': gradedCount,
       'pending_grade_count': pendingGradeCount,
       'due_at': dueAt?.toIso8601String(),
+      'class_student_count': classStudentCount,
     };
   }
 }

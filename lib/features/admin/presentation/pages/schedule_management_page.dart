@@ -102,6 +102,7 @@ class _CoursesTab extends ConsumerWidget {
         label: const Text('创建课程'),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (statsAsync.hasValue)
             Padding(
@@ -406,8 +407,8 @@ class _CoursesTab extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(8),
                             side: BorderSide(color: Colors.grey.shade200),
                           ),
-                          child: SizedBox(
-                            width: double.infinity,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
                             child: DataTable(
                               dataRowMinHeight: 60,
                               dataRowMaxHeight: double.infinity,
@@ -656,17 +657,33 @@ class _CoursesTab extends ConsumerWidget {
                                                         mainAxisSize:
                                                             MainAxisSize.min,
                                                         children: [
-                                                          Text(
-                                                            rule.classroomLocation !=
-                                                                    null
-                                                                ? '$slotText @ ${rule.classroomLocation}'
-                                                                : slotText,
-                                                            style: TextStyle(
-                                                              fontSize: 12,
-                                                              color: Colors
-                                                                  .orange
-                                                                  .shade700,
-                                                            ),
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .start,
+                                                            children: [
+                                                              Text(
+                                                                rule.classroomLocation !=
+                                                                        null
+                                                                    ? '$slotText @ ${rule.classroomLocation}'
+                                                                    : slotText,
+                                                                style: TextStyle(
+                                                                  fontSize: 12,
+                                                                  color: Colors
+                                                                      .orange
+                                                                      .shade700,
+                                                                ),
+                                                              ),
+                                                              Text(
+                                                                '${rule.startDate.year}/${rule.startDate.month.toString().padLeft(2, '0')}/${rule.startDate.day.toString().padLeft(2, '0')} - ${rule.endDate.year}/${rule.endDate.month.toString().padLeft(2, '0')}/${rule.endDate.day.toString().padLeft(2, '0')}',
+                                                                style: TextStyle(
+                                                                  fontSize: 11,
+                                                                  color: Colors
+                                                                      .orange
+                                                                      .shade500,
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ),
                                                           const SizedBox(
                                                             width: 4,

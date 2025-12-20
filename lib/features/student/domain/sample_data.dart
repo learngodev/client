@@ -23,6 +23,9 @@ class StudentScheduleItem {
     required this.location,
     required this.type,
     this.isOnline = false,
+    this.slotId,
+    this.slotName,
+    this.weekDay,
   });
 
   final String course;
@@ -33,6 +36,9 @@ class StudentScheduleItem {
   final String location;
   final StudentScheduleType type;
   final bool isOnline;
+  final String? slotId;
+  final String? slotName;
+  final int? weekDay;
 
   bool matchesQuery(String query) {
     final normalized = query.trim().toLowerCase();

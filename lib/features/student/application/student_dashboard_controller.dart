@@ -16,6 +16,14 @@ import '../domain/sample_data.dart'
         StudentReminderItem,
         StudentReminderPriority;
 import '../domain/student_repository.dart';
+import '../domain/time_slot.dart';
+
+final studentTimeSlotsProvider = FutureProvider.autoDispose<List<TimeSlot>>((
+  ref,
+) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  return repository.listTimeSlots();
+});
 
 final _uuid = Uuid();
 

@@ -157,6 +157,57 @@ class TeacherApiRepository implements TeacherRepository {
   }
 
   @override
+  Future<List<TeacherCourse>> listCourses() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/courses',
+      );
+      final data = _extractData(response.data, '未能获取课程列表');
+      final list = data['courses'] as List?;
+      return list
+              ?.map((e) => TeacherCourse.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载课程列表');
+    }
+  }
+
+  @override
+  Future<List<TeacherClass>> listCourseClasses(String courseId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/classes',
+      );
+      final data = _extractData(response.data, '未能获取班级列表');
+      final list = data['classes'] as List?;
+      return list
+              ?.map((e) => TeacherClass.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载班级列表');
+    }
+  }
+
+  @override
+  Future<List<TeacherStudent>> listClassStudents(String classId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/classes/$classId/students',
+      );
+      final data = _extractData(response.data, '未能获取学生列表');
+      final list = data['students'] as List?;
+      return list
+              ?.map((e) => TeacherStudent.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载学生列表');
+    }
+  }
+
+  @override
   Future<List<TeacherClass>> listMyClasses() async {
     try {
       final now = DateTime.now();

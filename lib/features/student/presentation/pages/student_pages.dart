@@ -822,63 +822,208 @@ class StudentSchedulePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(studentDashboardProvider);
+    final timeSlotsAsync = ref.watch(studentTimeSlotsProvider);
 
     return _buildStudentDashboardPage(ref, dashboard, (data) {
       final theme = Theme.of(context);
-      final grouped = <String, List<student_data.StudentScheduleItem>>{};
-      for (final item in data.schedule) {
-        grouped
-            .putIfAbsent(
-              item.dayLabel,
-              () => <student_data.StudentScheduleItem>[],
-            )
-            .add(item);
-      }
+      final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
-      return ListView(
-        padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Text('本周课表', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          for (final entry in grouped.entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Card(
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.today_outlined,
-                            color: theme.colorScheme.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(entry.key, style: theme.textTheme.titleMedium),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      for (final item in entry.value)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _ScheduleTile(item: item),
-                        ),
-                    ],
+      return timeSlotsAsync.when(
+        data: (timeSlots) {
+          final sortedSlots = List.of(timeSlots)
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+          return ColoredBox(
+            color: theme.scaffoldBackgroundColor,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('本周课表', style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Text(
+                    '如需调整课程，请联系辅导员或教务老师。',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: Colors.grey[700],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 24),
+                  Card(
+                    elevation: 0,
+                    clipBehavior: Clip.antiAlias,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
+                        headingRowColor: WidgetStateProperty.all(
+                          theme.colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
+                        dataRowMinHeight: 100,
+                        dataRowMaxHeight: 140,
+                        columnSpacing: 24,
+                        columns: [
+                          const DataColumn(label: Text('时间 / 节次')),
+                          ...weekDays.map(
+                            (day) => DataColumn(label: Text(day)),
+                          ),
+                        ],
+                        rows: sortedSlots.map((slot) {
+                          return DataRow(
+                            cells: [
+                              DataCell(
+                                SizedBox(
+                                  width: 100,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        slot.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '${slot.startTime} - ${slot.endTime}',
+                                        style: theme.textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              ...List.generate(7, (index) {
+                                final day = index + 1;
+                                final item = data.schedule
+                                    .where(
+                                      (item) =>
+                                          item.weekDay == day &&
+                                          item.slotId == slot.id,
+                                    )
+                                    .firstOrNull;
+
+                                if (item == null) {
+                                  return const DataCell(SizedBox(width: 140));
+                                }
+
+                                return DataCell(
+                                  Container(
+                                    width: 140,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Card(
+                                      elevation: 0,
+                                      color: item
+                                          .accentColor(theme)
+                                          .withValues(alpha: 0.1),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(
+                                          color: item
+                                              .accentColor(theme)
+                                              .withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                      child: InkWell(
+                                        onTap: () {
+                                          // TODO: Show details
+                                        },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                item.course,
+                                                style: theme
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: item.accentColor(
+                                                        theme,
+                                                      ),
+                                                    ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.person_outline,
+                                                    size: 14,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      item.teacher,
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodySmall,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.location_on_outlined,
+                                                    size: 14,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      item.location,
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodySmall,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                ],
               ),
             ),
-          const SizedBox(height: 12),
-          Text(
-            '如需调整课程，请联系辅导员或教务老师。',
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 36),
-        ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('无法加载课表: $error')),
       );
     });
   }

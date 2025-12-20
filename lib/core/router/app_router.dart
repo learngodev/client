@@ -21,6 +21,9 @@ import '../../features/teacher/presentation/pages/grading_page.dart';
 import '../../features/teacher/presentation/pages/teacher_assignments_page.dart';
 import '../../features/teacher/presentation/pages/assignment_submissions_page.dart';
 import '../../features/teacher/presentation/pages/create_assignment_page.dart';
+import '../../features/teacher/presentation/pages/teacher_courses_page.dart';
+import '../../features/teacher/presentation/pages/teacher_course_classes_page.dart';
+import '../../features/teacher/presentation/pages/teacher_class_students_page.dart';
 import '../../features/teacher/domain/teacher_models.dart';
 import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
@@ -199,6 +202,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/teacher/assignments',
             name: 'teacherAssignments',
             builder: (context, state) => const TeacherAssignmentsPage(),
+          ),
+          GoRoute(
+            path: '/teacher/courses',
+            name: 'teacherCourses',
+            builder: (context, state) => const TeacherCoursesPage(),
+          ),
+          GoRoute(
+            path: '/teacher/courses/:id',
+            name: 'teacherCourseClasses',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TeacherCourseClassesPage(courseId: id);
+            },
+          ),
+          GoRoute(
+            path: '/teacher/classes/:id/students',
+            name: 'teacherClassStudents',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return TeacherClassStudentsPage(classId: id);
+            },
           ),
           GoRoute(
             path: '/teacher/assignments/create',

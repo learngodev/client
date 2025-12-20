@@ -61,7 +61,7 @@ class CreateAssignmentPage extends HookConsumerWidget {
       isSubmitting.value = true;
       try {
         final request = CreateAssignmentRequest(
-          courseId: selectedClass.value!.courseId,
+          courseId: selectedClass.value!.courseId ?? '',
           teacherId: authState.account?.id ?? '',
           classId: selectedClass.value!.id,
           type: selectedType.value,
@@ -80,7 +80,7 @@ class CreateAssignmentPage extends HookConsumerWidget {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(const SnackBar(content: Text('发布成功')));
-          context.pop();
+          context.pop(true);
         }
       } catch (e) {
         if (context.mounted) {
@@ -506,7 +506,10 @@ class _QuestionEditorDialog extends HookWidget {
             const SizedBox(height: 16),
             if (type.value == 'choice' && options.value.isNotEmpty)
               DropdownButtonFormField<String>(
-                initialValue: options.value.contains(answerController.text)
+                initialValue:
+                    options.value
+                        .where((e) => e.isNotEmpty)
+                        .contains(answerController.text)
                     ? answerController.text
                     : null,
                 decoration: const InputDecoration(
@@ -516,6 +519,7 @@ class _QuestionEditorDialog extends HookWidget {
                 ),
                 items: options.value
                     .where((e) => e.isNotEmpty)
+                    .toSet()
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
                 onChanged: (v) => answerController.text = v ?? '',

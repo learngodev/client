@@ -19,7 +19,14 @@ class TeacherAssignmentsPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('作业管理')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/teacher/assignments/create'),
+        onPressed: () async {
+          final result = await context.push<bool>(
+            '/teacher/assignments/create',
+          );
+          if (result == true) {
+            ref.invalidate(teacherAssignmentsProvider);
+          }
+        },
         child: const Icon(Icons.add),
       ),
       body: assignmentsAsync.when(
@@ -169,7 +176,7 @@ class _AssignmentCard extends StatelessWidget {
                 children: [
                   _StatItem(
                     label: '总人数',
-                    value: '${assignment.submissionCount}',
+                    value: '${assignment.classStudentCount}',
                   ),
                   _StatItem(
                     label: '已提交',

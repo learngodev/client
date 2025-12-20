@@ -5,13 +5,21 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
 
-enum TeacherSection { overview, schedule, assignments, conversations, aiChat }
+enum TeacherSection {
+  overview,
+  schedule,
+  courses,
+  assignments,
+  conversations,
+  aiChat,
+}
 
 extension TeacherSectionX on TeacherSection {
   String get label {
     return switch (this) {
       TeacherSection.overview => '概览',
       TeacherSection.schedule => '课表',
+      TeacherSection.courses => '课程',
       TeacherSection.assignments => '作业',
       TeacherSection.conversations => '消息',
       TeacherSection.aiChat => 'AI 助手',
@@ -22,6 +30,7 @@ extension TeacherSectionX on TeacherSection {
     return switch (this) {
       TeacherSection.overview => Icons.dashboard_customize_outlined,
       TeacherSection.schedule => Icons.event_note_outlined,
+      TeacherSection.courses => Icons.class_outlined,
       TeacherSection.assignments => Icons.assignment_outlined,
       TeacherSection.conversations => Icons.chat_bubble_outline,
       TeacherSection.aiChat => Icons.smart_toy_outlined,
@@ -32,6 +41,7 @@ extension TeacherSectionX on TeacherSection {
     return switch (this) {
       TeacherSection.overview => '/teacher',
       TeacherSection.schedule => '/teacher/schedule',
+      TeacherSection.courses => '/teacher/courses',
       TeacherSection.assignments => '/teacher/assignments',
       TeacherSection.conversations => '/teacher/conversations',
       TeacherSection.aiChat => '/teacher/ai-chat',

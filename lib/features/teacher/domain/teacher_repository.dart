@@ -28,6 +28,9 @@ abstract class TeacherRepository {
     String comment,
   );
   Future<List<TeacherClass>> listMyClasses();
+  Future<List<TeacherCourse>> listCourses();
+  Future<List<TeacherClass>> listCourseClasses(String courseId);
+  Future<List<TeacherStudent>> listClassStudents(String classId);
   Future<GradeAssignmentResult> gradeAssignment({
     required String title,
     required String description,
