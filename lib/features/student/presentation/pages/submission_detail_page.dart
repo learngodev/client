@@ -19,6 +19,9 @@ class SubmissionDetailPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('作业结果')),
       body: asyncValue.when(
         data: (detail) {
+          if (detail == null) {
+            return const Center(child: Text('未找到提交记录'));
+          }
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [

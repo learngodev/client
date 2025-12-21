@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -241,22 +240,14 @@ class TeacherSchedulePage extends HookConsumerWidget {
 
     final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
-    final courseColors = useMemoized(() => <String, Color>{});
-
     Color getCourseColor(String courseId) {
-      if (courseColors.containsKey(courseId)) {
-        return courseColors[courseId]!;
-      }
-      final random = Random();
-      // Generate a random pastel color
-      final color = Color.fromARGB(
-        255,
-        200 + random.nextInt(56), // 200-255 for lighter pastel
-        200 + random.nextInt(56),
-        200 + random.nextInt(56),
-      );
-      courseColors[courseId] = color;
-      return color;
+      final colors = [
+        theme.colorScheme.primary,
+        theme.colorScheme.secondary,
+        theme.colorScheme.tertiary,
+        theme.colorScheme.error,
+      ];
+      return colors[courseId.hashCode.abs() % colors.length];
     }
 
     return ColoredBox(
@@ -342,84 +333,101 @@ class TeacherSchedulePage extends HookConsumerWidget {
                                 }
 
                                 return DataCell(
-                                  InkWell(
-                                    // 暂时禁用调整课表功能
-                                    // onTap: () {
-                                    //   showDialog(
-                                    //     context: context,
-                                    //     builder: (context) =>
-                                    //         _EditSessionDialog(session: item),
-                                    //   );
-                                    // },
-                                    child: Container(
-                                      width: 140,
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: getCourseColor(item.courseId),
+                                  Container(
+                                    width: 140,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Card(
+                                      elevation: 0,
+                                      color: getCourseColor(
+                                        item.courseId,
+                                      ).withValues(alpha: 0.1),
+                                      shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
+                                        side: BorderSide(
+                                          color: getCourseColor(
+                                            item.courseId,
+                                          ).withValues(alpha: 0.2),
+                                        ),
                                       ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            item.courseName,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                              color: Colors.black87,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            item.className,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black54,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            item.location,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black87,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          if (item.isOnline)
-                                            Container(
-                                              margin: const EdgeInsets.only(
-                                                top: 4,
+                                      child: InkWell(
+                                        onTap: () {
+                                          // TODO: Show details
+                                        },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                item.courseName,
+                                                style: theme
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: getCourseColor(
+                                                        item.courseId,
+                                                      ),
+                                                    ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.class_outlined,
+                                                    size: 14,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
                                                   ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.6,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      item.className,
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodySmall,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              child: Text(
-                                                '线上',
-                                                style: const TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.black87,
-                                                ),
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.location_on_outlined,
+                                                    size: 14,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      item.location,
+                                                      style: theme
+                                                          .textTheme
+                                                          .bodySmall,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ),
-                                        ],
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),

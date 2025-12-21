@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 enum QuestionType {
   singleChoice,
   multipleChoice,
@@ -58,6 +60,7 @@ class AssignmentQuestion {
     required this.score,
     this.options = const [],
     this.orderIndex = 0,
+    this.answer,
   });
 
   final String id;
@@ -66,16 +69,30 @@ class AssignmentQuestion {
   final double score;
   final List<String> options;
   final int orderIndex;
+  final String? answer;
 
   factory AssignmentQuestion.fromJson(Map<String, dynamic> json) {
+    var optionsList = <String>[];
+    final optionsJson = json['options'];
+    if (optionsJson is List) {
+      optionsList = optionsJson.map((e) => e.toString()).toList();
+    } else if (optionsJson is String) {
+      try {
+        final decoded = jsonDecode(optionsJson);
+        if (decoded is List) {
+          optionsList = decoded.map((e) => e.toString()).toList();
+        }
+      } catch (_) {}
+    }
+
     return AssignmentQuestion(
       id: json['id'] as String? ?? '',
       prompt: json['prompt'] as String? ?? '',
       type: QuestionTypeX.fromString(json['type'] as String? ?? ''),
       score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      options:
-          (json['options'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      options: optionsList,
       orderIndex: (json['order_index'] as num?)?.toInt() ?? 0,
+      answer: json['answer'] as String?,
     );
   }
 }
@@ -122,8 +139,12 @@ class AssignmentDetail {
       maxScore: (json['max_score'] as num?)?.toDouble() ?? 0.0,
       type: AssignmentTypeX.fromString(json['type'] as String? ?? ''),
       allowResubmit: json['allow_resubmit'] as bool? ?? false,
-      dueAt: DateTime.tryParse(json['due_at'] as String? ?? '')?.toLocal(),
-      startAt: DateTime.tryParse(json['start_at'] as String? ?? '')?.toLocal(),
+      dueAt: json['due_at'] == null
+          ? null
+          : DateTime.tryParse(json['due_at'] as String)?.toLocal(),
+      startAt: json['start_at'] == null
+          ? null
+          : DateTime.tryParse(json['start_at'] as String)?.toLocal(),
     );
   }
 }
@@ -149,7 +170,9 @@ class SubmissionResult {
       score: (json['score'] as num?)?.toDouble(),
       status: json['status'] as String? ?? '',
       submittedAt:
-          DateTime.tryParse(json['submitted_at'] as String? ?? '')?.toLocal() ??
+          (json['submitted_at'] == null
+              ? null
+              : DateTime.tryParse(json['submitted_at'] as String)?.toLocal()) ??
           DateTime.now(),
       feedback: json['feedback'] as String?,
     );

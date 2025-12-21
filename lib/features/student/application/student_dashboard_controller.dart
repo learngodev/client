@@ -86,16 +86,6 @@ class StudentDashboardController
     );
   }
 
-  void updateAssignmentProgress(String assignmentId, int progress) {
-    _updateAssignment(assignmentId, (assignment) {
-      final clamped = progress.clamp(0, 100);
-      if (assignment.progress == clamped) {
-        return null;
-      }
-      return assignment.copyWith(progress: clamped);
-    });
-  }
-
   void submitAssignment(String assignmentId) {
     _updateAssignment(assignmentId, (assignment) {
       if (assignment.status == StudentAssignmentStatus.submitted &&
@@ -106,20 +96,6 @@ class StudentDashboardController
       return assignment.copyWith(
         status: StudentAssignmentStatus.submitted,
         progress: 100,
-        isOverdue: false,
-      );
-    });
-  }
-
-  void requestAssignmentResubmission(String assignmentId) {
-    _updateAssignment(assignmentId, (assignment) {
-      if (!assignment.allowResubmit ||
-          assignment.status == StudentAssignmentStatus.pending) {
-        return null;
-      }
-      return assignment.copyWith(
-        status: StudentAssignmentStatus.pending,
-        progress: 0,
         isOverdue: false,
       );
     });

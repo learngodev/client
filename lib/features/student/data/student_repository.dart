@@ -98,7 +98,11 @@ class StudentApiRepository implements StudentRepository {
         '/api/v1/assignments/$id',
       );
       final data = _extractData(response.data, '未能获取作业详情');
-      return AssignmentDetail.fromJson(data);
+      final assignmentData = data['assignment'] as Map<String, dynamic>?;
+      if (assignmentData == null) {
+        throw const AppException('响应数据格式错误：缺少 assignment 字段');
+      }
+      return AssignmentDetail.fromJson(assignmentData);
     } on DioException catch (error) {
       throw _asAppException(error, '无法加载作业详情');
     }
@@ -110,9 +114,16 @@ class StudentApiRepository implements StudentRepository {
     Map<String, dynamic> answers,
   ) async {
     try {
+      final requestBody = {
+        'status': 'submitted',
+        'answers': answers.entries
+            .map((e) => {'question_id': e.key, 'answer': e.value.toString()})
+            .toList(),
+      };
+
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/assignments/$id/submit',
-        data: answers,
+        '/api/v1/assignments/$id/submissions',
+        data: requestBody,
       );
       final data = _extractData(response.data, '提交失败');
       return SubmissionResult.fromJson(data);
@@ -140,20 +151,25 @@ class StudentApiRepository implements StudentRepository {
   }
 
   @override
-  Future<StudentSubmissionDetail> getSubmissionDetail(
+  Future<StudentSubmissionDetail?> getSubmissionDetail(
     String assignmentId,
   ) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/assignments/$assignmentId/submission',
+        '/api/v1/assignments/$assignmentId/submissions/me',
       );
       final data = _extractData(response.data, '未能获取提交详情');
 
-      final assignmentData = data['assignment'] as Map<String, dynamic>;
+      final assignmentData = data['assignment'] as Map<String, dynamic>?;
       final submissionData = data['submission'] as Map<String, dynamic>;
       final itemsData = data['items'] as List?;
 
-      final assignment = AssignmentDetail.fromJson(assignmentData);
+      AssignmentDetail assignment;
+      if (assignmentData != null) {
+        assignment = AssignmentDetail.fromJson(assignmentData);
+      } else {
+        assignment = await getAssignmentDetail(assignmentId);
+      }
       final submission = SubmissionResult.fromJson(submissionData);
       final items =
           itemsData
@@ -167,6 +183,9 @@ class StudentApiRepository implements StudentRepository {
         items: items,
       );
     } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
       throw _asAppException(error, '无法加载提交详情');
     }
   }

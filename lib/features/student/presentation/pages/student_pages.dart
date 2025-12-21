@@ -377,10 +377,11 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
               child: _AssignmentCard(
                 assignment: assignment,
                 onTap: () {
-                  if (assignment.status ==
-                          student_data.StudentAssignmentStatus.graded ||
-                      assignment.status ==
-                          student_data.StudentAssignmentStatus.submitted) {
+                  if ((assignment.status ==
+                              student_data.StudentAssignmentStatus.graded ||
+                          assignment.status ==
+                              student_data.StudentAssignmentStatus.submitted) &&
+                      !assignment.allowResubmit) {
                     context.push(
                       '/student/assignments/${assignment.id}/result',
                     );
@@ -388,14 +389,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
                     context.push('/student/assignments/${assignment.id}');
                   }
                 },
-                onUpdateProgress: (value) =>
-                    controller.updateAssignmentProgress(assignment.id, value),
                 onSubmit: () => controller.submitAssignment(assignment.id),
-                onRequestResubmit: assignment.allowResubmit
-                    ? () => controller.requestAssignmentResubmission(
-                        assignment.id,
-                      )
-                    : null,
               ),
             ),
           if (pendingAssignments.length > 3)
@@ -1113,10 +1107,13 @@ class _StudentAssignmentsPageState
                 child: _AssignmentCard(
                   assignment: assignment,
                   onTap: () {
-                    if (assignment.status ==
-                            student_data.StudentAssignmentStatus.graded ||
-                        assignment.status ==
-                            student_data.StudentAssignmentStatus.submitted) {
+                    if ((assignment.status ==
+                                student_data.StudentAssignmentStatus.graded ||
+                            assignment.status ==
+                                student_data
+                                    .StudentAssignmentStatus
+                                    .submitted) &&
+                        !assignment.allowResubmit) {
                       context.push(
                         '/student/assignments/${assignment.id}/result',
                       );
@@ -1124,26 +1121,10 @@ class _StudentAssignmentsPageState
                       context.push('/student/assignments/${assignment.id}');
                     }
                   },
-                  onUpdateProgress:
-                      assignment.status ==
-                          student_data.StudentAssignmentStatus.pending
-                      ? (value) => controller.updateAssignmentProgress(
-                          assignment.id,
-                          value,
-                        )
-                      : null,
                   onSubmit:
                       assignment.status ==
                           student_data.StudentAssignmentStatus.pending
                       ? () => controller.submitAssignment(assignment.id)
-                      : null,
-                  onRequestResubmit:
-                      assignment.allowResubmit &&
-                          assignment.status !=
-                              student_data.StudentAssignmentStatus.pending
-                      ? () => controller.requestAssignmentResubmission(
-                          assignment.id,
-                        )
                       : null,
                 ),
               ),
@@ -1653,18 +1634,10 @@ class _ScheduleTile extends StatelessWidget {
 }
 
 class _AssignmentCard extends StatelessWidget {
-  const _AssignmentCard({
-    required this.assignment,
-    this.onUpdateProgress,
-    this.onSubmit,
-    this.onRequestResubmit,
-    this.onTap,
-  });
+  const _AssignmentCard({required this.assignment, this.onSubmit, this.onTap});
 
   final student_data.StudentAssignmentItem assignment;
-  final ValueChanged<int>? onUpdateProgress;
   final VoidCallback? onSubmit;
-  final VoidCallback? onRequestResubmit;
   final VoidCallback? onTap;
 
   @override
@@ -1673,12 +1646,7 @@ class _AssignmentCard extends StatelessWidget {
     final accent = assignment.statusColor(theme);
     final isPending =
         assignment.status == student_data.StudentAssignmentStatus.pending;
-    final showProgressSlider = onUpdateProgress != null && isPending;
     final showSubmit = onSubmit != null && isPending;
-    final showResubmit =
-        onRequestResubmit != null &&
-        assignment.allowResubmit &&
-        assignment.status != student_data.StudentAssignmentStatus.pending;
 
     return Card(
       elevation: 0,
@@ -1764,44 +1732,17 @@ class _AssignmentCard extends StatelessWidget {
                   ),
                 ),
               ],
-              if (showProgressSlider) ...[
-                const SizedBox(height: 16),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Slider.adaptive(
-                        value: assignment.progress.toDouble(),
-                        min: 0,
-                        max: 100,
-                        divisions: 20,
-                        label: '${assignment.progress}%',
-                        onChanged: (value) => onUpdateProgress!(value.round()),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text('${assignment.progress}%'),
-                  ],
-                ),
-              ],
-              if (showSubmit || showResubmit) ...[
+              if (showSubmit) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 12,
                   runSpacing: 8,
                   children: [
-                    if (showSubmit)
-                      FilledButton.icon(
-                        onPressed: onSubmit,
-                        icon: const Icon(Icons.cloud_upload_outlined),
-                        label: const Text('提交作业'),
-                      ),
-                    if (showResubmit)
-                      OutlinedButton.icon(
-                        onPressed: onRequestResubmit,
-                        icon: const Icon(Icons.refresh_outlined),
-                        label: const Text('重新提交申请'),
-                      ),
+                    FilledButton.icon(
+                      onPressed: onSubmit,
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      label: const Text('提交作业'),
+                    ),
                   ],
                 ),
               ],

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/features/student/application/student_dashboard_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../application/assignment_controller.dart';
@@ -24,10 +25,11 @@ class AssignmentDetailPage extends HookConsumerWidget {
     final isSubmitted = useState(false);
     final itemKeys = useRef<Map<String, GlobalKey>>({});
 
-    // Load draft
+    // Load draft or previous submission
     useEffect(() {
-      Future<void> loadDraft() async {
+      Future<void> loadInitialData() async {
         try {
+          // 1. Try to load draft first
           final prefs = await SharedPreferences.getInstance();
           final draft = prefs.getString('assignment_draft_$id');
           if (draft != null && context.mounted && !isSubmitted.value) {
@@ -37,14 +39,96 @@ class AssignmentDetailPage extends HookConsumerWidget {
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('已恢复上次未提交的草稿')));
+              return;
+            }
+          }
+
+          // 2. If no draft, try to load previous submission
+          if (context.mounted && !isSubmitted.value) {
+            try {
+              final submissionDetail = await ref
+                  .read(studentRepositoryProvider)
+                  .getSubmissionDetail(id);
+
+              if (context.mounted && submissionDetail != null) {
+                final initialAnswers = <String, dynamic>{};
+
+                // Try to get current assignment detail to help with question types
+                final currentDetail = ref
+                    .read(assignmentDetailControllerProvider(id))
+                    .valueOrNull;
+
+                for (final item in submissionDetail.items) {
+                  var type = QuestionType.essay;
+
+                  // 1. Try to find question in submission detail
+                  try {
+                    final q = submissionDetail.assignment.questions.firstWhere(
+                      (q) => q.id == item.questionId,
+                    );
+                    type = q.type;
+                  } catch (_) {
+                    // 2. Fallback: Try to find in current loaded assignment
+                    if (currentDetail != null) {
+                      try {
+                        final q = currentDetail.questions.firstWhere(
+                          (q) => q.id == item.questionId,
+                        );
+                        type = q.type;
+                      } catch (_) {}
+                    }
+                  }
+
+                  if (type == QuestionType.multipleChoice) {
+                    // Try to parse JSON list
+                    try {
+                      final List<dynamic> list = jsonDecode(item.answer);
+                      initialAnswers[item.questionId] = list
+                          .map((e) => e.toString())
+                          .toList();
+                    } catch (_) {
+                      // Fallback if not JSON
+                      initialAnswers[item.questionId] = [item.answer];
+                    }
+                  } else {
+                    initialAnswers[item.questionId] = item.answer;
+                  }
+                }
+
+                // 2. If no items found, try to load from assignment questions (if backend returns answers there)
+                if (initialAnswers.isEmpty) {
+                  for (final q in submissionDetail.assignment.questions) {
+                    if (q.answer != null && q.answer!.isNotEmpty) {
+                      if (q.type == QuestionType.multipleChoice) {
+                        try {
+                          final List<dynamic> list = jsonDecode(q.answer!);
+                          initialAnswers[q.id] = list
+                              .map((e) => e.toString())
+                              .toList();
+                        } catch (_) {
+                          initialAnswers[q.id] = [q.answer!];
+                        }
+                      } else {
+                        initialAnswers[q.id] = q.answer!;
+                      }
+                    }
+                  }
+                }
+
+                if (initialAnswers.isNotEmpty) {
+                  answers.value = initialAnswers;
+                }
+              }
+            } catch (e) {
+              debugPrint('Failed to load submission: $e');
             }
           }
         } catch (e) {
-          debugPrint('Failed to load draft: $e');
+          debugPrint('Failed to load initial data: $e');
         }
       }
 
-      loadDraft();
+      loadInitialData();
       return null;
     }, [id]);
 
@@ -99,6 +183,31 @@ class AssignmentDetailPage extends HookConsumerWidget {
             appBar: AppBar(
               title: Text(isExam ? '在线考试' : '作业详情'),
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.grid_view),
+                  tooltip: '题目导航',
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (_) => _QuestionNavigationSheet(
+                        questions: detail.questions,
+                        answers: answers.value,
+                        onJumpTo: (index) {
+                          Navigator.pop(context);
+                          final qId = detail.questions[index].id;
+                          final key = itemKeys.value[qId];
+                          if (key?.currentContext != null) {
+                            Scrollable.ensureVisible(
+                              key!.currentContext!,
+                              duration: const Duration(milliseconds: 300),
+                              alignment: 0.1,
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
                 if (isExam && detail.dueAt != null)
                   _ExamTimer(
                     dueAt: detail.dueAt!,
@@ -126,31 +235,6 @@ class AssignmentDetailPage extends HookConsumerWidget {
                   ),
                 const SizedBox(width: 16),
               ],
-            ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  builder: (_) => _QuestionNavigationSheet(
-                    questions: detail.questions,
-                    answers: answers.value,
-                    onJumpTo: (index) {
-                      Navigator.pop(context);
-                      final qId = detail.questions[index].id;
-                      final key = itemKeys.value[qId];
-                      if (key?.currentContext != null) {
-                        Scrollable.ensureVisible(
-                          key!.currentContext!,
-                          duration: const Duration(milliseconds: 300),
-                          alignment: 0.1,
-                        );
-                      }
-                    },
-                  ),
-                );
-              },
-              label: const Text('题目导航'),
-              icon: const Icon(Icons.grid_view),
             ),
             body: Column(
               children: [
@@ -199,7 +283,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
                             currentAnswer: answers.value[q.id],
                           );
                         }),
-                        const SizedBox(height: 80), // Space for FAB
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -322,6 +406,11 @@ class AssignmentDetailPage extends HookConsumerWidget {
                                 final prefs =
                                     await SharedPreferences.getInstance();
                                 await prefs.remove('assignment_draft_$id');
+
+                                // Refresh dashboard to update assignment status
+                                ref
+                                    .read(studentDashboardProvider.notifier)
+                                    .refresh();
 
                                 if (context.mounted) {
                                   Navigator.of(context).pop();
@@ -488,7 +577,7 @@ class _QuestionNavigationSheet extends StatelessWidget {
   }
 }
 
-class _QuestionCard extends HookWidget {
+class _QuestionCard extends StatelessWidget {
   const _QuestionCard({
     super.key,
     required this.question,
@@ -525,52 +614,138 @@ class _QuestionCard extends HookWidget {
     switch (question.type) {
       case QuestionType.singleChoice:
       case QuestionType.trueFalse:
-        return Column(
-          children: question.options.map((option) {
-            return RadioListTile<String>(
-              title: Text(option),
-              value: option,
-              groupValue: currentAnswer as String?,
-              onChanged: onAnswerChanged,
-              contentPadding: EdgeInsets.zero,
-            );
-          }).toList(),
+        return _SingleChoiceInput(
+          options: question.options,
+          currentAnswer: currentAnswer?.toString(),
+          onChanged: onAnswerChanged,
         );
       case QuestionType.multipleChoice:
-        final selected = (currentAnswer as List<String>?) ?? [];
-        return Column(
-          children: question.options.map((option) {
-            return CheckboxListTile(
-              title: Text(option),
-              value: selected.contains(option),
-              onChanged: (checked) {
-                final newSelected = List<String>.from(selected);
-                if (checked == true) {
-                  newSelected.add(option);
-                } else {
-                  newSelected.remove(option);
-                }
-                onAnswerChanged(newSelected);
-              },
-              contentPadding: EdgeInsets.zero,
-            );
-          }).toList(),
+        List<String> selected = [];
+        if (currentAnswer is List) {
+          selected = (currentAnswer as List).map((e) => e.toString()).toList();
+        } else if (currentAnswer is String) {
+          try {
+            final decoded = jsonDecode(currentAnswer);
+            if (decoded is List) {
+              selected = decoded.map((e) => e.toString()).toList();
+            } else {
+              selected = [currentAnswer];
+            }
+          } catch (_) {
+            if (currentAnswer.isNotEmpty) selected = [currentAnswer];
+          }
+        }
+        return _MultipleChoiceInput(
+          options: question.options,
+          currentAnswer: selected,
+          onChanged: onAnswerChanged,
         );
       case QuestionType.fillInBlank:
       case QuestionType.essay:
-        final controller = useTextEditingController(
-          text: currentAnswer as String?,
-        );
-        return TextField(
-          controller: controller,
+        return _TextInput(
+          initialValue: currentAnswer?.toString(),
           maxLines: question.type == QuestionType.essay ? 5 : 1,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: '请输入答案',
-          ),
-          onChanged: onAnswerChanged,
+          onChanged: (val) => onAnswerChanged(val),
         );
     }
+  }
+}
+
+class _SingleChoiceInput extends StatelessWidget {
+  const _SingleChoiceInput({
+    required this.options,
+    required this.currentAnswer,
+    required this.onChanged,
+  });
+
+  final List<String> options;
+  final String? currentAnswer;
+  final ValueChanged<dynamic> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: options.map((option) {
+        return RadioListTile<String>(
+          title: Text(option),
+          value: option,
+          groupValue: currentAnswer,
+          onChanged: onChanged,
+          contentPadding: EdgeInsets.zero,
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _MultipleChoiceInput extends StatelessWidget {
+  const _MultipleChoiceInput({
+    required this.options,
+    required this.currentAnswer,
+    required this.onChanged,
+  });
+
+  final List<String> options;
+  final List<String> currentAnswer;
+  final ValueChanged<dynamic> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: options.map((option) {
+        return CheckboxListTile(
+          title: Text(option),
+          value: currentAnswer.contains(option),
+          onChanged: (checked) {
+            final newSelected = List<String>.from(currentAnswer);
+            if (checked == true) {
+              newSelected.add(option);
+            } else {
+              newSelected.remove(option);
+            }
+            onChanged(newSelected);
+          },
+          contentPadding: EdgeInsets.zero,
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _TextInput extends HookWidget {
+  const _TextInput({
+    required this.initialValue,
+    required this.maxLines,
+    required this.onChanged,
+  });
+
+  final String? initialValue;
+  final int maxLines;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = useTextEditingController(text: initialValue);
+
+    useEffect(() {
+      if (initialValue != null && controller.text != initialValue) {
+        controller.value = controller.value.copyWith(
+          text: initialValue,
+          selection: TextSelection.collapsed(offset: initialValue!.length),
+        );
+      }
+      return null;
+    }, [initialValue]);
+
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: const InputDecoration(
+        border: OutlineInputBorder(),
+        hintText: '请输入答案',
+      ),
+      onChanged: onChanged,
+    );
   }
 }
 
