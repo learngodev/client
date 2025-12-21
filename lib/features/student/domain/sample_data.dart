@@ -180,7 +180,7 @@ class StudentReminderItem {
   bool get isHighPriority => priority == StudentReminderPriority.high;
 }
 
-enum StudentAssignmentStatus { pending, submitted, graded }
+enum StudentAssignmentStatus { pending, submitted, graded, returned }
 
 extension StudentAssignmentStatusX on StudentAssignmentStatus {
   String get label {
@@ -188,6 +188,7 @@ extension StudentAssignmentStatusX on StudentAssignmentStatus {
       StudentAssignmentStatus.pending => '待提交',
       StudentAssignmentStatus.submitted => '已提交',
       StudentAssignmentStatus.graded => '已批改',
+      StudentAssignmentStatus.returned => '已打回',
     };
   }
 }
@@ -233,6 +234,7 @@ class StudentAssignmentItem {
       StudentAssignmentStatus.pending => theme.colorScheme.primary,
       StudentAssignmentStatus.submitted => theme.colorScheme.secondary,
       StudentAssignmentStatus.graded => theme.colorScheme.tertiary,
+      StudentAssignmentStatus.returned => Colors.orange,
     };
   }
 
@@ -241,6 +243,7 @@ class StudentAssignmentItem {
       StudentAssignmentStatus.pending => Icons.pending_actions_outlined,
       StudentAssignmentStatus.submitted => Icons.task_alt_outlined,
       StudentAssignmentStatus.graded => Icons.verified_outlined,
+      StudentAssignmentStatus.returned => Icons.assignment_return_outlined,
     };
   }
 

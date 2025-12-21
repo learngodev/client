@@ -82,11 +82,8 @@ class StudentApiRepository implements StudentRepository {
       insights: _buildInsights(
         usage: aiUsage,
         drafts: noteResult.draftCount,
-        pendingAssignments: assignments
-            .where(
-              (item) => item.status == sample.StudentAssignmentStatus.pending,
-            )
-            .length,
+        assignments: assignments,
+        exams: exams,
       ),
     );
   }
@@ -628,64 +625,108 @@ class StudentApiRepository implements StudentRepository {
   List<sample.StudentInsightItem> _buildInsights({
     required _AIUsageSnapshot? usage,
     required int drafts,
-    required int pendingAssignments,
+    required List<sample.StudentAssignmentItem> assignments,
+    required List<sample.StudentExamItem> exams,
   }) {
-    if (usage == null) {
-      return [
-        ...sample.studentInsights.where((item) => item.label != '作业进度'),
+    final items = <sample.StudentInsightItem>[];
+
+    // 1. Assignment Completion
+    if (assignments.isNotEmpty) {
+      final completed = assignments.where((a) {
+        return a.status == sample.StudentAssignmentStatus.submitted ||
+            a.status == sample.StudentAssignmentStatus.graded ||
+            a.status == sample.StudentAssignmentStatus.returned;
+      }).length;
+      final progress = completed / assignments.length;
+      final pending = assignments.length - completed;
+
+      items.add(
         sample.StudentInsightItem(
-          label: '作业进度',
-          value: pendingAssignments > 0 ? '待完成 $pendingAssignments 项' : '全部完成',
-          progress: pendingAssignments > 0 ? 0.4 : 0.95,
-          hint: pendingAssignments > 0 ? '集中时间完成作业即可提升进度。' : '继续保持，高效完成学习任务。',
-          isAlert: pendingAssignments > 3,
+          label: '作业完成度',
+          value: '${(progress * 100).toInt()}%',
+          progress: progress,
+          hint: pending > 0 ? '还有 $pending 项作业待提交。' : '作业已全部完成，继续保持。',
+          isAlert: pending > 3,
         ),
-      ];
+      );
     }
 
-    final cappedMax = usage.maxDailyRequests <= 0
-        ? max(usage.totalMessages, 1)
-        : usage.maxDailyRequests;
-    final usageRatio = (usage.totalMessages / cappedMax).clamp(0.0, 1.0);
-    final remainingRatio = usage.maxDailyRequests <= 0
-        ? 1.0
-        : (usage.remainingDailyRequests / usage.maxDailyRequests).clamp(
-            0.0,
-            1.0,
-          );
+    // 2. Exam Reminder
+    final upcomingExams = exams
+        .where((e) => e.status == sample.StudentExamStatus.upcoming)
+        .toList();
+    if (upcomingExams.isNotEmpty) {
+      upcomingExams.sort(
+        (a, b) => (a.startAt ?? DateTime.now()).compareTo(
+          b.startAt ?? DateTime.now(),
+        ),
+      );
+      final nextExam = upcomingExams.first;
+      final now = _clock();
+      final diff = nextExam.startAt?.difference(now).inDays ?? 0;
 
-    return [
-      sample.StudentInsightItem(
-        label: 'AI 交互次数',
-        value: '${usage.totalMessages} 次',
-        progress: usageRatio,
-        hint: '今日已向助手发送 ${usage.userMessages} 条消息。',
-      ),
-      sample.StudentInsightItem(
-        label: '剩余配额',
-        value: usage.maxDailyRequests <= 0
-            ? '无限制'
-            : '${usage.remainingDailyRequests}/${usage.maxDailyRequests}',
-        progress: remainingRatio,
-        hint: usage.maxDailyRequests <= 0 ? '学校暂未限制 AI 使用次数。' : '达到上限后需等待配额刷新。',
-        isAlert:
-            usage.maxDailyRequests > 0 && usage.remainingDailyRequests <= 3,
-      ),
-      sample.StudentInsightItem(
-        label: '笔记活跃度',
-        value: drafts > 0 ? '草稿 $drafts 篇' : '全部已发布',
-        progress: drafts > 0 ? 0.45 : 0.9,
-        hint: drafts > 0 ? '整理草稿即可提升活跃度。' : '保持输出，持续沉淀知识。',
-        isAlert: drafts > 3,
-      ),
-      sample.StudentInsightItem(
-        label: '作业进度',
-        value: pendingAssignments > 0 ? '待完成 $pendingAssignments 项' : '全部完成',
-        progress: pendingAssignments > 0 ? 0.4 : 0.95,
-        hint: pendingAssignments > 0 ? '根据截止时间优先完成紧急作业。' : '所有作业已完成，继续关注新任务。',
-        isAlert: pendingAssignments > 3,
-      ),
-    ];
+      items.add(
+        sample.StudentInsightItem(
+          label: '考试提醒',
+          value: '${nextExam.course} ${diff <= 0 ? "今天" : "$diff 天后"}',
+          progress: diff <= 3 ? 0.8 : 0.4,
+          hint: '建议制定复习计划，从容应对考试。',
+          isAlert: diff <= 3,
+        ),
+      );
+    }
+
+    // 3. AI Usage
+    if (usage != null) {
+      final cappedMax = usage.maxDailyRequests <= 0
+          ? max(usage.totalMessages, 1)
+          : usage.maxDailyRequests;
+      final usageRatio = (usage.totalMessages / cappedMax).clamp(0.0, 1.0);
+      final remainingRatio = usage.maxDailyRequests <= 0
+          ? 1.0
+          : (usage.remainingDailyRequests / usage.maxDailyRequests).clamp(
+              0.0,
+              1.0,
+            );
+
+      items.add(
+        sample.StudentInsightItem(
+          label: 'AI 交互次数',
+          value: '${usage.totalMessages} 次',
+          progress: usageRatio,
+          hint: '今日已向助手发送 ${usage.userMessages} 条消息。',
+        ),
+      );
+      items.add(
+        sample.StudentInsightItem(
+          label: '剩余配额',
+          value: usage.maxDailyRequests <= 0
+              ? '无限制'
+              : '${usage.remainingDailyRequests}/${usage.maxDailyRequests}',
+          progress: remainingRatio,
+          hint: usage.maxDailyRequests <= 0
+              ? '学校暂未限制 AI 使用次数。'
+              : '达到上限后需等待配额刷新。',
+          isAlert:
+              usage.maxDailyRequests > 0 && usage.remainingDailyRequests <= 3,
+        ),
+      );
+    }
+
+    // 4. Notes
+    if (drafts > 0) {
+      items.add(
+        sample.StudentInsightItem(
+          label: '笔记活跃度',
+          value: '草稿 $drafts 篇',
+          progress: 0.45,
+          hint: '整理草稿即可提升活跃度。',
+          isAlert: drafts > 3,
+        ),
+      );
+    }
+
+    return items;
   }
 
   Map<String, dynamic> _extractData(
@@ -937,6 +978,7 @@ class StudentApiRepository implements StudentRepository {
     return switch (normalized) {
       'submitted' => sample.StudentAssignmentStatus.submitted,
       'graded' || 'reviewed' => sample.StudentAssignmentStatus.graded,
+      'returned' => sample.StudentAssignmentStatus.returned,
       _ => sample.StudentAssignmentStatus.pending,
     };
   }

@@ -283,9 +283,9 @@ class TeacherSchedulePage extends HookConsumerWidget {
                             alpha: 0.5,
                           ),
                         ),
-                        dataRowMinHeight: 100,
-                        dataRowMaxHeight: 140,
-                        columnSpacing: 24,
+                        dataRowMinHeight: 80,
+                        dataRowMaxHeight: 120,
+                        columnSpacing: 12,
                         columns: [
                           const DataColumn(label: Text('时间 / 节次')),
                           ...weekDays.map(
@@ -297,7 +297,7 @@ class TeacherSchedulePage extends HookConsumerWidget {
                             cells: [
                               DataCell(
                                 SizedBox(
-                                  width: 100,
+                                  width: 80,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
@@ -329,12 +329,12 @@ class TeacherSchedulePage extends HookConsumerWidget {
                                     .firstOrNull;
 
                                 if (item == null) {
-                                  return const DataCell(SizedBox(width: 140));
+                                  return const DataCell(SizedBox(width: 120));
                                 }
 
                                 return DataCell(
                                   Container(
-                                    width: 140,
+                                    width: 120,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 8,
                                     ),
@@ -357,7 +357,7 @@ class TeacherSchedulePage extends HookConsumerWidget {
                                         },
                                         borderRadius: BorderRadius.circular(8),
                                         child: Padding(
-                                          padding: const EdgeInsets.all(8),
+                                          padding: const EdgeInsets.all(4),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,

@@ -173,6 +173,11 @@ class _StatusBadge extends StatelessWidget {
         containerColor = Colors.blue.withValues(alpha: 0.1);
         label = '待批改';
         break;
+      case 'returned':
+        color = Colors.orange;
+        containerColor = Colors.orange.withValues(alpha: 0.1);
+        label = '已打回';
+        break;
       default:
         color = Colors.grey;
         containerColor = Colors.grey.withValues(alpha: 0.1);

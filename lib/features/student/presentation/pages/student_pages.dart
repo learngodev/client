@@ -191,27 +191,72 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
       // final quickLinks = data.quickLinks;
       final messages = data.messages;
 
+      // Calculate next course
+      student_data.StudentScheduleItem? nextCourse;
+      final now = DateTime.now();
+      final currentTime =
+          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+      for (final item in schedule) {
+        final parts = item.timeRange.split('-');
+        if (parts.length == 2) {
+          final end = parts[1];
+          if (end.compareTo(currentTime) > 0) {
+            nextCourse = item;
+            break;
+          }
+        }
+      }
+
+      String courseValue;
+      String courseLabel;
+      String? courseSubtitle;
+      IconData courseIcon;
+
+      if (nextCourse != null) {
+        courseValue = nextCourse.course;
+        courseLabel = '${nextCourse.timeRange} · ${nextCourse.location}';
+        courseSubtitle = null;
+        courseIcon = Icons.class_outlined;
+      } else {
+        if (schedule.isEmpty) {
+          courseValue = '今日无课';
+          courseLabel = '好好休息';
+          courseIcon = Icons.event_available_outlined;
+        } else {
+          courseValue = '课程已结束';
+          courseLabel = '好好休息';
+          courseIcon = Icons.event_available_outlined;
+        }
+        courseSubtitle = null;
+      }
+
       final stats = <_OverviewStat>[
         _OverviewStat(
-          icon: Icons.flash_on_outlined,
-          label: '待办提醒',
-          value: '${pendingReminders.length}',
-          color: theme.colorScheme.primary,
-          route: '/student/reminders',
-        ),
-        _OverviewStat(
-          icon: Icons.class_outlined,
-          label: '今日课程',
-          value: '${schedule.length}',
+          icon: courseIcon,
+          label: courseLabel,
+          value: courseValue,
+          subtitle: courseSubtitle,
           color: theme.colorScheme.secondary,
           route: '/student/schedule',
         ),
         _OverviewStat(
           icon: Icons.fact_check_outlined,
           label: '待完成作业',
-          value: '${pendingAssignments.length}',
+          value: pendingAssignments.isEmpty
+              ? '全部完成'
+              : '${pendingAssignments.length}',
           color: theme.colorScheme.tertiary,
           route: '/student/assignments',
+        ),
+        _OverviewStat(
+          icon: Icons.chat_bubble_outline,
+          label: '未读消息',
+          value: messages.where((m) => m.unreadCount > 0).isEmpty
+              ? '无新消息'
+              : '${messages.where((m) => m.unreadCount > 0).length}',
+          color: theme.colorScheme.primary,
+          route: '/student/messages',
         ),
       ];
 
@@ -225,45 +270,6 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
             spacing: 12,
             runSpacing: 12,
             children: [for (final stat in stats) _OverviewStatCard(stat: stat)],
-          ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.apps_outlined,
-            title: '快捷访问',
-            description: '常用功能快速入口。',
-          ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              // On smaller screens (mobile), use 2 columns.
-              // On larger screens (tablet/desktop), use 4 columns.
-              final crossAxisCount = width < 600 ? 2 : 4;
-              // Adjust aspect ratio to prevent items from being too tall or too short
-              final childAspectRatio = width < 600 ? 1.5 : 1.0;
-
-              return GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: childAspectRatio,
-                children: [
-                  _QuickAccessItem(
-                    icon: Icons.assignment_outlined,
-                    label: '作业',
-                    onTap: () => context.go('/student/assignments'),
-                  ),
-
-                  _QuickAccessItem(
-                    icon: Icons.notifications_outlined,
-                    label: '提醒',
-                    onTap: () => context.go('/student/reminders'),
-                  ),
-                ],
-              );
-            },
           ),
           const SizedBox(height: 24),
           _SectionHeader(
@@ -341,29 +347,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
               },
             ),
           ],
-          const SizedBox(height: 12),
-          const _ViewMoreButton(label: '查看提醒中心', route: '/student/reminders'),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.class_outlined,
-            title: '今日课表',
-            description: '合理安排时间，留意线上课程进入方式。',
-          ),
-          const SizedBox(height: 12),
-          if (schedule.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.event_busy_outlined,
-              title: '今天没有课程',
-              description: '可以利用时间复习或提前完成作业。',
-            )
-          else
-            for (final item in schedule.take(3))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ScheduleTile(item: item),
-              ),
-          const SizedBox(height: 12),
-          const _ViewMoreButton(label: '查看本周课表', route: '/student/schedule'),
+
           const SizedBox(height: 24),
           _SectionHeader(
             icon: Icons.fact_check_outlined,
@@ -371,57 +355,42 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
             description: '掌握作业完成情况，避免遗漏与逾期。',
           ),
           const SizedBox(height: 12),
-          for (final assignment in pendingAssignments.take(3))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _AssignmentCard(
-                assignment: assignment,
-                onTap: () {
-                  if ((assignment.status ==
-                              student_data.StudentAssignmentStatus.graded ||
-                          assignment.status ==
-                              student_data.StudentAssignmentStatus.submitted) &&
-                      !assignment.allowResubmit) {
-                    context.push(
-                      '/student/assignments/${assignment.id}/result',
-                    );
-                  } else {
-                    context.push('/student/assignments/${assignment.id}');
-                  }
-                },
-                onSubmit: () => controller.submitAssignment(assignment.id),
+          if (pendingAssignments.isEmpty)
+            const _IllustratedPlaceholder(
+              icon: Icons.assignment_turned_in_outlined,
+              title: '暂无待办作业',
+              description: '保持良好节奏，继续加油。',
+            )
+          else ...[
+            for (final assignment in pendingAssignments.take(3))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _AssignmentCard(
+                  assignment: assignment,
+                  onTap: () {
+                    if ((assignment.status ==
+                                student_data.StudentAssignmentStatus.graded ||
+                            assignment.status ==
+                                student_data
+                                    .StudentAssignmentStatus
+                                    .submitted) &&
+                        !assignment.allowResubmit) {
+                      context.push(
+                        '/student/assignments/${assignment.id}/result',
+                      );
+                    } else {
+                      context.push('/student/assignments/${assignment.id}');
+                    }
+                  },
+                  onSubmit: () => controller.submitAssignment(assignment.id),
+                ),
               ),
-            ),
-          if (pendingAssignments.length > 3)
-            const _ViewMoreButton(
-              label: '查看更多作业',
-              route: '/student/assignments',
-            ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.lightbulb_outline,
-            title: '学习洞察',
-            description: '关注数据反馈，调整学习节奏。',
-          ),
-          const SizedBox(height: 12),
-          Card(
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var index = 0; index < insights.length; index++)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == insights.length - 1 ? 0 : 16,
-                      ),
-                      child: _InsightTile(insight: insights[index]),
-                    ),
-                ],
+            if (pendingAssignments.length > 3)
+              const _ViewMoreButton(
+                label: '查看更多作业',
+                route: '/student/assignments',
               ),
-            ),
-          ),
+          ],
           const SizedBox(height: 24),
           _SectionHeader(
             icon: Icons.chat_bubble_outline,
@@ -429,381 +398,24 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
             description: '查看老师和同学的最新通知与沟通。',
           ),
           const SizedBox(height: 12),
-          for (final message in messages.take(3))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _MessageTile(
-                message: message,
-                onMarkRead: message.unreadCount > 0
-                    ? () => controller.markMessageAsRead(message)
-                    : null,
-              ),
-            ),
-          const SizedBox(height: 48),
-        ],
-      );
-    });
-  }
-}
-
-class StudentRemindersPage extends ConsumerStatefulWidget {
-  const StudentRemindersPage({super.key});
-
-  @override
-  ConsumerState<StudentRemindersPage> createState() =>
-      _StudentRemindersPageState();
-}
-
-class _StudentRemindersPageState extends ConsumerState<StudentRemindersPage>
-    with ReminderActionMixin<StudentRemindersPage> {
-  final TextEditingController _queryController = TextEditingController();
-  student_data.StudentReminderPriority? _priorityFilter;
-  bool _showCompleted = true;
-
-  Future<void> _openCreateReminderSheet(BuildContext context) async {
-    if (reminderActionInProgress) {
-      return;
-    }
-    final result = await showModalBottomSheet<_ReminderFormData>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (context) => const _ReminderEditorSheet(),
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    final notifier = ref.read(studentDashboardProvider.notifier);
-    final success = await performReminderAction(
-      () => notifier.createCustomReminder(
-        title: result.title,
-        description: result.description,
-        timeLabel: result.timeLabel,
-        icon: result.icon,
-        priority: result.priority,
-        route: result.route,
-      ),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (success) {
-      showReminderSnack('已添加提醒 "${result.title}"');
-    } else {
-      showReminderSnack('保存提醒失败，请稍后再试', error: true);
-    }
-  }
-
-  Future<void> _openEditReminderSheet(
-    BuildContext context,
-    student_data.StudentReminderItem reminder,
-  ) async {
-    if (!reminder.isCustom) {
-      return;
-    }
-    if (reminderActionInProgress) {
-      return;
-    }
-
-    final result = await showModalBottomSheet<_ReminderFormData>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (context) => _ReminderEditorSheet(
-        initialData: _ReminderFormData(
-          title: reminder.title,
-          description: reminder.description,
-          timeLabel: reminder.timeLabel,
-          priority: reminder.priority,
-          icon: reminder.icon,
-          route: reminder.route,
-        ),
-        isEditing: true,
-      ),
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    final notifier = ref.read(studentDashboardProvider.notifier);
-    final success = await performReminderAction(
-      () => notifier.editCustomReminder(
-        reminder.id,
-        title: result.title,
-        description: result.description,
-        timeLabel: result.timeLabel,
-        icon: result.icon,
-        priority: result.priority,
-        route: result.route,
-      ),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (success) {
-      showReminderSnack('已更新提醒 "${result.title}"');
-    } else {
-      showReminderSnack('更新提醒失败，请稍后再试', error: true);
-    }
-  }
-
-  Future<void> _confirmDeleteReminder(
-    BuildContext context,
-    student_data.StudentReminderItem reminder,
-  ) async {
-    final controller = ref.read(studentDashboardProvider.notifier);
-    if (reminderActionInProgress) {
-      return;
-    }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除提醒'),
-        content: Text('确定删除“${reminder.title}”吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (confirmed == true) {
-      final success = await performReminderAction(
-        () => controller.deleteReminder(reminder.id),
-      );
-      if (!mounted) {
-        return;
-      }
-      if (success) {
-        showReminderSnack('已删除提醒 "${reminder.title}"');
-      } else {
-        showReminderSnack('删除提醒失败，请稍后再试', error: true);
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _queryController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final dashboard = ref.watch(studentDashboardProvider);
-
-    return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final controller = ref.read(studentDashboardProvider.notifier);
-      final query = _queryController.text;
-
-      Iterable<student_data.StudentReminderItem> reminders = data.reminders;
-      if (query.isNotEmpty) {
-        reminders = reminders.where((item) => item.matches(query));
-      }
-      if (_priorityFilter != null) {
-        reminders = reminders.where((item) => item.priority == _priorityFilter);
-      }
-
-      final pending = reminders
-          .where((item) => !item.isCompleted)
-          .toList(growable: false);
-      final completed = reminders
-          .where((item) => item.isCompleted)
-          .toList(growable: false);
-
-      final totalReminders = data.reminders.length;
-      final totalPending = data.pendingReminders.length;
-      final totalCompleted = data.completedReminders.length;
-      final totalHighPriorityPending = data.pendingHighPriorityReminders.length;
-
-      return ListView(
-        padding: const EdgeInsets.all(24),
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Text('提醒中心', style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 12),
-          Text(
-            '集中管理学习待办与提醒，支持关键字筛选与批量标记完成。',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _queryController,
-            decoration: InputDecoration(
-              labelText: '搜索提醒',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _queryController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: '清除',
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() => _queryController.clear());
-                      },
-                    ),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('全部优先级'),
-                selected: _priorityFilter == null,
-                onSelected: (value) {
-                  if (value) {
-                    setState(() => _priorityFilter = null);
-                  }
-                },
-              ),
-              for (final priority
-                  in student_data.StudentReminderPriority.values)
-                ChoiceChip(
-                  label: Text('${priority.label}优先'),
-                  selected: _priorityFilter == priority,
-                  onSelected: (value) {
-                    setState(() {
-                      _priorityFilter = value ? priority : null;
-                    });
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              Chip(
-                avatar: const Icon(Icons.list_alt_outlined, size: 18),
-                label: Text('全部 $totalReminders'),
-              ),
-              Chip(
-                avatar: const Icon(Icons.pending_actions_outlined, size: 18),
-                label: Text('未完成 $totalPending'),
-              ),
-              Chip(
-                avatar: const Icon(Icons.check_circle_outline, size: 18),
-                label: Text('已完成 $totalCompleted'),
-              ),
-              Chip(
-                avatar: const Icon(Icons.priority_high_outlined, size: 18),
-                label: Text('重要待办 $totalHighPriorityPending'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('显示已完成提醒'),
-            value: _showCompleted,
-            onChanged: (value) => setState(() => _showCompleted = value),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: reminderActionInProgress
-                  ? null
-                  : () => _openCreateReminderSheet(context),
-              icon: const Icon(Icons.add),
-              label: const Text('新建自定义提醒'),
-            ),
-          ),
-          if (reminderActionInProgress) ...[
-            const SizedBox(height: 4),
-            const LinearProgressIndicator(),
-          ],
-          if (totalPending > 0) ...[
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: reminderActionInProgress
-                    ? null
-                    : () async {
-                        final success = await performReminderAction(
-                          () => controller.markAllRemindersCompleted(),
-                        );
-                        if (!mounted) {
-                          return;
-                        }
-                        if (success) {
-                          showReminderSnack('已将全部提醒标记为完成');
-                        } else {
-                          showReminderSnack('批量标记失败，请稍后再试', error: true);
-                        }
-                      },
-                icon: const Icon(Icons.done_all_outlined),
-                label: Text('全部标记完成 ($totalPending)'),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          if (pending.isEmpty)
+          if (messages.isEmpty)
             const _IllustratedPlaceholder(
-              icon: Icons.alarm_off_outlined,
-              title: '暂无符合条件的待办提醒',
-              description: '可以尝试调整筛选条件或添加新的学习计划。',
+              icon: Icons.chat_bubble_outline,
+              title: '暂无新消息',
+              description: '与老师和同学保持沟通。',
             )
           else
-            for (final reminder in pending)
+            for (final message in messages.take(3))
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _ReminderCard(
-                  reminder: reminder,
-                  onToggleCompleted: () =>
-                      controller.toggleReminderCompleted(reminder.id),
-                  onNavigate: reminder.route == null
-                      ? null
-                      : () => context.go(reminder.route!),
-                  onDelete: reminder.isCustom && !reminderActionInProgress
-                      ? () => _confirmDeleteReminder(context, reminder)
-                      : null,
-                  onEdit: reminder.isCustom && !reminderActionInProgress
-                      ? () => _openEditReminderSheet(context, reminder)
+                child: _MessageTile(
+                  message: message,
+                  onMarkRead: message.unreadCount > 0
+                      ? () => controller.markMessageAsRead(message)
                       : null,
                 ),
               ),
-          if (_showCompleted && completed.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _CompletedRemindersSection(
-              reminders: completed,
-              onToggleCompleted: controller.toggleReminderCompleted,
-              onDelete: (reminder) {
-                if (reminder.isCustom && !reminderActionInProgress) {
-                  _confirmDeleteReminder(context, reminder);
-                }
-              },
-              onEdit: (reminder) {
-                if (reminder.isCustom && !reminderActionInProgress) {
-                  _openEditReminderSheet(context, reminder);
-                }
-              },
-            ),
-          ],
-          const SizedBox(height: 36),
+          const SizedBox(height: 48),
         ],
       );
     });
@@ -854,9 +466,9 @@ class StudentSchedulePage extends ConsumerWidget {
                             alpha: 0.5,
                           ),
                         ),
-                        dataRowMinHeight: 100,
-                        dataRowMaxHeight: 140,
-                        columnSpacing: 24,
+                        dataRowMinHeight: 80,
+                        dataRowMaxHeight: 120,
+                        columnSpacing: 12,
                         columns: [
                           const DataColumn(label: Text('时间 / 节次')),
                           ...weekDays.map(
@@ -868,7 +480,7 @@ class StudentSchedulePage extends ConsumerWidget {
                             cells: [
                               DataCell(
                                 SizedBox(
-                                  width: 100,
+                                  width: 80,
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
@@ -900,12 +512,12 @@ class StudentSchedulePage extends ConsumerWidget {
                                     .firstOrNull;
 
                                 if (item == null) {
-                                  return const DataCell(SizedBox(width: 140));
+                                  return const DataCell(SizedBox(width: 120));
                                 }
 
                                 return DataCell(
                                   Container(
-                                    width: 140,
+                                    width: 120,
                                     padding: const EdgeInsets.symmetric(
                                       vertical: 8,
                                     ),
@@ -928,7 +540,7 @@ class StudentSchedulePage extends ConsumerWidget {
                                         },
                                         borderRadius: BorderRadius.circular(8),
                                         child: Padding(
-                                          padding: const EdgeInsets.all(8),
+                                          padding: const EdgeInsets.all(4),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
@@ -1142,6 +754,7 @@ class _OverviewStat {
     required this.value,
     required this.color,
     required this.route,
+    this.subtitle,
   });
 
   final IconData icon;
@@ -1149,6 +762,7 @@ class _OverviewStat {
   final String value;
   final Color color;
   final String route;
+  final String? subtitle;
 }
 
 class _OverviewStatCard extends StatelessWidget {
@@ -1180,10 +794,13 @@ class _OverviewStatCard extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 stat.value,
-                style: theme.textTheme.headlineMedium?.copyWith(
+                style: theme.textTheme.headlineSmall?.copyWith(
                   color: theme.colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
+                  fontSize: stat.value.length > 4 ? 18 : null,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
@@ -1192,6 +809,17 @@ class _OverviewStatCard extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (stat.subtitle != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  stat.subtitle!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),
@@ -1720,8 +1348,45 @@ class _AssignmentCard extends StatelessWidget {
                 ],
               ),
               if (assignment.feedback != null) ...[
-                const SizedBox(height: 8),
-                Text(assignment.feedback!, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: accent.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.rate_review_outlined,
+                            size: 16,
+                            color: accent,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '教师评语',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: accent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        assignment.feedback!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
               if (assignment.allowResubmit) ...[
                 const SizedBox(height: 8),
