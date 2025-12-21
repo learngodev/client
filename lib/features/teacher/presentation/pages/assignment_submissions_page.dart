@@ -58,14 +58,14 @@ class AssignmentSubmissionsPage extends ConsumerWidget {
   }
 }
 
-class _SubmissionCard extends StatelessWidget {
+class _SubmissionCard extends ConsumerWidget {
   const _SubmissionCard({required this.submission, required this.assignmentId});
 
   final SubmissionSummary submission;
   final String assignmentId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     String submittedAtText;
     try {
@@ -84,8 +84,9 @@ class _SubmissionCard extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          context.push('/teacher/grading/$assignmentId/${submission.id}');
+        onTap: () async {
+          await context.push('/teacher/grading/$assignmentId/${submission.id}');
+          ref.invalidate(assignmentSubmissionsProvider(assignmentId));
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

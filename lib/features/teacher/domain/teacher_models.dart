@@ -146,7 +146,7 @@ class SubmissionSummary {
     return SubmissionSummary(
       id: json['id'] as String? ?? '',
       studentId: json['student_id'] as String? ?? '',
-      studentName: '学生', // Placeholder
+      studentName: json['student_name'] as String? ?? '学生',
       submittedAt: DateTime.tryParse(
         json['submitted_at'] as String? ?? '',
       )?.toLocal(),
