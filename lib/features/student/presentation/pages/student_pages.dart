@@ -187,7 +187,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
       final completedReminders = data.completedReminders;
       final schedule = data.todaySchedule;
       final pendingAssignments = data.pendingAssignments;
-      final insights = data.insights;
+      // final insights = data.insights;
       // final quickLinks = data.quickLinks;
       final messages = data.messages;
 
