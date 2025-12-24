@@ -557,10 +557,7 @@ class AdminAccountsPage extends HookConsumerWidget {
         aggregatedAccounts.isEmpty &&
         !isRefreshing.value;
     if (showInitialLoading) {
-      return ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: const Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (accountsState.hasError && aggregatedAccounts.isEmpty) {
@@ -1690,7 +1687,7 @@ class AdminStructuresPage extends HookConsumerWidget {
                         for (final dept in departments)
                           DropdownMenuItem<String>(
                             value: dept.id,
-                            child: Text(dept.name),
+                            child: Text('${dept.name}（${dept.id}）'),
                           ),
                       ],
                       onChanged: submitting

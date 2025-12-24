@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show IconData, Icons;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -49,6 +50,7 @@ class StudentApiRepository implements StudentRepository {
   Future<StudentDashboardData> fetchDashboard() async {
     final noteFuture = _fetchNotes();
     final messageFuture = _fetchMessages();
+    final aiFuture = _fetchAiUsage();
     final assignmentFuture = _fetchAssignments();
     final examFuture = _fetchExams();
     final scheduleFuture = _fetchSchedule();
@@ -56,6 +58,7 @@ class StudentApiRepository implements StudentRepository {
 
     final noteResult = await noteFuture;
     final messages = await messageFuture;
+    final aiUsage = await aiFuture;
     final assignments = await assignmentFuture;
     final exams = await examFuture;
     final schedule = await scheduleFuture;
@@ -68,6 +71,7 @@ class StudentApiRepository implements StudentRepository {
         customReminders: customReminders,
         drafts: noteResult.draftCount,
         unreadMessages: messages.where((item) => item.isUnread).length,
+        usage: aiUsage,
       ),
       schedule: schedule,
       assignments: assignments,
@@ -76,6 +80,7 @@ class StudentApiRepository implements StudentRepository {
       messages: messages,
       quickLinks: sample.studentQuickLinks,
       insights: _buildInsights(
+        usage: aiUsage,
         drafts: noteResult.draftCount,
         assignments: assignments,
         exams: exams,
@@ -121,6 +126,24 @@ class StudentApiRepository implements StudentRepository {
       return SubmissionResult.fromJson(data);
     } on DioException catch (error) {
       throw _asAppException(error, '提交作业失败');
+    }
+  }
+
+  @override
+  Future<CheckAssignmentResult> checkAssignment({
+    required String title,
+    required String description,
+    required String content,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/ai/check_assignment',
+        data: {'title': title, 'description': description, 'content': content},
+      );
+      final data = _extractData(response.data, 'AI 检查失败');
+      return CheckAssignmentResult.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, 'AI 检查失败');
     }
   }
 
@@ -252,6 +275,26 @@ class StudentApiRepository implements StudentRepository {
         return [];
       }
       throw _asAppException(error, '无法获取消息列表');
+    }
+  }
+
+  Future<_AIUsageSnapshot?> _fetchAiUsage() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/api/v1/ai/usage');
+      final data = _extractData(response.data, '未能获取 AI 使用情况');
+      final rawUsage = _asMap(data['usage']);
+      if (rawUsage == null || rawUsage.isEmpty) {
+        return null;
+      }
+      return _AIUsageSnapshot.fromJson(rawUsage);
+    } on DioException catch (error) {
+      final status = error.response?.statusCode ?? 0;
+      if (status == 409) {
+        // AI 助手未配置，允许返回空数据。
+        debugPrint('AI usage unavailable: ${error.message}');
+        return null;
+      }
+      throw _asAppException(error, '无法获取 AI 使用情况');
     }
   }
 
@@ -452,6 +495,7 @@ class StudentApiRepository implements StudentRepository {
     required List<sample.StudentReminderItem> customReminders,
     required int drafts,
     required int unreadMessages,
+    required _AIUsageSnapshot? usage,
   }) {
     final now = _clock();
     final reminders = <sample.StudentReminderItem>[];
@@ -554,10 +598,32 @@ class StudentApiRepository implements StudentRepository {
       );
     }
 
+    if (usage != null && usage.maxDailyRequests > 0) {
+      final threshold = max(3, usage.maxDailyRequests ~/ 5);
+      if (usage.remainingDailyRequests <= threshold) {
+        addReminder(
+          sample.StudentReminderItem(
+            id: 'ai-quota',
+            title: 'AI 额度仅剩 ${usage.remainingDailyRequests} 次',
+            description: '合理安排今日剩余名额，达到上限后需等待刷新。',
+            timeLabel: '每日 00:00 自动重置',
+            icon: Icons.smart_toy_outlined,
+            priority: sample.StudentReminderPriority.high,
+            route: '/student/ai',
+          ),
+        );
+      }
+    }
+
+    for (final reminder in customReminders) {
+      addReminder(reminder);
+    }
+
     return List.unmodifiable(reminders);
   }
 
   List<sample.StudentInsightItem> _buildInsights({
+    required _AIUsageSnapshot? usage,
     required int drafts,
     required List<sample.StudentAssignmentItem> assignments,
     required List<sample.StudentExamItem> exams,
@@ -606,6 +672,43 @@ class StudentApiRepository implements StudentRepository {
           progress: diff <= 3 ? 0.8 : 0.4,
           hint: '建议制定复习计划，从容应对考试。',
           isAlert: diff <= 3,
+        ),
+      );
+    }
+
+    // 3. AI Usage
+    if (usage != null) {
+      final cappedMax = usage.maxDailyRequests <= 0
+          ? max(usage.totalMessages, 1)
+          : usage.maxDailyRequests;
+      final usageRatio = (usage.totalMessages / cappedMax).clamp(0.0, 1.0);
+      final remainingRatio = usage.maxDailyRequests <= 0
+          ? 1.0
+          : (usage.remainingDailyRequests / usage.maxDailyRequests).clamp(
+              0.0,
+              1.0,
+            );
+
+      items.add(
+        sample.StudentInsightItem(
+          label: 'AI 交互次数',
+          value: '${usage.totalMessages} 次',
+          progress: usageRatio,
+          hint: '今日已向助手发送 ${usage.userMessages} 条消息。',
+        ),
+      );
+      items.add(
+        sample.StudentInsightItem(
+          label: '剩余配额',
+          value: usage.maxDailyRequests <= 0
+              ? '无限制'
+              : '${usage.remainingDailyRequests}/${usage.maxDailyRequests}',
+          progress: remainingRatio,
+          hint: usage.maxDailyRequests <= 0
+              ? '学校暂未限制 AI 使用次数。'
+              : '达到上限后需等待配额刷新。',
+          isAlert:
+              usage.maxDailyRequests > 0 && usage.remainingDailyRequests <= 3,
         ),
       );
     }
@@ -1129,6 +1232,20 @@ class FakeStudentRepository implements StudentRepository {
   }
 
   @override
+  Future<CheckAssignmentResult> checkAssignment({
+    required String title,
+    required String description,
+    required String content,
+  }) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    return CheckAssignmentResult(
+      issues: ['模拟问题1', '模拟问题2'],
+      suggestions: ['模拟建议1', '模拟建议2'],
+      overall: '模拟总体评价',
+    );
+  }
+
+  @override
   Future<StudentSubmissionDetail> getSubmissionDetail(
     String assignmentId,
   ) async {
@@ -1172,6 +1289,42 @@ class _NoteFetchResult {
 
   final List<sample.StudentNoteItem> items;
   final int draftCount;
+}
+
+class _AIUsageSnapshot {
+  const _AIUsageSnapshot({
+    required this.userMessages,
+    required this.assistantMessages,
+    required this.totalMessages,
+    required this.promptTokens,
+    required this.resultTokens,
+    required this.totalTokens,
+    required this.maxDailyRequests,
+    required this.remainingDailyRequests,
+  });
+
+  factory _AIUsageSnapshot.fromJson(Map<String, dynamic> json) {
+    return _AIUsageSnapshot(
+      userMessages: (json['user_messages'] as num?)?.toInt() ?? 0,
+      assistantMessages: (json['assistant_messages'] as num?)?.toInt() ?? 0,
+      totalMessages: (json['total_messages'] as num?)?.toInt() ?? 0,
+      promptTokens: (json['prompt_tokens'] as num?)?.toInt() ?? 0,
+      resultTokens: (json['result_tokens'] as num?)?.toInt() ?? 0,
+      totalTokens: (json['total_tokens'] as num?)?.toInt() ?? 0,
+      maxDailyRequests: (json['max_daily_requests'] as num?)?.toInt() ?? 0,
+      remainingDailyRequests:
+          (json['remaining_daily_requests'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  final int userMessages;
+  final int assistantMessages;
+  final int totalMessages;
+  final int promptTokens;
+  final int resultTokens;
+  final int totalTokens;
+  final int maxDailyRequests;
+  final int remainingDailyRequests;
 }
 
 class _MessageRecord {
