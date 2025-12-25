@@ -326,6 +326,7 @@ String _roleHomePath(AccountRole? role) {
     AccountRole.admin => '/admin',
     AccountRole.teacher => '/teacher',
     AccountRole.student => '/student',
+    AccountRole.ai => throw UnimplementedError(),
     null => '/sign-in',
   };
 }

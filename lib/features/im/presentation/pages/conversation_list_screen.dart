@@ -5,6 +5,8 @@ import 'package:learn_go/features/im/application/im_providers.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:intl/intl.dart';
 
+import 'package:learn_go/features/im/presentation/pages/create_conversation_dialog.dart';
+
 class ConversationListWidget extends ConsumerWidget {
   const ConversationListWidget({super.key});
 
@@ -183,50 +185,7 @@ class ConversationListWidget extends ConsumerWidget {
   void _showCreateConversationDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: const Text('发起新会话'),
-        children: [
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('已发起与 张老师 的会话')));
-            },
-            child: const ListTile(
-              leading: CircleAvatar(child: Text('张')),
-              title: Text('张老师'),
-              subtitle: Text('数学老师'),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('已发起与 李辅导员 的会话')));
-            },
-            child: const ListTile(
-              leading: CircleAvatar(child: Text('李')),
-              title: Text('李辅导员'),
-              subtitle: Text('辅导员'),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('已发起与 王同学 的会话')));
-            },
-            child: const ListTile(
-              leading: CircleAvatar(child: Text('王')),
-              title: Text('王同学'),
-              subtitle: Text('班长'),
-            ),
-          ),
-        ],
-      ),
+      builder: (context) => const CreateConversationDialog(),
     );
   }
 }

@@ -41,4 +41,5 @@ const _$MessageKindEnumMap = {
   MessageKind.image: 'image',
   MessageKind.video: 'video',
   MessageKind.audio: 'audio',
+  MessageKind.file: 'file',
 };

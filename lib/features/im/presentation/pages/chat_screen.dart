@@ -1,7 +1,13 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:learn_go/features/file/application/file_service.dart';
 import 'package:learn_go/features/im/application/im_providers.dart';
+import 'package:learn_go/features/im/domain/entities/message.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/auth/domain/account.dart';
 import 'package:intl/intl.dart';
@@ -165,14 +171,30 @@ class ChatScreen extends HookConsumerWidget {
                                             ),
                                       ),
                                     ),
-                                  Text(
-                                    message.text,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: isMe
-                                          ? theme.colorScheme.onPrimaryContainer
-                                          : theme.colorScheme.onSurfaceVariant,
+                                  if (message.kind == MessageKind.image)
+                                    _ImageMessage(
+                                      fileId: message.mediaUri ?? '',
+                                    )
+                                  else if (message.kind == MessageKind.file)
+                                    _FileMessage(
+                                      fileName: message.text,
+                                      fileId: message.mediaUri ?? '',
+                                      isMe: isMe,
+                                    )
+                                  else
+                                    Text(
+                                      message.text,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: isMe
+                                                ? theme
+                                                      .colorScheme
+                                                      .onPrimaryContainer
+                                                : theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                          ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ),
@@ -207,7 +229,87 @@ class ChatScreen extends HookConsumerWidget {
                     IconButton(
                       icon: const Icon(Icons.add_circle_outline),
                       onPressed: () {
-                        // TODO: Attachments
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (context) => SafeArea(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ListTile(
+                                  leading: const Icon(Icons.image),
+                                  title: const Text('图片'),
+                                  onTap: () async {
+                                    Navigator.pop(context);
+                                    final picker = ImagePicker();
+                                    final pickedFile = await picker.pickImage(
+                                      source: ImageSource.gallery,
+                                    );
+                                    if (pickedFile != null) {
+                                      final file = File(pickedFile.path);
+                                      try {
+                                        final fileModel = await ref
+                                            .read(fileServiceProvider)
+                                            .uploadFile(file);
+                                        await ref
+                                            .read(imControllerProvider)
+                                            .sendMessage(
+                                              conversationId,
+                                              '[图片]',
+                                              kind: MessageKind.image,
+                                              mediaUri: fileModel.id,
+                                            );
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(content: Text('上传失败: $e')),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                ),
+                                ListTile(
+                                  leading: const Icon(Icons.attach_file),
+                                  title: const Text('文件'),
+                                  onTap: () async {
+                                    Navigator.pop(context);
+                                    final result = await FilePicker.platform
+                                        .pickFiles();
+                                    if (result != null &&
+                                        result.files.single.path != null) {
+                                      final file = File(
+                                        result.files.single.path!,
+                                      );
+                                      try {
+                                        final fileModel = await ref
+                                            .read(fileServiceProvider)
+                                            .uploadFile(file);
+                                        await ref
+                                            .read(imControllerProvider)
+                                            .sendMessage(
+                                              conversationId,
+                                              fileModel.fileName,
+                                              kind: MessageKind.file,
+                                              mediaUri: fileModel.id,
+                                            );
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(content: Text('上传失败: $e')),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       },
                       color: theme.colorScheme.primary,
                     ),
@@ -251,6 +353,121 @@ class ChatScreen extends HookConsumerWidget {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageMessage extends ConsumerWidget {
+  final String fileId;
+
+  const _ImageMessage({required this.fileId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final urlAsync = ref.watch(downloadUrlProvider(fileId));
+
+    return urlAsync.when(
+      data: (url) => GestureDetector(
+        onTap: () {
+          // TODO: Show full screen image
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            url,
+            width: 200,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                width: 200,
+                height: 150,
+                color: Colors.grey[200],
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                width: 200,
+                height: 150,
+                color: Colors.grey[200],
+                child: const Icon(Icons.broken_image),
+              );
+            },
+          ),
+        ),
+      ),
+      loading: () => Container(
+        width: 200,
+        height: 150,
+        color: Colors.grey[200],
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => const Icon(Icons.error),
+    );
+  }
+}
+
+class _FileMessage extends ConsumerWidget {
+  final String fileName;
+  final String fileId;
+  final bool isMe;
+
+  const _FileMessage({
+    required this.fileName,
+    required this.fileId,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final urlAsync = ref.watch(downloadUrlProvider(fileId));
+
+    return GestureDetector(
+      onTap: () {
+        urlAsync.whenData((url) {
+          // TODO: Open file
+          // launchUrl(Uri.parse(url));
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isMe
+              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+              : theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: theme.colorScheme.outline.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.insert_drive_file,
+              color: isMe
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                fileName,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: isMe
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurface,
+                  decoration: TextDecoration.underline,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

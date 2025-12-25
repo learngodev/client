@@ -6,7 +6,7 @@ import 'package:learn_go/features/auth/domain/account.dart';
 part 'message.freezed.dart';
 part 'message.g.dart';
 
-enum MessageKind { text, image, video, audio }
+enum MessageKind { text, image, video, audio, file }
 
 @freezed
 abstract class Message with _$Message {

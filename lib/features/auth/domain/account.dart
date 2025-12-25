@@ -1,4 +1,4 @@
-enum AccountRole { admin, teacher, student }
+enum AccountRole { admin, teacher, student, ai }
 
 extension AccountRoleLabel on AccountRole {
   String get label {
@@ -6,6 +6,7 @@ extension AccountRoleLabel on AccountRole {
       AccountRole.admin => '管理员',
       AccountRole.teacher => '教师',
       AccountRole.student => '学生',
+      AccountRole.ai => 'AI助手',
     };
   }
 
@@ -14,6 +15,7 @@ extension AccountRoleLabel on AccountRole {
       AccountRole.admin => 'admin',
       AccountRole.teacher => 'teacher',
       AccountRole.student => 'student',
+      AccountRole.ai => 'ai',
     };
   }
 
@@ -22,6 +24,7 @@ extension AccountRoleLabel on AccountRole {
       'admin' => AccountRole.admin,
       'teacher' => AccountRole.teacher,
       'student' => AccountRole.student,
+      'ai' => AccountRole.ai,
       _ => AccountRole.student,
     };
   }
@@ -48,7 +51,8 @@ class Account {
       id: json['id']?.toString() ?? '',
       schoolId: json['school_id']?.toString() ?? '',
       identifier: json['identifier']?.toString() ?? '',
-      displayName: json['display_name']?.toString() ?? '',
+      displayName:
+          json['display_name']?.toString() ?? json['name']?.toString() ?? '',
       role: AccountRoleLabel.fromApiValue(roleValue),
     );
   }
