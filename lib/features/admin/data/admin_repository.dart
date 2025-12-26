@@ -11,6 +11,7 @@ import '../domain/ai_settings.dart';
 import '../domain/course.dart';
 import '../domain/schedule.dart';
 import '../domain/classroom.dart';
+import '../domain/ai_ops.dart';
 
 class AdminRepository {
   const AdminRepository(this._dio);
@@ -2334,6 +2335,77 @@ class AdminRepository {
       message ??= error.message ?? '网络错误';
       details ??= body?.toString();
       throw AppException(message, details: details);
+    }
+  }
+
+  Future<({String analysis, List<AIOperation> operations})>
+  analyzeBatchOperation({
+    required String schoolId,
+    required String instruction,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/ai/analyze',
+        data: {'school_id': schoolId, 'instruction': instruction},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('分析失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '分析失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'] as Map<String, dynamic>?;
+      final analysis = data?['analysis'] as String? ?? '';
+      final operations =
+          (data?['operations'] as List<dynamic>?)
+              ?.map((e) => AIOperation.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+      return (analysis: analysis, operations: operations);
+    } on DioException catch (error) {
+      throw AppException.fromDio(error);
+    }
+  }
+
+  Future<List<String>> executeBatchOperations({
+    required String schoolId,
+    required List<AIOperation> operations,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/ai/execute',
+        data: {
+          'school_id': schoolId,
+          'operations': operations.map((e) => e.toJson()).toList(),
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('执行失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '执行失败',
+          details: error?['details']?.toString(),
+        );
+      }
+      final data = body['data'] as Map<String, dynamic>?;
+      final results =
+          (data?['results'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [];
+      return results;
+    } on DioException catch (error) {
+      throw AppException.fromDio(error);
     }
   }
 }

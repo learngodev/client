@@ -18,6 +18,7 @@ import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../domain/oss.dart' as oss;
 import '../../domain/system_settings.dart' as system;
+import '../../domain/ai_ops.dart';
 import '../widgets/assign_student_dialog.dart';
 import 'class_detail_page.dart';
 
@@ -1232,6 +1233,20 @@ class AdminAccountsPage extends HookConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          FilledButton.tonalIcon(
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('AI 批量操作'),
+                            onPressed: () async {
+                              final success = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => const _AIBatchDialog(),
+                              );
+                              if (success == true) {
+                                handleRefresh();
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 12),
                           FilledButton.icon(
                             icon: const Icon(Icons.add),
                             label: const Text('添加账号'),
@@ -6376,6 +6391,266 @@ class _CreateAccountDialog extends HookConsumerWidget {
           child: Text(isSubmitting.value ? '提交中...' : '提交'),
         ),
       ],
+    );
+  }
+}
+
+enum _BatchStep { input, preview, result }
+
+class _AIBatchDialog extends HookConsumerWidget {
+  const _AIBatchDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final instructionController = useTextEditingController();
+    final isLoading = useState(false);
+    final step = useState<_BatchStep>(_BatchStep.input);
+    final operations = useState<List<AIOperation>>([]);
+    final results = useState<List<String>>([]);
+    final analysis = useState<String?>(null);
+    final error = useState<String?>(null);
+    final schoolId = ref.watch(authStateProvider).account?.schoolId ?? '';
+
+    Future<void> analyze() async {
+      if (instructionController.text.trim().isEmpty) return;
+
+      isLoading.value = true;
+      error.value = null;
+
+      try {
+        final res = await ref
+            .read(adminRepositoryProvider)
+            .analyzeBatchOperation(
+              schoolId: schoolId,
+              instruction: instructionController.text,
+            );
+        operations.value = res.operations;
+        analysis.value = res.analysis;
+        step.value = _BatchStep.preview;
+      } catch (e) {
+        error.value = e.toString();
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    Future<void> execute() async {
+      isLoading.value = true;
+      error.value = null;
+
+      try {
+        final res = await ref
+            .read(adminRepositoryProvider)
+            .executeBatchOperations(
+              schoolId: schoolId,
+              operations: operations.value,
+            );
+        results.value = res;
+        step.value = _BatchStep.result;
+      } catch (e) {
+        error.value = e.toString();
+      } finally {
+        isLoading.value = false;
+      }
+    }
+
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600, maxHeight: 700),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('AI 批量操作', style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 16),
+              if (step.value == _BatchStep.input) ...[
+                Text(
+                  '请输入自然语言指令，例如："创建两个学生账号，张三和李四，密码都是123456"',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: instructionController,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: '在此输入指令...',
+                  ),
+                ),
+              ],
+              if (step.value == _BatchStep.preview) ...[
+                Text(
+                  '即将执行的操作 (${operations.value.length})',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: operations.value.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final op = operations.value[index];
+                        String title;
+                        String subtitle;
+                        IconData icon;
+                        Color? iconColor;
+
+                        switch (op.action) {
+                          case 'create_student':
+                            title = '创建学生账号';
+                            icon = Icons.person_add_outlined;
+                            iconColor = Colors.blue;
+                            final name = op.data['name'] ?? '未知';
+                            final number = op.data['number'] ?? '自动生成';
+                            final pwd = op.data['password'] ?? '默认';
+                            subtitle = '姓名: $name, 学号: $number, 密码: $pwd';
+                            break;
+                          case 'create_teacher':
+                            title = '创建教师账号';
+                            icon = Icons.school_outlined;
+                            iconColor = Colors.orange;
+                            final name = op.data['name'] ?? '未知';
+                            final number = op.data['number'] ?? '自动生成';
+                            final pwd = op.data['password'] ?? '默认';
+                            subtitle = '姓名: $name, 工号: $number, 密码: $pwd';
+                            break;
+                          case 'lock_account':
+                            title = '锁定账号';
+                            icon = Icons.lock_outline;
+                            iconColor = Colors.red;
+                            final number = op.data['number'] ?? '未知';
+                            subtitle = '账号: $number';
+                            break;
+                          case 'unlock_account':
+                            title = '解锁账号';
+                            icon = Icons.lock_open_outlined;
+                            iconColor = Colors.green;
+                            final number = op.data['number'] ?? '未知';
+                            subtitle = '账号: $number';
+                            break;
+                          default:
+                            title = '未知操作: ${op.action}';
+                            icon = Icons.help_outline;
+                            subtitle = op.data.toString();
+                        }
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: iconColor?.withValues(alpha: 0.1),
+                            child: Icon(icon, color: iconColor, size: 20),
+                          ),
+                          title: Text(title),
+                          subtitle: Text(subtitle),
+                          dense: true,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+              if (step.value == _BatchStep.result) ...[
+                const Text('执行结果：'),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: results.value.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                          ),
+                          title: Text(results.value[index]),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+              if (error.value != null)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: Text(
+                    error.value!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (step.value == _BatchStep.preview)
+                    TextButton(
+                      onPressed: () {
+                        step.value = _BatchStep.input;
+                        error.value = null;
+                      },
+                      child: const Text('返回修改'),
+                    ),
+                  if (step.value != _BatchStep.preview)
+                    TextButton(
+                      onPressed: () =>
+                          Navigator.of(context).pop(results.value.isNotEmpty),
+                      child: const Text('关闭'),
+                    ),
+                  const SizedBox(width: 12),
+                  if (step.value == _BatchStep.input)
+                    FilledButton.icon(
+                      onPressed: isLoading.value ? null : analyze,
+                      icon: isLoading.value
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.analytics),
+                      label: const Text('分析'),
+                    ),
+                  if (step.value == _BatchStep.preview)
+                    FilledButton.icon(
+                      onPressed: isLoading.value ? null : execute,
+                      icon: isLoading.value
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.check),
+                      label: const Text('确认执行'),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

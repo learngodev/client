@@ -34,6 +34,7 @@ const _$AccountRoleEnumMap = {
   AccountRole.admin: 'admin',
   AccountRole.teacher: 'teacher',
   AccountRole.student: 'student',
+  AccountRole.ai: 'ai',
 };
 
 const _$MessageKindEnumMap = {
