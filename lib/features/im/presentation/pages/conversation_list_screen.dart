@@ -16,53 +16,50 @@ class ConversationListWidget extends ConsumerWidget {
     final currentUserId = ref.watch(authStateProvider).account?.id ?? '';
     final theme = Theme.of(context);
 
-    return ColoredBox(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: RefreshIndicator(
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: RefreshIndicator(
         onRefresh: () async {
           return ref.refresh(conversationsProvider.future);
         },
         child: CustomScrollView(
           slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '消息',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton.filledTonal(
-                          icon: const Icon(Icons.add_comment_outlined),
-                          onPressed: () =>
-                              _showCreateConversationDialog(context),
-                        ),
-                      ],
+            SliverAppBar(
+              title: Text(
+                '消息',
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              centerTitle: false,
+              toolbarHeight: 64,
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: IconButton.filledTonal(
+                    onPressed: () => _showCreateConversationDialog(context),
+                    icon: const Icon(Icons.add_comment_outlined),
+                    tooltip: '新对话',
+                  ),
+                ),
+              ],
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: '搜索对话...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: '搜索对话...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.5),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
                 ),
               ),
             ),
@@ -70,6 +67,7 @@ class ConversationListWidget extends ConsumerWidget {
               data: (conversations) {
                 if (conversations.isEmpty) {
                   return SliverFillRemaining(
+                    hasScrollBody: false,
                     child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -77,12 +75,21 @@ class ConversationListWidget extends ConsumerWidget {
                           Icon(
                             Icons.chat_bubble_outline,
                             size: 64,
-                            color: theme.colorScheme.outline,
+                            color: theme.colorScheme.outline.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
                             '暂无消息',
                             style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '与老师、同学保持沟通',
+                            style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.outline,
                             ),
                           ),
@@ -101,71 +108,99 @@ class ConversationListWidget extends ConsumerWidget {
                           ).format(lastMsg.createdAt.toLocal())
                         : '';
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      leading: CircleAvatar(
-                        radius: 24,
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        child: Text(
-                          conversation
-                              .getDisplayName(currentUserId)
-                              .substring(0, 1)
-                              .toUpperCase(),
-                          style: TextStyle(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
+                    return Column(
+                      children: [
+                        ListTile(
+                          onTap: () =>
+                              context.push('/conversations/${conversation.id}'),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
                           ),
-                        ),
-                      ),
-                      title: Text(
-                        conversation.getDisplayName(currentUserId),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        lastMsg?.text ?? '暂无消息',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      trailing: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            timeLabel,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.outline,
+                          leading: CircleAvatar(
+                            radius: 24,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Text(
+                              conversation
+                                  .getDisplayName(currentUserId)
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                              style: TextStyle(
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
-                          if (conversation.unreadCount > 0) ...[
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.error,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${conversation.unreadCount}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onError,
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  conversation.getDisplayName(currentUserId),
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              Text(
+                                timeLabel,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.outline,
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    lastMsg?.text ?? '暂无消息',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                if (conversation.unreadCount > 0)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.error,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '${conversation.unreadCount}',
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme.colorScheme.onError,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                  ),
+                              ],
                             ),
-                          ],
-                        ],
-                      ),
-                      onTap: () {
-                        context.push('/conversations/${conversation.id}');
-                      },
+                          ),
+                        ),
+                        if (index != conversations.length - 1)
+                          Divider(
+                            height: 1,
+                            indent: 80,
+                            endIndent: 16,
+                            color: theme.colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                      ],
                     );
                   }, childCount: conversations.length),
                 );

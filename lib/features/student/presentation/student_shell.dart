@@ -4,13 +4,24 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/account.dart';
+import '../../im/application/im_providers.dart';
+import '../application/student_dashboard_controller.dart';
 
-enum StudentSection { overview, schedule, assignments, messages, aiChat }
+enum StudentSection {
+  overview,
+  courses,
+  schedule,
+  assignments,
+  messages,
+  aiChat,
+}
 
 extension StudentSectionX on StudentSection {
   String get label {
     return switch (this) {
       StudentSection.overview => '概览',
+      StudentSection.courses => '课程',
       StudentSection.schedule => '课表',
       StudentSection.assignments => '作业',
       StudentSection.messages => '消息',
@@ -21,7 +32,8 @@ extension StudentSectionX on StudentSection {
   IconData get icon {
     return switch (this) {
       StudentSection.overview => Icons.dashboard_outlined,
-      StudentSection.schedule => Icons.event_available_outlined,
+      StudentSection.courses => Icons.book_outlined,
+      StudentSection.schedule => Icons.calendar_month_outlined,
       StudentSection.assignments => Icons.assignment_outlined,
       StudentSection.messages => Icons.chat_outlined,
       StudentSection.aiChat => Icons.smart_toy_outlined,
@@ -31,6 +43,7 @@ extension StudentSectionX on StudentSection {
   String get path {
     return switch (this) {
       StudentSection.overview => '/student',
+      StudentSection.courses => '/student/courses',
       StudentSection.schedule => '/student/schedule',
       StudentSection.assignments => '/student/assignments',
       StudentSection.messages => '/student/messages',
@@ -48,15 +61,71 @@ class StudentShell extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(authStateProvider).account;
+    final dashboard = ref.watch(studentDashboardProvider);
+    final conversations = ref.watch(conversationsProvider);
+
+    final pendingAssignments = dashboard.maybeWhen(
+      data: (data) => data.pendingAssignments.length,
+      orElse: () => 0,
+    );
+
+    final unreadMessages = conversations.maybeWhen(
+      data: (items) =>
+          items.fold<int>(0, (sum, item) => sum + item.unreadCount),
+      orElse: () => 0,
+    );
+
     final destinations = StudentSection.values
         .map(
           (section) => AdaptiveDestination(
             label: section.label,
             icon: section.icon,
             selectedIcon: section.icon,
+            badgeCount: switch (section) {
+              StudentSection.assignments => pendingAssignments,
+              StudentSection.messages => unreadMessages,
+              _ => null,
+            },
           ),
         )
         .toList();
+
+    final compactPaths = <String>[
+      StudentSection.overview.path,
+      StudentSection.messages.path,
+      StudentSection.courses.path,
+      StudentSection.schedule.path,
+      '/student/profile',
+    ];
+
+    final compactDestinations = <AdaptiveDestination>[
+      const AdaptiveDestination(
+        label: '首页',
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home,
+      ),
+      AdaptiveDestination(
+        label: '消息',
+        icon: Icons.chat_bubble_outline,
+        selectedIcon: Icons.chat,
+        badgeCount: unreadMessages,
+      ),
+      const AdaptiveDestination(
+        label: '课程',
+        icon: Icons.book_outlined,
+        selectedIcon: Icons.book,
+      ),
+      const AdaptiveDestination(
+        label: '课表',
+        icon: Icons.calendar_month_outlined,
+        selectedIcon: Icons.calendar_month,
+      ),
+      const AdaptiveDestination(
+        label: '我',
+        icon: Icons.person_outline,
+        selectedIcon: Icons.person,
+      ),
+    ];
 
     final location = state.matchedLocation;
 
@@ -69,8 +138,7 @@ class StudentShell extends HookConsumerWidget {
         });
 
     final currentIndex = StudentSection.values.indexOf(bestMatch);
-
-    final isSubPage = !StudentSection.values.any((s) => s.path == location);
+    final compactIndex = _matchPathIndex(location, compactPaths);
 
     return AdaptiveNavigationScaffold(
       destinations: destinations,
@@ -81,34 +149,40 @@ class StudentShell extends HookConsumerWidget {
           context.go(target);
         }
       },
-      appBarLeading: isSubPage
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.go('/student'),
-              tooltip: '返回概览',
-            )
-          : null,
-      appBarTitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('学生空间'),
-          if (account != null)
-            Text(
-              '${account.displayName} · ${account.identifier}',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: Colors.black87),
-            ),
-        ],
+      compactDestinations: compactDestinations,
+      compactSelectedIndex: compactIndex,
+      onCompactDestinationSelected: (index) {
+        final target = compactPaths[index];
+        if (target != location) {
+          context.go(target);
+        }
+      },
+      hideAppBar: true,
+      appBarTitle: null,
+      userInfo: NavUserInfo(
+        title: account?.displayName ?? '未登录',
+        subtitle: account != null
+            ? '${account.identifier} · ${account.role.label}'
+            : '请登录以查看个人信息',
+        onTap: () => context.go('/student/profile'),
       ),
-      appBarActions: [
-        IconButton(
-          tooltip: '退出登录',
-          onPressed: () => ref.read(authStateProvider.notifier).signOut(),
-          icon: const Icon(Icons.logout),
-        ),
-      ],
       child: child,
     );
   }
+}
+
+int _matchPathIndex(String location, List<String> paths) {
+  var bestIndex = 0;
+  var bestLength = 0;
+
+  for (var i = 0; i < paths.length; i++) {
+    final path = paths[i];
+    final isMatch = location == path || location.startsWith('$path/');
+    if (isMatch && path.length > bestLength) {
+      bestIndex = i;
+      bestLength = path.length;
+    }
+  }
+
+  return bestIndex;
 }

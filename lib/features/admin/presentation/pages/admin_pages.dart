@@ -21,6 +21,7 @@ import '../../domain/system_settings.dart' as system;
 import '../../domain/ai_ops.dart';
 import '../widgets/assign_student_dialog.dart';
 import 'class_detail_page.dart';
+import 'account_management_page.dart';
 
 int _compareDepartmentNodes(DepartmentNode a, DepartmentNode b) {
   final nameCompare = a.department.name.toLowerCase().compareTo(
@@ -139,7 +140,7 @@ class AdminOverviewPage extends ConsumerWidget {
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerLeft,
-                child: OutlinedButton.icon(
+                child: TextButton.icon(
                   icon: const Icon(Icons.refresh),
                   label: const Text('刷新院系数据'),
                   onPressed: () async {
@@ -211,8 +212,18 @@ class AdminOverviewPage extends ConsumerWidget {
   }
 }
 
-class AdminAccountsPage extends HookConsumerWidget {
+class AdminAccountsPage extends StatelessWidget {
   const AdminAccountsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const AccountManagementPage();
+  }
+}
+
+// ignore: unused_element
+class _LegacyAdminAccountsPage extends HookConsumerWidget {
+  const _LegacyAdminAccountsPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2418,16 +2429,21 @@ class AdminStructuresPage extends HookConsumerWidget {
                       onSelected: (selected) => ref
                           .read(adminDepartmentViewPreferencesProvider.notifier)
                           .setOnlyEmpty(selected),
+                      side: BorderSide.none,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainerLow,
                     ),
                     if (canToggleBulkExpansion && nodes.isNotEmpty) ...[
-                      OutlinedButton.icon(
+                      TextButton.icon(
                         icon: const Icon(Icons.unfold_more),
                         label: const Text('展开全部'),
                         onPressed: allVisibleExpanded
                             ? null
                             : () => expandAllDepartments(nodes),
                       ),
-                      OutlinedButton.icon(
+                      TextButton.icon(
                         icon: const Icon(Icons.unfold_less),
                         label: const Text('折叠全部'),
                         onPressed: canCollapseAny

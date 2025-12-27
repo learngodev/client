@@ -12,6 +12,7 @@ import '../../../core/network/dio_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
 import '../domain/assignment_models.dart';
+import '../domain/course.dart';
 import '../domain/sample_data.dart' as sample;
 import '../domain/student_repository.dart';
 import '../domain/time_slot.dart';
@@ -43,6 +44,23 @@ class StudentApiRepository implements StudentRepository {
           [];
     } on DioException catch (error) {
       throw _asAppException(error, '无法加载时间段');
+    }
+  }
+
+  @override
+  Future<List<Course>> listCourses() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/student/courses',
+      );
+      final data = _extractData(response.data, '未能获取课程列表');
+      final list = data['items'] as List?;
+      return list
+              ?.map((e) => Course.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载课程列表');
     }
   }
 
@@ -144,6 +162,19 @@ class StudentApiRepository implements StudentRepository {
       return CheckAssignmentResult.fromJson(data);
     } on DioException catch (error) {
       throw _asAppException(error, 'AI 检查失败');
+    }
+  }
+
+  @override
+  Future<void> joinCourse(String code) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/student/courses/join',
+        data: {'code': code},
+      );
+      _extractData(response.data, '加入课程失败');
+    } on DioException catch (error) {
+      throw _asAppException(error, '加入课程失败');
     }
   }
 
@@ -1189,6 +1220,12 @@ class FakeStudentRepository implements StudentRepository {
   }
 
   @override
+  Future<List<Course>> listCourses() async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return [];
+  }
+
+  @override
   Future<AssignmentDetail> getAssignmentDetail(String id) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     return AssignmentDetail(
@@ -1243,6 +1280,11 @@ class FakeStudentRepository implements StudentRepository {
       suggestions: ['模拟建议1', '模拟建议2'],
       overall: '模拟总体评价',
     );
+  }
+
+  @override
+  Future<void> joinCourse(String code) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
   }
 
   @override

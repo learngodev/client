@@ -7,17 +7,23 @@ class TeacherCourse {
     required this.id,
     required this.name,
     required this.description,
+    this.imageUrl,
+    this.invitationCode,
   });
 
   final String id;
   final String name;
   final String description;
+  final String? imageUrl;
+  final String? invitationCode;
 
   factory TeacherCourse.fromJson(Map<String, dynamic> json) {
     return TeacherCourse(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
+      imageUrl: json['image_url'] as String?,
+      invitationCode: json['invitation_code'] as String?,
     );
   }
 }

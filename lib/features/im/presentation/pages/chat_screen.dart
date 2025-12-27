@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,10 @@ import 'package:learn_go/features/im/domain/entities/message.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/auth/domain/account.dart';
 import 'package:intl/intl.dart';
+
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/gradient_app_bar.dart';
+import '../../../../core/widgets/pill_button.dart';
 
 class ChatScreen extends HookConsumerWidget {
   final String conversationId;
@@ -48,9 +53,13 @@ class ChatScreen extends HookConsumerWidget {
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Scaffold(
-        appBar: AppBar(
+        appBar: GradientAppBar(
           title: Text(conversation?.getDisplayName(currentUserId) ?? '对话'),
-          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).maybePop(),
+            tooltip: '返回',
+          ),
         ),
         body: Column(
           children: [
@@ -209,149 +218,168 @@ class ChatScreen extends HookConsumerWidget {
               ),
             ),
             SafeArea(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          builder: (context) => SafeArea(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                ListTile(
-                                  leading: const Icon(Icons.image),
-                                  title: const Text('图片'),
-                                  onTap: () async {
-                                    Navigator.pop(context);
-                                    final picker = ImagePicker();
-                                    final pickedFile = await picker.pickImage(
-                                      source: ImageSource.gallery,
-                                    );
-                                    if (pickedFile != null) {
-                                      final file = File(pickedFile.path);
-                                      try {
-                                        final fileModel = await ref
-                                            .read(fileServiceProvider)
-                                            .uploadFile(file);
-                                        await ref
-                                            .read(imControllerProvider)
-                                            .sendMessage(
-                                              conversationId,
-                                              '[图片]',
-                                              kind: MessageKind.image,
-                                              mediaUri: fileModel.id,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    Theme.of(context).extension<ModernUI>()!.sheetRadius,
+                  ),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).extension<ModernUI>()!.glassSurface,
+                        borderRadius: BorderRadius.circular(
+                          Theme.of(context).extension<ModernUI>()!.sheetRadius,
+                        ),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).extension<ModernUI>()!.borderSubtle,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(
+                              context,
+                            ).extension<ModernUI>()!.shadowColor,
+                            blurRadius: 18,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (context) => SafeArea(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(Icons.image),
+                                        title: const Text('图片'),
+                                        onTap: () async {
+                                          Navigator.pop(context);
+                                          final picker = ImagePicker();
+                                          final pickedFile = await picker
+                                              .pickImage(
+                                                source: ImageSource.gallery,
+                                              );
+                                          if (pickedFile != null) {
+                                            final file = File(pickedFile.path);
+                                            try {
+                                              final fileModel = await ref
+                                                  .read(fileServiceProvider)
+                                                  .uploadFile(file);
+                                              await ref
+                                                  .read(imControllerProvider)
+                                                  .sendMessage(
+                                                    conversationId,
+                                                    '[图片]',
+                                                    kind: MessageKind.image,
+                                                    mediaUri: fileModel.id,
+                                                  );
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('上传失败: $e'),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(Icons.attach_file),
+                                        title: const Text('文件'),
+                                        onTap: () async {
+                                          Navigator.pop(context);
+                                          final result = await FilePicker
+                                              .platform
+                                              .pickFiles();
+                                          if (result != null &&
+                                              result.files.single.path !=
+                                                  null) {
+                                            final file = File(
+                                              result.files.single.path!,
                                             );
-                                      } catch (e) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(content: Text('上传失败: $e')),
-                                          );
-                                        }
-                                      }
-                                    }
-                                  },
+                                            try {
+                                              final fileModel = await ref
+                                                  .read(fileServiceProvider)
+                                                  .uploadFile(file);
+                                              await ref
+                                                  .read(imControllerProvider)
+                                                  .sendMessage(
+                                                    conversationId,
+                                                    fileModel.fileName,
+                                                    kind: MessageKind.file,
+                                                    mediaUri: fileModel.id,
+                                                  );
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('上传失败: $e'),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                ListTile(
-                                  leading: const Icon(Icons.attach_file),
-                                  title: const Text('文件'),
-                                  onTap: () async {
-                                    Navigator.pop(context);
-                                    final result = await FilePicker.platform
-                                        .pickFiles();
-                                    if (result != null &&
-                                        result.files.single.path != null) {
-                                      final file = File(
-                                        result.files.single.path!,
-                                      );
-                                      try {
-                                        final fileModel = await ref
-                                            .read(fileServiceProvider)
-                                            .uploadFile(file);
-                                        await ref
-                                            .read(imControllerProvider)
-                                            .sendMessage(
-                                              conversationId,
-                                              fileModel.fileName,
-                                              kind: MessageKind.file,
-                                              mediaUri: fileModel.id,
-                                            );
-                                      } catch (e) {
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(content: Text('上传失败: $e')),
-                                          );
-                                        }
-                                      }
-                                    }
-                                  },
-                                ),
-                              ],
+                              );
+                            },
+                            color: theme.colorScheme.primary,
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: textController,
+                              decoration: const InputDecoration(
+                                hintText: '发送消息...',
+                                border: InputBorder.none,
+                                isCollapsed: true,
+                              ),
+                              minLines: 1,
+                              maxLines: 4,
                             ),
                           ),
-                        );
-                      },
-                      color: theme.colorScheme.primary,
-                    ),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest
-                              .withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: TextField(
-                          controller: textController,
-                          decoration: const InputDecoration(
-                            hintText: '发送消息...',
-                            border: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: 10),
-                            filled: false,
+                          const SizedBox(width: 8),
+                          PillButton(
+                            label: '发送',
+                            icon: Icons.send,
+                            compact: true,
+                            onPressed: () {
+                              final text = textController.text.trim();
+                              if (text.isNotEmpty) {
+                                ref
+                                    .read(imControllerProvider)
+                                    .sendMessage(conversationId, text);
+                                textController.clear();
+                              }
+                            },
                           ),
-                          minLines: 1,
-                          maxLines: 4,
-                        ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      icon: const Icon(Icons.send),
-                      onPressed: () {
-                        final text = textController.text.trim();
-                        if (text.isNotEmpty) {
-                          ref
-                              .read(imControllerProvider)
-                              .sendMessage(conversationId, text);
-                          textController.clear();
-                        }
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

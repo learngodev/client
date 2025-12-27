@@ -1,4 +1,5 @@
 import 'assignment_models.dart';
+import 'course.dart';
 import 'sample_data.dart';
 import 'time_slot.dart';
 
@@ -116,4 +117,6 @@ abstract class StudentRepository {
     required String description,
     required String content,
   });
+  Future<void> joinCourse(String code);
+  Future<List<Course>> listCourses();
 }

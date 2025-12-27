@@ -109,3 +109,28 @@ class AIUsageSummary {
     );
   }
 }
+
+class AIUsageTimelinePoint {
+  const AIUsageTimelinePoint({
+    required this.date,
+    required this.totalMessages,
+    required this.totalTokens,
+    required this.accountCount,
+  });
+
+  final DateTime date;
+  final int totalMessages;
+  final int totalTokens;
+  final int accountCount;
+
+  factory AIUsageTimelinePoint.fromJson(Map<String, dynamic> json) {
+    return AIUsageTimelinePoint(
+      date:
+          DateTime.tryParse(json['date'] as String? ?? '')?.toLocal() ??
+          DateTime.now(),
+      totalMessages: (json['total_messages'] as num?)?.toInt() ?? 0,
+      totalTokens: (json['total_tokens'] as num?)?.toInt() ?? 0,
+      accountCount: (json['account_count'] as num?)?.toInt() ?? 0,
+    );
+  }
+}

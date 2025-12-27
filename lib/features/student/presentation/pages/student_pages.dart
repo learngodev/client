@@ -1,11 +1,16 @@
+// ignore_for_file: unused_element, unused_element_parameter, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/core/widgets/pill_button.dart';
 
 import '../../application/student_dashboard_controller.dart';
+import '../../domain/course.dart';
 import '../../domain/sample_data.dart' as student_data;
 import '../../domain/student_repository.dart';
 import '../../../im/presentation/pages/conversation_list_screen.dart';
+import 'join_course_dialog.dart';
 
 typedef _DashboardBuilder = Widget Function(StudentDashboardData data);
 
@@ -54,20 +59,20 @@ Widget _buildStudentDashboardPage(
   AsyncValue<StudentDashboardData> dashboard,
   _DashboardBuilder builder,
 ) {
-  final controller = ref.read(studentDashboardProvider.notifier);
-  return dashboard.when(
-    data: (data) {
-      return RefreshIndicator(
-        onRefresh: controller.refresh,
-        child: ColoredBox(
-          color: Theme.of(ref.context).scaffoldBackgroundColor,
-          child: builder(data),
-        ),
-      );
+  return RefreshIndicator(
+    onRefresh: () async {
+      await ref.read(studentDashboardProvider.notifier).refresh();
     },
-    loading: () => const Center(child: CircularProgressIndicator()),
-    error: (error, stackTrace) =>
-        _DashboardErrorView(onRetry: controller.refresh),
+    child: dashboard.when(
+      data: builder,
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stackTrace) => ListView(
+        children: const [
+          SizedBox(height: 120),
+          Center(child: Text('加载失败，请下拉重试')),
+        ],
+      ),
+    ),
   );
 }
 
@@ -79,101 +84,17 @@ class StudentOverviewPage extends ConsumerStatefulWidget {
       _StudentOverviewPageState();
 }
 
-class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
-    with ReminderActionMixin<StudentOverviewPage> {
-  Future<void> _confirmDeleteReminder(
-    student_data.StudentReminderItem reminder,
-  ) async {
-    if (reminderActionInProgress) {
-      return;
-    }
+class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
+  final PageController _bannerController = PageController(
+    viewportFraction: 0.9,
+  );
+  int _bannerIndex = 0;
+  int _tabIndex = 0;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除提醒'),
-        content: Text('确定删除“${reminder.title}”吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-
-    if (!mounted || confirmed != true) {
-      return;
-    }
-
-    final success = await performReminderAction(
-      () => dashboardController.deleteReminder(reminder.id),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (success) {
-      showReminderSnack('已删除提醒 "${reminder.title}"');
-    } else {
-      showReminderSnack('删除提醒失败，请稍后再试', error: true);
-    }
-  }
-
-  Future<void> _openEditReminder(
-    student_data.StudentReminderItem reminder,
-  ) async {
-    if (!reminder.isCustom || reminderActionInProgress) {
-      return;
-    }
-
-    final result = await showModalBottomSheet<_ReminderFormData>(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      builder: (context) => _ReminderEditorSheet(
-        initialData: _ReminderFormData(
-          title: reminder.title,
-          description: reminder.description,
-          timeLabel: reminder.timeLabel,
-          priority: reminder.priority,
-          icon: reminder.icon,
-          route: reminder.route,
-        ),
-        isEditing: true,
-      ),
-    );
-
-    if (!mounted || result == null) {
-      return;
-    }
-
-    final success = await performReminderAction(
-      () => dashboardController.editCustomReminder(
-        reminder.id,
-        title: result.title,
-        description: result.description,
-        timeLabel: result.timeLabel,
-        icon: result.icon,
-        priority: result.priority,
-        route: result.route,
-      ),
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (success) {
-      showReminderSnack('已更新提醒 "${result.title}"');
-    } else {
-      showReminderSnack('更新提醒失败，请稍后再试', error: true);
-    }
+  @override
+  void dispose() {
+    _bannerController.dispose();
+    super.dispose();
   }
 
   @override
@@ -181,244 +102,767 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage>
     final dashboard = ref.watch(studentDashboardProvider);
 
     return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final controller = dashboardController;
-      final pendingReminders = data.pendingReminders;
-      final completedReminders = data.completedReminders;
-      final schedule = data.todaySchedule;
-      final pendingAssignments = data.pendingAssignments;
-      final insights = data.insights;
-      // final quickLinks = data.quickLinks;
-      final messages = data.messages;
-
-      // Calculate next course
-      student_data.StudentScheduleItem? nextCourse;
-      final now = DateTime.now();
-      final currentTime =
-          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-
-      for (final item in schedule) {
-        final parts = item.timeRange.split('-');
-        if (parts.length == 2) {
-          final end = parts[1];
-          if (end.compareTo(currentTime) > 0) {
-            nextCourse = item;
-            break;
-          }
-        }
-      }
-
-      String courseValue;
-      String courseLabel;
-      String? courseSubtitle;
-      IconData courseIcon;
-
-      if (nextCourse != null) {
-        courseValue = nextCourse.course;
-        courseLabel = '${nextCourse.timeRange} · ${nextCourse.location}';
-        courseSubtitle = null;
-        courseIcon = Icons.class_outlined;
-      } else {
-        if (schedule.isEmpty) {
-          courseValue = '今日无课';
-          courseLabel = '好好休息';
-          courseIcon = Icons.event_available_outlined;
-        } else {
-          courseValue = '课程已结束';
-          courseLabel = '好好休息';
-          courseIcon = Icons.event_available_outlined;
-        }
-        courseSubtitle = null;
-      }
-
-      final stats = <_OverviewStat>[
-        _OverviewStat(
-          icon: courseIcon,
-          label: courseLabel,
-          value: courseValue,
-          subtitle: courseSubtitle,
-          color: theme.colorScheme.secondary,
-          route: '/student/schedule',
+      final commonShortcuts = <_HomeShortcut>[
+        const _HomeShortcut(
+          label: '学生大礼包',
+          icon: Icons.card_giftcard,
+          route: '/student/ai-chat',
+          color: Color(0xFFFFD700),
         ),
-        _OverviewStat(
-          icon: Icons.fact_check_outlined,
-          label: '待完成作业',
-          value: pendingAssignments.isEmpty
-              ? '全部完成'
-              : '${pendingAssignments.length}',
-          color: theme.colorScheme.tertiary,
+        const _HomeShortcut(
+          label: '我的课程',
+          icon: Icons.school,
+          route: '/student/courses',
+          color: Color(0xFF4CAF50),
+        ),
+        _HomeShortcut(
+          label: '我的作业',
+          icon: Icons.edit_document,
           route: '/student/assignments',
+          badge: data.pendingAssignments.length,
+          color: Color(0xFF2196F3),
         ),
-        _OverviewStat(
-          icon: Icons.chat_bubble_outline,
-          label: '未读消息',
-          value: messages.where((m) => m.unreadCount > 0).isEmpty
-              ? '无新消息'
-              : '${messages.where((m) => m.unreadCount > 0).length}',
-          color: theme.colorScheme.primary,
-          route: '/student/messages',
+        const _HomeShortcut(
+          label: '学生课表',
+          icon: Icons.calendar_month,
+          route: '/student/schedule',
+          color: Color(0xFF9C27B0),
+        ),
+        const _HomeShortcut(
+          label: '待办',
+          icon: Icons.assignment_turned_in,
+          route: '/student/assignments',
+          color: Color(0xFF00BCD4),
+        ),
+        const _HomeShortcut(
+          label: '考试',
+          icon: Icons.assignment,
+          route: '/student/assignments',
+          color: Color(0xFF3F51B5),
+        ),
+        const _HomeShortcut(
+          label: '湄洲湾职业...',
+          icon: Icons.home,
+          route: '/student/profile',
+          color: Color(0xFF2196F3),
+        ),
+        const _HomeShortcut(
+          label: '微读书',
+          icon: Icons.book,
+          route: '/student/assignments',
+          color: Color(0xFF607D8B),
+        ),
+        const _HomeShortcut(
+          label: '应用中心',
+          icon: Icons.grid_view,
+          route: '/student/profile',
+          color: Color(0xFF009688),
+        ),
+        const _HomeShortcut(
+          label: '知视频',
+          icon: Icons.play_circle_filled,
+          route: '/student/ai-chat',
+          color: Color(0xFFF44336),
+        ),
+        const _HomeShortcut(
+          label: '知问',
+          icon: Icons.question_answer,
+          route: '/student/ai-chat',
+          color: Color(0xFF8BC34A),
+        ),
+        const _HomeShortcut(
+          label: '教师课表',
+          icon: Icons.calendar_today,
+          route: '/student/schedule',
+          color: Color(0xFFFF9800),
+        ),
+      ];
+
+      final recommendedShortcuts = <_HomeShortcut>[
+        const _HomeShortcut(
+          label: '英语四六级',
+          icon: Icons.translate,
+          route: '/student/ai-chat',
+          color: Color(0xFF673AB7),
+        ),
+        const _HomeShortcut(
+          label: '体育打卡',
+          icon: Icons.directions_run,
+          route: '/student/profile',
+          color: Color(0xFFFF5722),
+        ),
+        const _HomeShortcut(
+          label: '课程表',
+          icon: Icons.event_available_outlined,
+          route: '/student/schedule',
+          color: Color(0xFF795548),
+        ),
+        const _HomeShortcut(
+          label: '资料库',
+          icon: Icons.menu_book_outlined,
+          route: '/student/assignments',
+          color: Color(0xFF607D8B),
+        ),
+      ];
+
+      final shortcuts = _tabIndex == 0 ? commonShortcuts : recommendedShortcuts;
+      // Mock recent items to match screenshot
+      final recentItems = [
+        _RecentItem(
+          icon: Icons.mail,
+          title: '收件箱',
+          badge: 6,
+          color: Colors.blue,
+          onTap: () => context.go('/student/messages'),
+        ),
+        _RecentItem(
+          icon: Icons.book, // Placeholder for course image
+          title: '形势与政策 (2025年秋季)',
+          tag: '课程',
+          isAddable: true,
+          color: Colors.blue.shade100,
+          onTap: () => context.go('/student/schedule'),
         ),
       ];
 
       return ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          Text('学习概览', style: theme.textTheme.headlineSmall),
+          const _HomeHeader(),
+          const SizedBox(height: 12),
+          const _HomeSearchBar(),
+          const SizedBox(height: 12),
+          _HomeBanner(
+            controller: _bannerController,
+            index: _bannerIndex,
+            onPageChanged: (i) => setState(() => _bannerIndex = i),
+          ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [for (final stat in stats) _OverviewStatCard(stat: stat)],
-          ),
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.flash_on_outlined,
-            title: '今日提醒',
-            description: '抓住重点任务，按时完成学习计划。',
+          _HomeTabs(
+            tabs: const ['常用', '推荐'],
+            index: _tabIndex,
+            onChanged: (i) => setState(() => _tabIndex = i),
           ),
           const SizedBox(height: 12),
-          if (pendingReminders.isNotEmpty)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: reminderActionInProgress
-                    ? null
-                    : () async {
-                        final success = await performReminderAction(
-                          () => controller.markAllRemindersCompleted(),
-                        );
-                        if (!mounted) {
-                          return;
-                        }
-                        if (success) {
-                          showReminderSnack('已将全部提醒标记为完成');
-                        } else {
-                          showReminderSnack('批量标记失败，请稍后再试', error: true);
-                        }
-                      },
-                icon: const Icon(Icons.done_all_outlined),
-                label: Text('全部标记完成 (${pendingReminders.length})'),
-              ),
-            ),
-          if (reminderActionInProgress) ...[
-            const SizedBox(height: 4),
-            const LinearProgressIndicator(),
-          ],
-          if (pendingReminders.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.check_circle_outline,
-              title: '暂无待办事项',
-              description: '保持良好节奏，继续加油。',
-            )
-          else
-            for (final item in pendingReminders.take(3))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ReminderCard(
-                  reminder: item,
-                  onToggleCompleted: () =>
-                      controller.toggleReminderCompleted(item.id),
-                  onNavigate: item.route == null
-                      ? null
-                      : () => context.go(item.route!),
-                  onDelete: item.isCustom && !reminderActionInProgress
-                      ? () => _confirmDeleteReminder(item)
-                      : null,
-                  onEdit: item.isCustom && !reminderActionInProgress
-                      ? () => _openEditReminder(item)
-                      : null,
-                ),
-              ),
-          if (completedReminders.isNotEmpty) ...[
+          _ShortcutGrid(
+            shortcuts: shortcuts,
+            onTap: (shortcut) => context.go(shortcut.route),
+          ),
+          if (_tabIndex == 0) ...[
             const SizedBox(height: 8),
-            _CompletedRemindersSection(
-              reminders: completedReminders,
-              onToggleCompleted: controller.toggleReminderCompleted,
-              onDelete: (reminder) {
-                if (reminder.isCustom && !reminderActionInProgress) {
-                  _confirmDeleteReminder(reminder);
-                }
-              },
-              onEdit: (reminder) {
-                if (reminder.isCustom && !reminderActionInProgress) {
-                  _openEditReminder(reminder);
-                }
-              },
+            Center(
+              child: TextButton(
+                onPressed: () {},
+                child: const Text(
+                  '查看更多 >',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
             ),
           ],
-
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.fact_check_outlined,
-            title: '作业进度',
-            description: '掌握作业完成情况，避免遗漏与逾期。',
-          ),
+          const SizedBox(height: 18),
+          const _SectionTitle(title: '最近使用'),
           const SizedBox(height: 12),
-          if (pendingAssignments.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.assignment_turned_in_outlined,
-              title: '暂无待办作业',
-              description: '保持良好节奏，继续加油。',
-            )
-          else ...[
-            for (final assignment in pendingAssignments.take(3))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _AssignmentCard(
-                  assignment: assignment,
-                  onTap: () {
-                    if ((assignment.status ==
-                                student_data.StudentAssignmentStatus.graded ||
-                            assignment.status ==
-                                student_data
-                                    .StudentAssignmentStatus
-                                    .submitted) &&
-                        !assignment.allowResubmit) {
-                      context.push(
-                        '/student/assignments/${assignment.id}/result',
-                      );
-                    } else {
-                      context.push('/student/assignments/${assignment.id}');
-                    }
-                  },
-                  onSubmit: () => controller.submitAssignment(assignment.id),
-                ),
-              ),
-            if (pendingAssignments.length > 3)
-              const _ViewMoreButton(
-                label: '查看更多作业',
-                route: '/student/assignments',
-              ),
-          ],
-          const SizedBox(height: 24),
-          _SectionHeader(
-            icon: Icons.chat_bubble_outline,
-            title: '近期消息',
-            description: '查看老师和同学的最新通知与沟通。',
-          ),
-          const SizedBox(height: 12),
-          if (messages.isEmpty)
-            const _IllustratedPlaceholder(
-              icon: Icons.chat_bubble_outline,
-              title: '暂无新消息',
-              description: '与老师和同学保持沟通。',
-            )
-          else
-            for (final message in messages.take(3))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _MessageTile(
-                  message: message,
-                  onMarkRead: message.unreadCount > 0
-                      ? () => controller.markMessageAsRead(message)
-                      : null,
-                ),
-              ),
-          const SizedBox(height: 48),
+          for (final item in recentItems)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _RecentItemTile(item: item),
+            ),
         ],
       );
     });
+  }
+}
+
+class _HomeShortcut {
+  const _HomeShortcut({
+    required this.label,
+    required this.icon,
+    required this.route,
+    this.badge,
+    this.subtitle,
+    this.color,
+  });
+
+  final String label;
+  final IconData icon;
+  final String route;
+  final int? badge;
+  final String? subtitle;
+  final Color? color;
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const SizedBox(width: 24), // Spacer for balance
+        Row(
+          children: [
+            Text(
+              '首页',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
+        IconButton(
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => const JoinCourseDialog(),
+            );
+          },
+          icon: const Icon(Icons.add_circle_outline),
+          tooltip: '加入课程',
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeSearchBar extends StatelessWidget {
+  const _HomeSearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, color: theme.hintColor),
+          const SizedBox(width: 8),
+          Text(
+            '搜索',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeBanner extends StatelessWidget {
+  const _HomeBanner({
+    required this.controller,
+    required this.index,
+    required this.onPageChanged,
+  });
+
+  final PageController controller;
+  final int index;
+  final ValueChanged<int> onPageChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final items = const [
+      _BannerItem(
+        title: '冲刺期末好礼',
+        description: '1000+超值礼品 · 100%打卡即领',
+        color: Color(0xFFE0F4FF),
+      ),
+      _BannerItem(
+        title: '学习打卡',
+        description: '五分钟领取证书，保持好习惯',
+        color: Color(0xFFFFF4E5),
+      ),
+    ];
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: controller,
+            onPageChanged: onPageChanged,
+            itemCount: items.length,
+            itemBuilder: (context, i) {
+              final item = items[i];
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: item.color,
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [item.color, Colors.white.withOpacity(0.7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -24,
+                        top: -16,
+                        child: Icon(
+                          Icons.card_giftcard,
+                          size: 120,
+                          color: Colors.white.withOpacity(0.25),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.description,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                            const Spacer(),
+                            PillButton(label: '立即领取', onPressed: () {}),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (int i = 0; i < items.length; i++)
+              Container(
+                width: 20,
+                height: 4,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  color: i == index
+                      ? theme.colorScheme.primary
+                      : theme.dividerColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _BannerItem {
+  const _BannerItem({
+    required this.title,
+    required this.description,
+    required this.color,
+  });
+
+  final String title;
+  final String description;
+  final Color color;
+}
+
+class _HomeTabs extends StatelessWidget {
+  const _HomeTabs({
+    required this.tabs,
+    required this.index,
+    required this.onChanged,
+  });
+
+  final List<String> tabs;
+  final int index;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        for (int i = 0; i < tabs.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(right: 24),
+            child: GestureDetector(
+              onTap: () => onChanged(i),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tabs[i],
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: i == index
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: i == index
+                          ? theme.colorScheme.onSurface
+                          : theme.hintColor,
+                      fontSize: i == index ? 18 : 16,
+                    ),
+                  ),
+                  if (i == index)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      height: 3,
+                      width: 20,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        const Spacer(),
+        Icon(Icons.list, color: theme.hintColor),
+      ],
+    );
+  }
+}
+
+class _ShortcutGrid extends StatelessWidget {
+  const _ShortcutGrid({required this.shortcuts, required this.onTap});
+
+  final List<_HomeShortcut> shortcuts;
+  final ValueChanged<_HomeShortcut> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GridView.builder(
+      itemCount: shortcuts.length,
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 8,
+        childAspectRatio: 0.8,
+      ),
+      itemBuilder: (context, index) {
+        final shortcut = shortcuts[index];
+        return _ShortcutCard(
+          shortcut: shortcut,
+          theme: theme,
+          onTap: () => onTap(shortcut),
+        );
+      },
+    );
+  }
+}
+
+class _ShortcutCard extends StatelessWidget {
+  const _ShortcutCard({
+    required this.shortcut,
+    required this.theme,
+    required this.onTap,
+  });
+
+  final _HomeShortcut shortcut;
+  final ThemeData theme;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: shortcut.color ?? theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(shortcut.icon, color: Colors.white, size: 28),
+              ),
+              if (shortcut.badge case final badge?)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: _Badge(label: badge > 99 ? '99+' : '$badge'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            shortcut.label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodyMedium?.color,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentItem {
+  const _RecentItem({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.badge,
+    this.tag,
+    this.isAddable = false,
+    this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final int? badge;
+  final String? tag;
+  final bool isAddable;
+  final Color? color;
+  final VoidCallback onTap;
+}
+
+class _RecentItemTile extends StatelessWidget {
+  const _RecentItemTile({required this.item});
+
+  final _RecentItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: item.color ?? theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(item.icon, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (item.tag != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: theme.dividerColor,
+                            width: 0.5,
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          item.tag!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 10,
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                if (item.subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    item.subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (item.badge != null)
+            _Badge(label: '${item.badge}')
+          else if (item.isAddable)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border.all(color: theme.dividerColor),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.add, size: 14, color: theme.hintColor),
+                  Text(
+                    '常用',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.hintColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, this.dense = true});
+
+  final String label;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: dense
+          ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
+          : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.error,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: theme.colorScheme.onError,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      title,
+      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    );
+  }
+}
+
+class StudentCoursesPage extends ConsumerWidget {
+  const StudentCoursesPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final coursesAsync = ref.watch(studentCoursesProvider);
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            title: const Text('课程'),
+            centerTitle: true,
+            pinned: true,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const JoinCourseDialog(),
+                  );
+                },
+                icon: const Icon(Icons.add),
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: '搜索',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                ),
+              ),
+            ),
+          ),
+          coursesAsync.when(
+            data: (courses) {
+              if (courses.isEmpty) {
+                return const SliverFillRemaining(
+                  child: Center(child: Text('暂无课程')),
+                );
+              }
+              return SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final course = courses[index];
+                  return _CourseCard(course: course);
+                }, childCount: courses.length),
+              );
+            },
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (error, stack) =>
+                SliverFillRemaining(child: Center(child: Text('加载失败'))),
+          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 20)),
+        ],
+      ),
+    );
   }
 }
 
@@ -427,35 +871,47 @@ class StudentSchedulePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final dashboard = ref.watch(studentDashboardProvider);
+    final theme = Theme.of(context);
+    final dashboardAsync = ref.watch(studentDashboardProvider);
     final timeSlotsAsync = ref.watch(studentTimeSlotsProvider);
 
-    return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final theme = Theme.of(context);
-      final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    final weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
-      return timeSlotsAsync.when(
-        data: (timeSlots) {
-          final sortedSlots = List.of(timeSlots)
-            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    Color getCourseColor(String courseName) {
+      final colors = [
+        theme.colorScheme.primary,
+        theme.colorScheme.secondary,
+        theme.colorScheme.tertiary,
+        theme.colorScheme.error,
+      ];
+      return colors[courseName.hashCode.abs() % colors.length];
+    }
 
-          return ColoredBox(
-            color: theme.scaffoldBackgroundColor,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('本周课表', style: theme.textTheme.headlineSmall),
-                  const SizedBox(height: 8),
-                  Text(
-                    '如需调整课程，请联系辅导员或教务老师。',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Card(
+    return ColoredBox(
+      color: theme.scaffoldBackgroundColor,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('我的课表', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 8),
+            Text(
+              '查看本周学习安排。',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 24),
+            dashboardAsync.when(
+              data: (data) => timeSlotsAsync.when(
+                data: (timeSlots) {
+                  final sortedSlots = List.of(timeSlots)
+                    ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+                  final scheduleItems = data.schedule;
+
+                  return Card(
                     elevation: 0,
                     clipBehavior: Clip.antiAlias,
                     child: SingleChildScrollView(
@@ -503,7 +959,7 @@ class StudentSchedulePage extends ConsumerWidget {
                               ),
                               ...List.generate(7, (index) {
                                 final day = index + 1;
-                                final item = data.schedule
+                                final item = scheduleItems
                                     .where(
                                       (item) =>
                                           item.weekDay == day &&
@@ -523,15 +979,15 @@ class StudentSchedulePage extends ConsumerWidget {
                                     ),
                                     child: Card(
                                       elevation: 0,
-                                      color: item
-                                          .accentColor(theme)
-                                          .withValues(alpha: 0.1),
+                                      color: getCourseColor(
+                                        item.course,
+                                      ).withValues(alpha: 0.1),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         side: BorderSide(
-                                          color: item
-                                              .accentColor(theme)
-                                              .withValues(alpha: 0.2),
+                                          color: getCourseColor(
+                                            item.course,
+                                          ).withValues(alpha: 0.2),
                                         ),
                                       ),
                                       child: InkWell(
@@ -540,12 +996,10 @@ class StudentSchedulePage extends ConsumerWidget {
                                         },
                                         borderRadius: BorderRadius.circular(8),
                                         child: Padding(
-                                          padding: const EdgeInsets.all(4),
+                                          padding: const EdgeInsets.all(8),
                                           child: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
                                             children: [
                                               Text(
                                                 item.course,
@@ -555,53 +1009,64 @@ class StudentSchedulePage extends ConsumerWidget {
                                                     ?.copyWith(
                                                       fontWeight:
                                                           FontWeight.bold,
-                                                      color: item.accentColor(
-                                                        theme,
+                                                      color: getCourseColor(
+                                                        item.course,
                                                       ),
                                                     ),
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                              const SizedBox(height: 4),
+                                              const SizedBox(height: 2),
                                               Row(
                                                 children: [
                                                   Icon(
                                                     Icons.person_outline,
-                                                    size: 14,
+                                                    size: 12,
                                                     color: theme
                                                         .colorScheme
                                                         .onSurfaceVariant,
                                                   ),
-                                                  const SizedBox(width: 4),
+                                                  const SizedBox(width: 2),
                                                   Expanded(
                                                     child: Text(
                                                       item.teacher,
                                                       style: theme
                                                           .textTheme
-                                                          .bodySmall,
+                                                          .labelSmall
+                                                          ?.copyWith(
+                                                            color: theme
+                                                                .colorScheme
+                                                                .onSurfaceVariant,
+                                                            fontSize: 10,
+                                                          ),
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 2),
+                                              const Spacer(),
                                               Row(
                                                 children: [
                                                   Icon(
                                                     Icons.location_on_outlined,
-                                                    size: 14,
+                                                    size: 12,
                                                     color: theme
                                                         .colorScheme
                                                         .onSurfaceVariant,
                                                   ),
-                                                  const SizedBox(width: 4),
+                                                  const SizedBox(width: 2),
                                                   Expanded(
                                                     child: Text(
                                                       item.location,
                                                       style: theme
                                                           .textTheme
-                                                          .bodySmall,
+                                                          .labelSmall
+                                                          ?.copyWith(
+                                                            color: theme
+                                                                .colorScheme
+                                                                .onSurfaceVariant,
+                                                          ),
                                                       overflow:
                                                           TextOverflow.ellipsis,
                                                     ),
@@ -621,17 +1086,122 @@ class StudentSchedulePage extends ConsumerWidget {
                         }).toList(),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 36),
-                ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, s) => const Center(child: Text('加载时间表失败')),
               ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, s) => const Center(child: Text('加载课表失败')),
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('无法加载课表: $error')),
-      );
-    });
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CourseCard extends StatelessWidget {
+  final Course course;
+
+  const _CourseCard({required this.course});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // Generate random color based on course name
+    final colors = [
+      Colors.red,
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+    ];
+    final color = colors[course.name.hashCode.abs() % colors.length];
+    final imageColor = color.withValues(alpha: 0.2);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {
+            context.push('/student/courses/${course.id}');
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: course.imageUrl != null
+                        ? null
+                        : (isDark ? color.withValues(alpha: 0.2) : imageColor),
+                    borderRadius: BorderRadius.circular(8),
+                    image: course.imageUrl != null
+                        ? DecorationImage(
+                            image: NetworkImage(course.imageUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: course.imageUrl == null
+                      ? Icon(Icons.book, color: color, size: 24)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        course.name,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '教师: 未知', // Placeholder
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (course.description != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          course.description!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -673,7 +1243,7 @@ class _StudentAssignmentsPageState
           Text('作业中心', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 12),
           Text(
-            '掌握作业与实验进度，支持逾期补交和重新提交申请。',
+            '查看作业和实测进度，支持申请延期或重新提交。',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.grey[700],
             ),
@@ -710,7 +1280,7 @@ class _StudentAssignmentsPageState
             const _IllustratedPlaceholder(
               icon: Icons.inbox_outlined,
               title: '暂无匹配的作业',
-              description: '可以切换筛选条件或查看历史记录。',
+              description: '可以调整筛选条件或查看历史记录。',
             )
           else
             for (final assignment in filtered)
@@ -975,7 +1545,7 @@ class _CompletedRemindersSection extends StatelessWidget {
             Icons.check_circle_outline,
             color: theme.colorScheme.primary,
           ),
-          title: Text('已完成提醒 (${reminders.length})'),
+          title: Text('宸插畬鎴愭彁閱?(${reminders.length})'),
           children: [
             for (final reminder in reminders)
               Padding(
@@ -1023,11 +1593,11 @@ class _ReminderIconOption {
 }
 
 const List<_ReminderIconOption> _reminderIconOptions = <_ReminderIconOption>[
-  _ReminderIconOption(Icons.alarm_on_outlined, '默认'),
+  _ReminderIconOption(Icons.alarm_on_outlined, '榛樿'),
   _ReminderIconOption(Icons.task_alt_outlined, '作业'),
-  _ReminderIconOption(Icons.menu_book_outlined, '复习'),
-  _ReminderIconOption(Icons.lightbulb_outline, '想法'),
-  _ReminderIconOption(Icons.event_available_outlined, '日程'),
+  _ReminderIconOption(Icons.menu_book_outlined, '澶嶄範'),
+  _ReminderIconOption(Icons.lightbulb_outline, '鎯虫硶'),
+  _ReminderIconOption(Icons.event_available_outlined, '鏃ョ▼'),
   _ReminderIconOption(Icons.school_outlined, '课程'),
 ];
 
@@ -1128,7 +1698,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
               controller: _titleController,
               decoration: const InputDecoration(
                 labelText: '标题',
-                hintText: '例如：提交实验报告',
+                hintText: '例如：提交实测报告',
               ),
               autofocus: true,
               validator: (value) {
@@ -1153,7 +1723,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
               controller: _timeLabelController,
               decoration: const InputDecoration(
                 labelText: '时间说明',
-                hintText: '例如：截止 周五 18:00',
+                hintText: '例如：本周五 18:00',
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
@@ -1190,7 +1760,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            Text('图标', style: Theme.of(context).textTheme.titleSmall),
+            Text('鍥炬爣', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -1214,12 +1784,12 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
               children: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('取消'),
+                  child: const Text('鍙栨秷'),
                 ),
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _handleSubmit,
-                  child: Text(widget.isEditing ? '更新' : '保存'),
+                  child: Text(widget.isEditing ? '鏇存柊' : '淇濆瓨'),
                 ),
               ],
             ),
@@ -1518,7 +2088,7 @@ class _MessageTile extends StatelessWidget {
                   minimumSize: const Size(0, 0),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('标记已读'),
+                child: const Text('鏍囪宸茶'),
               ),
             ],
           ],
@@ -1721,7 +2291,7 @@ class StudentExamsPage extends ConsumerWidget {
           Text('考试安排', style: theme.textTheme.headlineSmall),
           const SizedBox(height: 12),
           Text(
-            '关注考试倒计时与考场安排，提前确认准考证与座位号。',
+            '关注倒计时与考场安排，请提前准备好准考证与座位号。',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: Colors.grey[700],
             ),
@@ -1737,7 +2307,7 @@ class StudentExamsPage extends ConsumerWidget {
             const _IllustratedPlaceholder(
               icon: Icons.event_available_outlined,
               title: '暂无考试',
-              description: '近期没有即将开始的考试安排。',
+              description: '近期没有即将开始的考试。',
             )
           else
             for (final exam in upcoming)
@@ -1756,7 +2326,7 @@ class StudentExamsPage extends ConsumerWidget {
             const _IllustratedPlaceholder(
               icon: Icons.history_toggle_off_outlined,
               title: '暂无记录',
-              description: '完成首次考试后将自动记录成绩。',
+              description: '完成第一次考试后会自动记录成绩。',
             )
           else
             for (final exam in history)
@@ -1864,7 +2434,7 @@ class _StudentNotesPageState extends ConsumerState<StudentNotesPage> {
               ),
               const SizedBox(width: 12),
               FilterChip(
-                label: const Text('仅看置顶'),
+                label: const Text('只看置顶'),
                 selected: _onlyPinned,
                 onSelected: (v) => setState(() => _onlyPinned = v),
               ),
@@ -1875,7 +2445,7 @@ class _StudentNotesPageState extends ConsumerState<StudentNotesPage> {
             const _IllustratedPlaceholder(
               icon: Icons.note_alt_outlined,
               title: '暂无笔记',
-              description: '记录学习心得，构建知识体系。',
+              description: '记录学习要点，构建自己的知识体系。',
             )
           else
             for (final note in noteList)

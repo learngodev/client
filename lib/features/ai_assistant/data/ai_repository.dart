@@ -112,4 +112,20 @@ class AIRepository {
     final data = body['data'] as Map<String, dynamic>;
     return AIUsageSummary.fromJson(data['usage'] as Map<String, dynamic>);
   }
+
+  Future<List<AIUsageTimelinePoint>> getUsageTimeline({
+    required String schoolId,
+    int days = 7,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/ai/usage/timeline',
+      queryParameters: {'school_id': schoolId, 'days': days},
+    );
+    final body = response.data as Map<String, dynamic>;
+    final data = body['data'] as Map<String, dynamic>;
+    final list = data['timeline'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => AIUsageTimelinePoint.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }

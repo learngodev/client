@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/student_repository.dart';
 import '../data/student_reminder_storage.dart';
+import '../domain/course.dart';
 import '../domain/sample_data.dart'
     show
         StudentAssignmentItem,
@@ -23,6 +24,13 @@ final studentTimeSlotsProvider = FutureProvider.autoDispose<List<TimeSlot>>((
 ) async {
   final repository = ref.watch(studentRepositoryProvider);
   return repository.listTimeSlots();
+});
+
+final studentCoursesProvider = FutureProvider.autoDispose<List<Course>>((
+  ref,
+) async {
+  final repository = ref.watch(studentRepositoryProvider);
+  return repository.listCourses();
 });
 
 final _uuid = Uuid();

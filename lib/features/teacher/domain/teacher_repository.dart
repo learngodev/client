@@ -47,4 +47,10 @@ abstract class TeacherRepository {
     String? location,
     String? status,
   });
+  Future<TeacherCourse> createCourse({
+    required String name,
+    required String description,
+    String? imageUrl,
+    List<String>? classIds,
+  });
 }

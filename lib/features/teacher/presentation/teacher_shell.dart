@@ -3,7 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
+import '../../im/application/im_providers.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../auth/domain/account.dart';
+import '../application/teacher_assignment_provider.dart';
 
 enum TeacherSection {
   overview,
@@ -58,15 +61,66 @@ class TeacherShell extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(authStateProvider).account;
+    final assignments = ref.watch(teacherAssignmentsProvider);
+    final conversations = ref.watch(conversationsProvider);
+
+    final pendingToGrade = assignments.maybeWhen(
+      data: (items) =>
+          items.fold<int>(0, (sum, item) => sum + item.pendingGradeCount),
+      orElse: () => 0,
+    );
+
+    final unreadMessages = conversations.maybeWhen(
+      data: (items) =>
+          items.fold<int>(0, (sum, item) => sum + item.unreadCount),
+      orElse: () => 0,
+    );
+
     final destinations = TeacherSection.values
         .map(
           (section) => AdaptiveDestination(
             label: section.label,
             icon: section.icon,
             selectedIcon: section.icon,
+            badgeCount: switch (section) {
+              TeacherSection.assignments => pendingToGrade,
+              TeacherSection.conversations => unreadMessages,
+              _ => null,
+            },
           ),
         )
         .toList();
+
+    final compactPaths = <String>[
+      TeacherSection.overview.path,
+      TeacherSection.conversations.path,
+      TeacherSection.courses.path,
+      '/teacher/profile',
+    ];
+
+    final compactDestinations = <AdaptiveDestination>[
+      const AdaptiveDestination(
+        label: '首页',
+        icon: Icons.home_outlined,
+        selectedIcon: Icons.home,
+      ),
+      AdaptiveDestination(
+        label: '消息',
+        icon: Icons.chat_bubble_outline,
+        selectedIcon: Icons.chat,
+        badgeCount: unreadMessages,
+      ),
+      const AdaptiveDestination(
+        label: '课程',
+        icon: Icons.class_outlined,
+        selectedIcon: Icons.class_rounded,
+      ),
+      const AdaptiveDestination(
+        label: '我',
+        icon: Icons.person_outline,
+        selectedIcon: Icons.person,
+      ),
+    ];
 
     final location = state.matchedLocation;
     final currentSection = TeacherSection.values.lastWhere(
@@ -75,6 +129,7 @@ class TeacherShell extends HookConsumerWidget {
       orElse: () => TeacherSection.overview,
     );
     final currentIndex = TeacherSection.values.indexOf(currentSection);
+    final compactIndex = _matchPathIndex(location, compactPaths);
 
     return AdaptiveNavigationScaffold(
       destinations: destinations,
@@ -85,27 +140,40 @@ class TeacherShell extends HookConsumerWidget {
           context.go(target);
         }
       },
-      appBarTitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('教师工作台'),
-          if (account != null)
-            Text(
-              '${account.displayName} · ${account.identifier}',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: Colors.black87),
-            ),
-        ],
+      compactDestinations: compactDestinations,
+      compactSelectedIndex: compactIndex,
+      onCompactDestinationSelected: (index) {
+        final target = compactPaths[index];
+        if (target != location) {
+          context.go(target);
+        }
+      },
+      hideAppBar: true,
+      appBarTitle: null,
+      userInfo: NavUserInfo(
+        title: account?.displayName ?? '未登录',
+        subtitle: account != null
+            ? '${account.identifier} · ${account.role.label}'
+            : '请登录以查看个人信息',
+        onTap: () => context.go('/teacher/profile'),
       ),
-      appBarActions: [
-        IconButton(
-          tooltip: '退出登录',
-          onPressed: () => ref.read(authStateProvider.notifier).signOut(),
-          icon: const Icon(Icons.logout),
-        ),
-      ],
       child: child,
     );
   }
+}
+
+int _matchPathIndex(String location, List<String> paths) {
+  var bestIndex = 0;
+  var bestLength = 0;
+
+  for (var i = 0; i < paths.length; i++) {
+    final path = paths[i];
+    final isMatch = location == path || location.startsWith('$path/');
+    if (isMatch && path.length > bestLength) {
+      bestIndex = i;
+      bestLength = path.length;
+    }
+  }
+
+  return bestIndex;
 }

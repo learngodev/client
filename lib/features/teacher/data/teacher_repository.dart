@@ -360,6 +360,30 @@ class TeacherApiRepository implements TeacherRepository {
     }
   }
 
+  @override
+  Future<TeacherCourse> createCourse({
+    required String name,
+    required String description,
+    String? imageUrl,
+    List<String>? classIds,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/teacher/courses',
+        data: {
+          'name': name,
+          'description': description,
+          'image_url': imageUrl,
+          'class_ids': classIds,
+        },
+      );
+      final data = _extractData(response.data, '未能创建课程');
+      return TeacherCourse.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法创建课程');
+    }
+  }
+
   Map<String, dynamic> _extractData(
     Map<String, dynamic>? body,
     String fallbackMessage,

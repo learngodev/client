@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:animations/animations.dart';
 
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/domain/account.dart';
@@ -29,6 +30,8 @@ import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
 import '../../features/ai_assistant/presentation/ai_chat_list_screen.dart';
 import '../../features/ai_assistant/presentation/ai_chat_screen.dart';
+import '../../features/profile/presentation/profile_page.dart';
+import '../../features/profile/presentation/settings_page.dart';
 import '../widgets/status_pages.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -70,60 +73,102 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         name: 'splash',
-        builder: (context, state) => const SplashPage(),
+        pageBuilder: (context, state) => _sharedAxisTransitionPage(
+          context: context,
+          state: state,
+          child: const SplashPage(),
+        ),
       ),
       GoRoute(
         path: '/sign-in',
         name: 'signIn',
-        builder: (context, state) => const SignInPage(),
+        pageBuilder: (context, state) => _sharedAxisTransitionPage(
+          context: context,
+          state: state,
+          child: const SignInPage(),
+        ),
       ),
       GoRoute(
         path: '/password-reset',
         name: 'passwordReset',
-        builder: (context, state) => const PasswordResetPage(),
+        pageBuilder: (context, state) => _sharedAxisTransitionPage(
+          context: context,
+          state: state,
+          child: const PasswordResetPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => _sharedAxisTransitionPage(
+          context: context,
+          state: state,
+          child: const SettingsPage(),
+        ),
       ),
       GoRoute(
         path: '/',
         name: 'root',
-        builder: (context, state) => const _RoleLandingPage(),
+        pageBuilder: (context, state) => _sharedAxisTransitionPage(
+          context: context,
+          state: state,
+          child: const _RoleLandingPage(),
+        ),
       ),
       GoRoute(
         path: '/conversations/:id',
         name: 'conversation',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final conversationId = state.pathParameters['id']!;
-          return ChatScreen(conversationId: conversationId);
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: ChatScreen(conversationId: conversationId),
+          );
         },
       ),
       GoRoute(
         path: '/student/assignments/:id',
         name: 'studentAssignmentDetail',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return AssignmentDetailPage(id: id);
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: AssignmentDetailPage(id: id),
+          );
         },
       ),
       GoRoute(
         path: '/student/assignments/:id/result',
         name: 'studentAssignmentResult',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return SubmissionDetailPage(assignmentId: id);
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: SubmissionDetailPage(assignmentId: id),
+          );
         },
       ),
       GoRoute(
         path: '/teacher/grading/:assignmentId/:submissionId',
         name: 'teacherGradingDetail',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final assignmentId = state.pathParameters['assignmentId']!;
           final submissionId = state.pathParameters['submissionId']!;
-          return GradingPage(
-            assignmentId: assignmentId,
-            submissionId: submissionId,
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: GradingPage(
+              assignmentId: assignmentId,
+              submissionId: submissionId,
+            ),
           );
         },
       ),
@@ -137,47 +182,83 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'adminOverview',
             redirect: (context, state) =>
                 _guardRole(authState, AccountRole.admin, state),
-            builder: (context, state) => const AdminOverviewPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AdminOverviewPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/accounts',
             name: 'adminAccounts',
-            builder: (context, state) => const AdminAccountsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AdminAccountsPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/structures',
             name: 'adminStructures',
-            builder: (context, state) => const AdminStructuresPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AdminStructuresPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/courses',
             name: 'adminCourses',
-            builder: (context, state) => const CourseManagementPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const CourseManagementPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/schedule',
             name: 'adminSchedule',
-            builder: (context, state) => const ScheduleManagementPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const ScheduleManagementPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/classrooms',
             name: 'adminClassrooms',
-            builder: (context, state) => const ClassroomManagementPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const ClassroomManagementPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/oss',
             name: 'adminOss',
-            builder: (context, state) => const AdminOssSettingsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AdminOssSettingsPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/system',
             name: 'adminSystem',
-            builder: (context, state) => const AdminSystemSettingsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AdminSystemSettingsPage(),
+            ),
           ),
           GoRoute(
             path: '/admin/ai',
             name: 'adminAI',
-            builder: (context, state) => const AdminAISettingsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AdminAISettingsPage(),
+            ),
           ),
         ],
       ),
@@ -191,73 +272,127 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'teacherOverview',
             redirect: (context, state) =>
                 _guardRole(authState, AccountRole.teacher, state),
-            builder: (context, state) => const TeacherOverviewPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const TeacherOverviewPage(),
+            ),
           ),
           GoRoute(
             path: '/teacher/schedule',
             name: 'teacherSchedule',
-            builder: (context, state) => const TeacherSchedulePage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const TeacherSchedulePage(),
+            ),
           ),
           GoRoute(
             path: '/teacher/assignments',
             name: 'teacherAssignments',
-            builder: (context, state) => const TeacherAssignmentsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const TeacherAssignmentsPage(),
+            ),
           ),
           GoRoute(
             path: '/teacher/courses',
             name: 'teacherCourses',
-            builder: (context, state) => const TeacherCoursesPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const TeacherCoursesPage(),
+            ),
           ),
           GoRoute(
             path: '/teacher/courses/:id',
             name: 'teacherCourseClasses',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final id = state.pathParameters['id']!;
-              return TeacherCourseClassesPage(courseId: id);
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: TeacherCourseClassesPage(courseId: id),
+              );
             },
           ),
           GoRoute(
             path: '/teacher/classes/:id/students',
             name: 'teacherClassStudents',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final id = state.pathParameters['id']!;
-              return TeacherClassStudentsPage(classId: id);
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: TeacherClassStudentsPage(classId: id),
+              );
             },
           ),
           GoRoute(
             path: '/teacher/assignments/create',
             name: 'teacherCreateAssignment',
-            builder: (context, state) => const CreateAssignmentPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const CreateAssignmentPage(),
+            ),
           ),
           GoRoute(
             path: '/teacher/assignments/:assignmentId/submissions',
             name: 'teacherAssignmentSubmissions',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final assignmentId = state.pathParameters['assignmentId']!;
               final assignment = state.extra as TeacherAssignment?;
-              return AssignmentSubmissionsPage(
-                assignmentId: assignmentId,
-                assignmentTitle: assignment?.title,
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: AssignmentSubmissionsPage(
+                  assignmentId: assignmentId,
+                  assignmentTitle: assignment?.title,
+                ),
               );
             },
           ),
           GoRoute(
             path: '/teacher/conversations',
             name: 'teacherConversations',
-            builder: (context, state) => const TeacherConversationsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const TeacherConversationsPage(),
+            ),
+          ),
+
+          GoRoute(
+            path: '/teacher/profile',
+            name: 'teacherProfile',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const ProfilePage(),
+            ),
           ),
 
           GoRoute(
             path: '/teacher/ai-chat',
             name: 'teacherAIChat',
-            builder: (context, state) => const AIChatListScreen(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AIChatListScreen(),
+            ),
           ),
           GoRoute(
             path: '/teacher/ai-chat/:id',
             name: 'teacherAIChatDetail',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final id = state.pathParameters['id']!;
-              return AIChatScreen(sessionId: id);
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: AIChatScreen(sessionId: id),
+              );
             },
           ),
         ],
@@ -272,41 +407,87 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: 'studentOverview',
             redirect: (context, state) =>
                 _guardRole(authState, AccountRole.student, state),
-            builder: (context, state) => const StudentOverviewPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const StudentOverviewPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/student/courses',
+            name: 'studentCourses',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const StudentCoursesPage(),
+            ),
           ),
           GoRoute(
             path: '/student/schedule',
             name: 'studentSchedule',
-            builder: (context, state) => const StudentSchedulePage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const StudentSchedulePage(),
+            ),
           ),
           GoRoute(
             path: '/student/assignments',
             name: 'studentAssignments',
-            builder: (context, state) => const StudentAssignmentsPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const StudentAssignmentsPage(),
+            ),
           ),
 
           GoRoute(
             path: '/student/messages',
             name: 'studentMessages',
-            builder: (context, state) => const StudentMessagesPage(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const StudentMessagesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/student/profile',
+            name: 'studentProfile',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const ProfilePage(),
+            ),
           ),
           GoRoute(
             path: '/student/ai-chat',
             name: 'studentAIChat',
-            builder: (context, state) => const AIChatListScreen(),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const AIChatListScreen(),
+            ),
           ),
           GoRoute(
             path: '/student/ai-chat/:id',
             name: 'studentAIChatDetail',
-            builder: (context, state) {
+            pageBuilder: (context, state) {
               final id = state.pathParameters['id']!;
-              return AIChatScreen(sessionId: id);
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: AIChatScreen(sessionId: id),
+              );
             },
           ),
         ],
       ),
     ],
-    errorBuilder: (context, state) => const NotFoundPage(),
+    errorPageBuilder: (context, state) => _sharedAxisTransitionPage(
+      context: context,
+      state: state,
+      child: const NotFoundPage(),
+    ),
   );
 });
 
@@ -380,3 +561,30 @@ final _routerNotifierProvider = Provider<_RouterNotifier>((ref) {
   ref.onDispose(notifier.dispose);
   return notifier;
 });
+
+Page<void> _sharedAxisTransitionPage({
+  required BuildContext context,
+  required GoRouterState state,
+  required Widget child,
+  SharedAxisTransitionType? transitionType,
+}) {
+  // 窄屏（通常底部导航）使用水平切换，中宽屏（通常侧边导航）使用垂直切换
+  final effectiveTransitionType =
+      transitionType ??
+      (MediaQuery.of(context).size.width > 600
+          ? SharedAxisTransitionType.vertical
+          : SharedAxisTransitionType.horizontal);
+
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SharedAxisTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        transitionType: effectiveTransitionType,
+        child: child,
+      );
+    },
+  );
+}
