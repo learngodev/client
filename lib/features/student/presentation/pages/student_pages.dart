@@ -3,9 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:learn_go/core/widgets/pill_button.dart';
+import 'package:intl/intl.dart';
 
 import '../../application/student_dashboard_controller.dart';
+import '../../../auth/application/auth_controller.dart';
 import '../../domain/course.dart';
 import '../../domain/sample_data.dart' as student_data;
 import '../../domain/student_repository.dart';
@@ -85,709 +86,427 @@ class StudentOverviewPage extends ConsumerStatefulWidget {
 }
 
 class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
-  final PageController _bannerController = PageController(
-    viewportFraction: 0.9,
-  );
-  int _bannerIndex = 0;
-  int _tabIndex = 0;
-
-  @override
-  void dispose() {
-    _bannerController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final dashboard = ref.watch(studentDashboardProvider);
+    final account = ref.watch(authStateProvider).account;
+    final theme = Theme.of(context);
 
     return _buildStudentDashboardPage(ref, dashboard, (data) {
-      final commonShortcuts = <_HomeShortcut>[
-        const _HomeShortcut(
-          label: '学生大礼包',
-          icon: Icons.card_giftcard,
-          route: '/student/ai-chat',
-          color: Color(0xFFFFD700),
-        ),
-        const _HomeShortcut(
-          label: '我的课程',
-          icon: Icons.school,
-          route: '/student/courses',
-          color: Color(0xFF4CAF50),
-        ),
-        _HomeShortcut(
-          label: '我的作业',
-          icon: Icons.edit_document,
-          route: '/student/assignments',
-          badge: data.pendingAssignments.length,
-          color: Color(0xFF2196F3),
-        ),
-        const _HomeShortcut(
-          label: '学生课表',
-          icon: Icons.calendar_month,
-          route: '/student/schedule',
-          color: Color(0xFF9C27B0),
-        ),
-        const _HomeShortcut(
-          label: '待办',
-          icon: Icons.assignment_turned_in,
-          route: '/student/assignments',
-          color: Color(0xFF00BCD4),
-        ),
-        const _HomeShortcut(
-          label: '考试',
-          icon: Icons.assignment,
-          route: '/student/assignments',
-          color: Color(0xFF3F51B5),
-        ),
-        const _HomeShortcut(
-          label: '湄洲湾职业...',
-          icon: Icons.home,
-          route: '/student/profile',
-          color: Color(0xFF2196F3),
-        ),
-        const _HomeShortcut(
-          label: '微读书',
-          icon: Icons.book,
-          route: '/student/assignments',
-          color: Color(0xFF607D8B),
-        ),
-        const _HomeShortcut(
-          label: '应用中心',
-          icon: Icons.grid_view,
-          route: '/student/profile',
-          color: Color(0xFF009688),
-        ),
-        const _HomeShortcut(
-          label: '知视频',
-          icon: Icons.play_circle_filled,
-          route: '/student/ai-chat',
-          color: Color(0xFFF44336),
-        ),
-        const _HomeShortcut(
-          label: '知问',
-          icon: Icons.question_answer,
-          route: '/student/ai-chat',
-          color: Color(0xFF8BC34A),
-        ),
-        const _HomeShortcut(
-          label: '教师课表',
-          icon: Icons.calendar_today,
-          route: '/student/schedule',
-          color: Color(0xFFFF9800),
-        ),
-      ];
-
-      final recommendedShortcuts = <_HomeShortcut>[
-        const _HomeShortcut(
-          label: '英语四六级',
-          icon: Icons.translate,
-          route: '/student/ai-chat',
-          color: Color(0xFF673AB7),
-        ),
-        const _HomeShortcut(
-          label: '体育打卡',
-          icon: Icons.directions_run,
-          route: '/student/profile',
-          color: Color(0xFFFF5722),
-        ),
-        const _HomeShortcut(
-          label: '课程表',
-          icon: Icons.event_available_outlined,
-          route: '/student/schedule',
-          color: Color(0xFF795548),
-        ),
-        const _HomeShortcut(
-          label: '资料库',
-          icon: Icons.menu_book_outlined,
-          route: '/student/assignments',
-          color: Color(0xFF607D8B),
-        ),
-      ];
-
-      final shortcuts = _tabIndex == 0 ? commonShortcuts : recommendedShortcuts;
-      // Mock recent items to match screenshot
-      final recentItems = [
-        _RecentItem(
-          icon: Icons.mail,
-          title: '收件箱',
-          badge: 6,
-          color: Colors.blue,
-          onTap: () => context.go('/student/messages'),
-        ),
-        _RecentItem(
-          icon: Icons.book, // Placeholder for course image
-          title: '形势与政策 (2025年秋季)',
-          tag: '课程',
-          isAddable: true,
-          color: Colors.blue.shade100,
-          onTap: () => context.go('/student/schedule'),
-        ),
-      ];
-
       return ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
         children: [
-          const _HomeHeader(),
+          _buildHeader(theme, account?.displayName ?? '同学'),
+          const SizedBox(height: 24),
+          _buildStats(theme, data),
+          const SizedBox(height: 24),
+          _buildQuickActions(context),
+          const SizedBox(height: 24),
+          _buildSectionTitle(theme, '今日课程'),
           const SizedBox(height: 12),
-          const _HomeSearchBar(),
+          _buildScheduleList(theme, data.todaySchedule),
+          const SizedBox(height: 24),
+          _buildSectionTitle(theme, '待办作业'),
           const SizedBox(height: 12),
-          _HomeBanner(
-            controller: _bannerController,
-            index: _bannerIndex,
-            onPageChanged: (i) => setState(() => _bannerIndex = i),
-          ),
-          const SizedBox(height: 16),
-          _HomeTabs(
-            tabs: const ['常用', '推荐'],
-            index: _tabIndex,
-            onChanged: (i) => setState(() => _tabIndex = i),
-          ),
-          const SizedBox(height: 12),
-          _ShortcutGrid(
-            shortcuts: shortcuts,
-            onTap: (shortcut) => context.go(shortcut.route),
-          ),
-          if (_tabIndex == 0) ...[
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: () {},
-                child: const Text(
-                  '查看更多 >',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 18),
-          const _SectionTitle(title: '最近使用'),
-          const SizedBox(height: 12),
-          for (final item in recentItems)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _RecentItemTile(item: item),
-            ),
+          _buildAssignmentList(context, theme, data.pendingAssignments),
         ],
       );
     });
   }
-}
 
-class _HomeShortcut {
-  const _HomeShortcut({
-    required this.label,
-    required this.icon,
-    required this.route,
-    this.badge,
-    this.subtitle,
-    this.color,
-  });
+  Widget _buildHeader(ThemeData theme, String name) {
+    final now = DateTime.now();
+    final dateStr = DateFormat('M月d日 EEEE', 'zh_CN').format(now);
 
-  final String label;
-  final IconData icon;
-  final String route;
-  final int? badge;
-  final String? subtitle;
-  final Color? color;
-}
-
-class _HomeHeader extends StatelessWidget {
-  const _HomeHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const SizedBox(width: 24), // Spacer for balance
-        Row(
-          children: [
-            Text(
-              '首页',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Icon(Icons.keyboard_arrow_down),
-          ],
-        ),
-        IconButton(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => const JoinCourseDialog(),
-            );
-          },
-          icon: const Icon(Icons.add_circle_outline),
-          tooltip: '加入课程',
-        ),
-      ],
-    );
-  }
-}
-
-class _HomeSearchBar extends StatelessWidget {
-  const _HomeSearchBar();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.15)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.search, color: theme.hintColor),
-          const SizedBox(width: 8),
-          Text(
-            '搜索',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.hintColor),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeBanner extends StatelessWidget {
-  const _HomeBanner({
-    required this.controller,
-    required this.index,
-    required this.onPageChanged,
-  });
-
-  final PageController controller;
-  final int index;
-  final ValueChanged<int> onPageChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final items = const [
-      _BannerItem(
-        title: '冲刺期末好礼',
-        description: '1000+超值礼品 · 100%打卡即领',
-        color: Color(0xFFE0F4FF),
-      ),
-      _BannerItem(
-        title: '学习打卡',
-        description: '五分钟领取证书，保持好习惯',
-        color: Color(0xFFFFF4E5),
-      ),
-    ];
-
-    return Column(
-      children: [
-        SizedBox(
-          height: 160,
-          child: PageView.builder(
-            controller: controller,
-            onPageChanged: onPageChanged,
-            itemCount: items.length,
-            itemBuilder: (context, i) {
-              final item = items[i];
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: item.color,
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      colors: [item.color, Colors.white.withOpacity(0.7)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        right: -24,
-                        top: -16,
-                        child: Icon(
-                          Icons.card_giftcard,
-                          size: 120,
-                          color: Colors.white.withOpacity(0.25),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.title,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              item.description,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            const Spacer(),
-                            PillButton(label: '立即领取', onPressed: () {}),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (int i = 0; i < items.length; i++)
-              Container(
-                width: 20,
-                height: 4,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: i == index
-                      ? theme.colorScheme.primary
-                      : theme.dividerColor,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primaryContainer,
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-      ],
-    );
-  }
-}
-
-class _BannerItem {
-  const _BannerItem({
-    required this.title,
-    required this.description,
-    required this.color,
-  });
-
-  final String title;
-  final String description;
-  final Color color;
-}
-
-class _HomeTabs extends StatelessWidget {
-  const _HomeTabs({
-    required this.tabs,
-    required this.index,
-    required this.onChanged,
-  });
-
-  final List<String> tabs;
-  final int index;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        for (int i = 0; i < tabs.length; i++)
-          Padding(
-            padding: const EdgeInsets.only(right: 24),
-            child: GestureDetector(
-              onTap: () => onChanged(i),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tabs[i],
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: i == index
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: i == index
-                          ? theme.colorScheme.onSurface
-                          : theme.hintColor,
-                      fontSize: i == index ? 18 : 16,
-                    ),
-                  ),
-                  if (i == index)
-                    Container(
-                      margin: const EdgeInsets.only(top: 4),
-                      height: 3,
-                      width: 20,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        const Spacer(),
-        Icon(Icons.list, color: theme.hintColor),
-      ],
-    );
-  }
-}
-
-class _ShortcutGrid extends StatelessWidget {
-  const _ShortcutGrid({required this.shortcuts, required this.onTap});
-
-  final List<_HomeShortcut> shortcuts;
-  final ValueChanged<_HomeShortcut> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GridView.builder(
-      itemCount: shortcuts.length,
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 8,
-        childAspectRatio: 0.8,
-      ),
-      itemBuilder: (context, index) {
-        final shortcut = shortcuts[index];
-        return _ShortcutCard(
-          shortcut: shortcut,
-          theme: theme,
-          onTap: () => onTap(shortcut),
-        );
-      },
-    );
-  }
-}
-
-class _ShortcutCard extends StatelessWidget {
-  const _ShortcutCard({
-    required this.shortcut,
-    required this.theme,
-    required this.onTap,
-  });
-
-  final _HomeShortcut shortcut;
-  final ThemeData theme;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: shortcut.color ?? theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(shortcut.icon, color: Colors.white, size: 28),
-              ),
-              if (shortcut.badge case final badge?)
-                Positioned(
-                  top: -4,
-                  right: -4,
-                  child: _Badge(label: badge > 99 ? '99+' : '$badge'),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            shortcut.label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodyMedium?.color,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _RecentItem {
-  const _RecentItem({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    this.badge,
-    this.tag,
-    this.isAddable = false,
-    this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final int? badge;
-  final String? tag;
-  final bool isAddable;
-  final Color? color;
-  final VoidCallback onTap;
-}
-
-class _RecentItemTile extends StatelessWidget {
-  const _RecentItemTile({required this.item});
-
-  final _RecentItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: item.color ?? theme.colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(item.icon, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (item.tag != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: theme.dividerColor,
-                            width: 0.5,
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          item.tag!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            fontSize: 10,
-                            color: theme.hintColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                if (item.subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.hintColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  dateStr,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimary.withOpacity(0.9),
                   ),
-                ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '你好，\n$name',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onPrimary,
+                    height: 1.2,
+                  ),
+                ),
               ],
             ),
           ),
-          if (item.badge != null)
-            _Badge(label: '${item.badge}')
-          else if (item.isAddable)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.add, size: 14, color: theme.hintColor),
-                  Text(
-                    '常用',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.hintColor,
-                    ),
-                  ),
-                ],
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: CircleAvatar(
+              radius: 32,
+              backgroundColor: theme.colorScheme.surface,
+              child: Text(
+                name.isNotEmpty ? name[0] : 'S',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
-}
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.label, this.dense = true});
+  Widget _buildStats(ThemeData theme, StudentDashboardData data) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            theme,
+            '待办作业',
+            '${data.pendingAssignments.length}',
+            Icons.assignment_outlined,
+            Colors.orange,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            theme,
+            '近期考试',
+            '${data.upcomingExams.length}',
+            Icons.event_note_outlined,
+            Colors.blue,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildStatCard(
+            theme,
+            '今日课程',
+            '${data.todaySchedule.length}',
+            Icons.class_outlined,
+            Colors.green,
+          ),
+        ),
+      ],
+    );
+  }
 
-  final String label;
-  final bool dense;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: dense
-          ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
-          : const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.error,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: theme.colorScheme.onError,
-          fontWeight: FontWeight.w700,
+  Widget _buildStatCard(
+    ThemeData theme,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Card(
+      elevation: 2,
+      shadowColor: color.withOpacity(0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              value,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+  Widget _buildQuickActions(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildActionItem(
+              context,
+              Icons.school_outlined,
+              '我的课程',
+              '/student/courses',
+              Colors.blue,
+            ),
+            _buildActionItem(
+              context,
+              Icons.assignment_outlined,
+              '作业',
+              '/student/assignments',
+              Colors.orange,
+            ),
+            _buildActionItem(
+              context,
+              Icons.calendar_today_outlined,
+              '课表',
+              '/student/schedule',
+              Colors.purple,
+            ),
+            _buildActionItem(
+              context,
+              Icons.grade_outlined,
+              '成绩',
+              '/student/exams',
+              Colors.teal,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  final String title;
+  Widget _buildActionItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String route,
+    Color color,
+  ) {
+    return InkWell(
+      onTap: () => context.go(route),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget _buildSectionTitle(ThemeData theme, String title) {
     return Text(
       title,
-      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildScheduleList(
+    ThemeData theme,
+    List<student_data.StudentScheduleItem> schedule,
+  ) {
+    if (schedule.isEmpty) {
+      return _buildEmptyState(theme, '今天没有课程安排');
+    }
+    return Column(
+      children: schedule
+          .map((item) => _buildScheduleItem(theme, item))
+          .toList(),
+    );
+  }
+
+  Widget _buildScheduleItem(
+    ThemeData theme,
+    student_data.StudentScheduleItem item,
+  ) {
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Column(
+              children: [
+                Text(
+                  item.startTime,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                Text(
+                  item.timeRange.split('-').last,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            Container(
+              width: 4,
+              height: 40,
+              decoration: BoxDecoration(
+                color: item.accentColor(theme),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.course,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${item.location} · ${item.teacher}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssignmentList(
+    BuildContext context,
+    ThemeData theme,
+    List<student_data.StudentAssignmentItem> assignments,
+  ) {
+    if (assignments.isEmpty) {
+      return _buildEmptyState(theme, '没有待办作业');
+    }
+    final displayList = assignments.take(3).toList();
+    return Column(
+      children: displayList
+          .map((item) => _buildAssignmentItem(context, theme, item))
+          .toList(),
+    );
+  }
+
+  Widget _buildAssignmentItem(
+    BuildContext context,
+    ThemeData theme,
+    student_data.StudentAssignmentItem item,
+  ) {
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerLow,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        onTap: () => context.push('/student/assignments/${item.id}'),
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.tertiaryContainer,
+          child: Icon(
+            Icons.assignment,
+            color: theme.colorScheme.onTertiaryContainer,
+          ),
+        ),
+        title: Text(
+          item.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Text('${item.course} · ${item.dueLabel}'),
+        trailing: item.isOverdue
+            ? const Icon(Icons.warning, color: Colors.red)
+            : const Icon(Icons.chevron_right),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme, String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: 48,
+            color: theme.colorScheme.outline.withOpacity(0.5),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

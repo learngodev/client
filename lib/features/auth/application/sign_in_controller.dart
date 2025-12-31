@@ -17,7 +17,7 @@ class SignInController extends Notifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await ref
-          .read(authStateProvider.notifier)
+          .read(authControllerProvider.notifier)
           .signIn(
             schoolId: schoolId,
             identifier: identifier,

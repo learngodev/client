@@ -16,11 +16,11 @@ abstract class Conversation with _$Conversation {
   const factory Conversation({
     required String id,
     required ConversationType type,
-    @JsonKey(name: 'school_id') required String schoolId,
-    @JsonKey(name: 'created_at') required DateTime createdAt,
-    @JsonKey(name: 'updated_at') required DateTime updatedAt,
-    @JsonKey(name: 'last_message') Message? lastMessage,
-    @JsonKey(name: 'unread_count') @Default(0) int unreadCount,
+    required String schoolId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    Message? lastMessage,
+    @Default(0) int unreadCount,
     @Default([]) List<ConversationMember> members,
   }) = _Conversation;
 
@@ -47,11 +47,11 @@ abstract class Conversation with _$Conversation {
 abstract class ConversationMember with _$ConversationMember {
   const factory ConversationMember({
     required String id,
-    @JsonKey(name: 'conversation_id') required String conversationId,
-    @JsonKey(name: 'account_id') required String accountId,
-    @JsonKey(name: 'account_name') String? accountName,
+    required String conversationId,
+    required String accountId,
+    String? accountName,
     required AccountRole role,
-    @JsonKey(name: 'created_at') required DateTime createdAt,
+    required DateTime createdAt,
   }) = _ConversationMember;
 
   factory ConversationMember.fromJson(Map<String, dynamic> json) =>

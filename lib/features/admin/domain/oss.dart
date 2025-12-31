@@ -47,6 +47,7 @@ class AdminOssCredential {
     required this.accessKeyMasked,
     required this.allowPublicRead,
     required this.allowMultipartUpload,
+    required this.useRelayUpload,
     required this.isPrimary,
     required this.active,
     required this.createdAt,
@@ -62,6 +63,7 @@ class AdminOssCredential {
   final String accessKeyMasked;
   final bool allowPublicRead;
   final bool allowMultipartUpload;
+  final bool useRelayUpload;
   final bool isPrimary;
   final bool active;
   final DateTime createdAt;
@@ -85,6 +87,7 @@ class AdminOssCredential {
       accessKeyMasked: json['access_key_masked']?.toString() ?? '',
       allowPublicRead: json['allow_public_read'] as bool? ?? false,
       allowMultipartUpload: json['allow_multipart_upload'] as bool? ?? false,
+      useRelayUpload: json['use_relay_upload'] as bool? ?? false,
       isPrimary: json['is_primary'] as bool? ?? false,
       active: json['active'] as bool? ?? false,
       createdAt:
@@ -103,6 +106,7 @@ class AdminOssCredential {
     String? accessKeyMasked,
     bool? allowPublicRead,
     bool? allowMultipartUpload,
+    bool? useRelayUpload,
     bool? isPrimary,
     bool? active,
     DateTime? createdAt,
@@ -118,6 +122,7 @@ class AdminOssCredential {
       accessKeyMasked: accessKeyMasked ?? this.accessKeyMasked,
       allowPublicRead: allowPublicRead ?? this.allowPublicRead,
       allowMultipartUpload: allowMultipartUpload ?? this.allowMultipartUpload,
+      useRelayUpload: useRelayUpload ?? this.useRelayUpload,
       isPrimary: isPrimary ?? this.isPrimary,
       active: active ?? this.active,
       createdAt: createdAt ?? this.createdAt,

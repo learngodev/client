@@ -72,6 +72,56 @@ extension StudentReminderPriorityX on StudentReminderPriority {
   }
 }
 
+class _StudentReminderIconCodec {
+  static const _defaultKey = 'alarm_on_outlined';
+
+  static const Map<String, IconData> _iconByKey = {
+    _defaultKey: Icons.alarm_on_outlined,
+    'code_off_outlined': Icons.code_off_outlined,
+    'record_voice_over_outlined': Icons.record_voice_over_outlined,
+    'menu_book_outlined': Icons.menu_book_outlined,
+  };
+
+  static IconData fromJson(Map<String, dynamic> json) {
+    final iconKey = (json['iconKey'] as String?)?.trim();
+    if (iconKey != null && iconKey.isNotEmpty) {
+      return _iconByKey[iconKey] ?? _iconByKey[_defaultKey]!;
+    }
+
+    // Backward compatibility: legacy storage used codePoint/fontFamily/fontPackage.
+    // Avoid constructing IconData at runtime (breaks web icon tree-shaking).
+    final codePoint = json['iconCodePoint'] as int?;
+    final fontFamily = json['iconFontFamily'] as String?;
+    final fontPackage = json['iconFontPackage'] as String?;
+
+    if (codePoint == null) {
+      return _iconByKey[_defaultKey]!;
+    }
+
+    for (final icon in _iconByKey.values) {
+      if (icon.codePoint == codePoint &&
+          icon.fontFamily == fontFamily &&
+          icon.fontPackage == fontPackage) {
+        return icon;
+      }
+    }
+
+    return _iconByKey[_defaultKey]!;
+  }
+
+  static String toKey(IconData icon) {
+    for (final entry in _iconByKey.entries) {
+      final candidate = entry.value;
+      if (candidate.codePoint == icon.codePoint &&
+          candidate.fontFamily == icon.fontFamily &&
+          candidate.fontPackage == icon.fontPackage) {
+        return entry.key;
+      }
+    }
+    return _defaultKey;
+  }
+}
+
 class StudentReminderItem {
   const StudentReminderItem({
     required this.id,
@@ -141,6 +191,7 @@ class StudentReminderItem {
       'title': title,
       'description': description,
       'timeLabel': timeLabel,
+      'iconKey': _StudentReminderIconCodec.toKey(icon),
       'iconCodePoint': icon.codePoint,
       'iconFontFamily': icon.fontFamily,
       'iconFontPackage': icon.fontPackage,
@@ -157,12 +208,7 @@ class StudentReminderItem {
       (value) => value.name == priorityName,
       orElse: () => StudentReminderPriority.normal,
     );
-    final codePoint = json['iconCodePoint'] as int?;
-    final fontFamily = json['iconFontFamily'] as String?;
-    final fontPackage = json['iconFontPackage'] as String?;
-    final icon = codePoint == null
-        ? Icons.alarm_on_outlined
-        : IconData(codePoint, fontFamily: fontFamily, fontPackage: fontPackage);
+    final icon = _StudentReminderIconCodec.fromJson(json);
 
     return StudentReminderItem(
       id: json['id'] as String? ?? '',

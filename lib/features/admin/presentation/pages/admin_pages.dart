@@ -10,6 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../dashboard/application/dashboard_providers.dart';
+import '../../../dashboard/presentation/widgets/ai_usage_chart_card.dart';
 import '../../application/admin_providers.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../../core/exceptions/app_exception.dart';
@@ -77,6 +79,7 @@ class AdminOverviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tree = ref.watch(adminDepartmentTreeProvider);
+    final aiUsage = ref.watch(aiUsageTimelineProvider);
 
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -196,6 +199,17 @@ class AdminOverviewPage extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 24),
+              aiUsage.when(
+                data: (data) => AIUsageChartCard(data: data),
+                loading: () => const Card(
+                  child: SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+                error: (err, stack) => const SizedBox.shrink(),
+              ),
+              const SizedBox(height: 24),
               _AccountSectionCard(
                 icon: Icons.analytics_outlined,
                 title: '快速检查',
@@ -223,6 +237,7 @@ class AdminAccountsPage extends StatelessWidget {
 
 // ignore: unused_element
 class _LegacyAdminAccountsPage extends HookConsumerWidget {
+  // ignore: unused_element_parameter
   const _LegacyAdminAccountsPage({super.key});
 
   @override
@@ -2610,9 +2625,12 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       final regionController = TextEditingController();
       final bucketController = TextEditingController();
       final prefixController = TextEditingController();
+      final accessKeyIdController = TextEditingController();
+      final accessKeySecretController = TextEditingController();
       final accessKeyController = TextEditingController();
       var allowPublicRead = false;
       var allowMultipart = false;
+      var useRelayUpload = false;
       var isPrimary = false;
       var active = true;
       try {
@@ -2624,9 +2642,12 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                 String region,
                 String bucket,
                 String directoryPrefix,
+                String accessKeyId,
+                String accessKeySecret,
                 String accessKey,
                 bool allowPublicRead,
                 bool allowMultipart,
+                bool useRelayUpload,
                 bool isPrimary,
                 bool active,
               })
@@ -2702,6 +2723,34 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                   helperText: '可选，建议以 / 结尾',
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: accessKeyIdController,
+                                decoration: const InputDecoration(
+                                  labelText: 'AccessKey ID',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入 AccessKey ID';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: accessKeySecretController,
+                                decoration: const InputDecoration(
+                                  labelText: 'AccessKey Secret',
+                                ),
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入 AccessKey Secret';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
                               TextFormField(
                                 controller: accessKeyController,
                                 decoration: const InputDecoration(
@@ -2754,6 +2803,19 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                   });
                                 },
                               ),
+                              SwitchListTile.adaptive(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('服务端中继上传'),
+                                subtitle: const Text(
+                                  '开启后文件将先上传到服务端再转存到 OSS（仅主凭证生效）',
+                                ),
+                                value: useRelayUpload,
+                                onChanged: (value) {
+                                  setStateBuilder(() {
+                                    useRelayUpload = value;
+                                  });
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -2776,9 +2838,13 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                           region: regionController.text.trim(),
                           bucket: bucketController.text.trim(),
                           directoryPrefix: prefixController.text.trim(),
+                          accessKeyId: accessKeyIdController.text.trim(),
+                          accessKeySecret: accessKeySecretController.text
+                              .trim(),
                           accessKey: accessKeyController.text.trim(),
                           allowPublicRead: allowPublicRead,
                           allowMultipart: allowMultipart,
+                          useRelayUpload: useRelayUpload,
                           isPrimary: isPrimary,
                           active: active,
                         ));
@@ -2798,10 +2864,13 @@ class AdminOssSettingsPage extends HookConsumerWidget {
           endpoint: result.endpoint,
           region: result.region,
           bucket: result.bucket,
+          accessKeyId: result.accessKeyId,
+          accessKeySecret: result.accessKeySecret,
           directoryPrefix: result.directoryPrefix,
           accessKeyDisplay: result.accessKey,
           allowPublicRead: result.allowPublicRead,
           allowMultipartUpload: result.allowMultipart,
+          useRelayUpload: result.useRelayUpload,
           active: result.active,
           isPrimary: result.isPrimary,
         );
@@ -2815,6 +2884,8 @@ class AdminOssSettingsPage extends HookConsumerWidget {
         regionController.dispose();
         bucketController.dispose();
         prefixController.dispose();
+        accessKeyIdController.dispose();
+        accessKeySecretController.dispose();
         accessKeyController.dispose();
       }
     }
@@ -3122,6 +3193,16 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                 );
                                 return value ? '凭证已启用' : '凭证已停用';
                               }),
+                          onToggleRelayUpload: (value) =>
+                              runCredentialMutation(credential.id, () async {
+                                await ossNotifier.updateCredential(
+                                  credentialId: credential.id,
+                                  useRelayUpload: value,
+                                );
+                                return value
+                                    ? '已启用服务端中继上传（仅主凭证生效）'
+                                    : '已关闭服务端中继上传';
+                              }),
                           onTogglePublicRead: (value) =>
                               runCredentialMutation(credential.id, () async {
                                 await ossNotifier.updateCredential(
@@ -3168,6 +3249,10 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                             final prefixController = TextEditingController(
                               text: credential.directoryPrefix,
                             );
+                            final accessKeyIdController =
+                                TextEditingController();
+                            final accessKeySecretController =
+                                TextEditingController();
                             final accessKeyController = TextEditingController(
                               text: credential.accessKeyMasked,
                             );
@@ -3180,6 +3265,8 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                       String region,
                                       String bucket,
                                       String directoryPrefix,
+                                      String accessKeyId,
+                                      String accessKeySecret,
                                       String accessKeyMasked,
                                     })
                                   >(
@@ -3277,13 +3364,29 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                                     helperText:
                                                         '仅展示已有凭证掩码，例如：LTAI****',
                                                   ),
-                                                  validator: (value) {
-                                                    if (value == null ||
-                                                        value.trim().isEmpty) {
-                                                      return '访问凭证标识不能为空';
-                                                    }
-                                                    return null;
-                                                  },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller:
+                                                      accessKeyIdController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText:
+                                                            'AccessKey ID（可选）',
+                                                        helperText: '留空则不更新',
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller:
+                                                      accessKeySecretController,
+                                                  decoration:
+                                                      const InputDecoration(
+                                                        labelText:
+                                                            'AccessKey Secret（可选）',
+                                                        helperText: '留空则不更新',
+                                                      ),
+                                                  obscureText: true,
                                                 ),
                                               ],
                                             ),
@@ -3316,6 +3419,13 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                                 directoryPrefix:
                                                     prefixController.text
                                                         .trim(),
+                                                accessKeyId:
+                                                    accessKeyIdController.text
+                                                        .trim(),
+                                                accessKeySecret:
+                                                    accessKeySecretController
+                                                        .text
+                                                        .trim(),
                                                 accessKeyMasked:
                                                     accessKeyController.text
                                                         .trim(),
@@ -3341,8 +3451,17 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                         region: result.region,
                                         bucket: result.bucket,
                                         directoryPrefix: result.directoryPrefix,
+                                        accessKeyId: result.accessKeyId.isEmpty
+                                            ? null
+                                            : result.accessKeyId,
+                                        accessKeySecret:
+                                            result.accessKeySecret.isEmpty
+                                            ? null
+                                            : result.accessKeySecret,
                                         accessKeyDisplay:
-                                            result.accessKeyMasked,
+                                            result.accessKeyMasked.isEmpty
+                                            ? null
+                                            : result.accessKeyMasked,
                                       );
                                   return '已更新 ${updated.name} 的访问信息';
                                 },
@@ -3353,6 +3472,8 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                               regionController.dispose();
                               bucketController.dispose();
                               prefixController.dispose();
+                              accessKeyIdController.dispose();
+                              accessKeySecretController.dispose();
                               accessKeyController.dispose();
                             }
                           },
@@ -5703,6 +5824,7 @@ class _OssCredentialTile extends StatelessWidget {
     required this.isMutating,
     this.onCopyKey,
     this.onToggleActive,
+    this.onToggleRelayUpload,
     this.onTogglePublicRead,
     this.onToggleMultipart,
     this.onSetPrimary,
@@ -5714,6 +5836,7 @@ class _OssCredentialTile extends StatelessWidget {
   final bool isMutating;
   final VoidCallback? onCopyKey;
   final ValueChanged<bool>? onToggleActive;
+  final ValueChanged<bool>? onToggleRelayUpload;
   final ValueChanged<bool>? onTogglePublicRead;
   final ValueChanged<bool>? onToggleMultipart;
   final VoidCallback? onSetPrimary;
@@ -5843,6 +5966,13 @@ class _OssCredentialTile extends StatelessWidget {
             subtitle: const Text('开启后可直接对外共享只读资源'),
             value: credential.allowPublicRead,
             onChanged: isMutating ? null : onTogglePublicRead,
+          ),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('服务端中继上传'),
+            subtitle: const Text('开启后上传将由服务端中转到 OSS（仅主凭证生效）'),
+            value: credential.useRelayUpload,
+            onChanged: isMutating ? null : onToggleRelayUpload,
           ),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,

@@ -8,10 +8,10 @@ part 'schedule.g.dart';
 abstract class TimeSlot with _$TimeSlot {
   const factory TimeSlot({
     required String id,
-    @JsonKey(name: 'school_id') required String schoolId,
+    required String schoolId,
     required String name,
-    @JsonKey(name: 'start_time') required String startTime,
-    @JsonKey(name: 'end_time') required String endTime,
+    required String startTime,
+    required String endTime,
   }) = _TimeSlot;
 
   factory TimeSlot.fromJson(Map<String, dynamic> json) =>
@@ -22,21 +22,21 @@ abstract class TimeSlot with _$TimeSlot {
 abstract class CourseSchedule with _$CourseSchedule {
   const factory CourseSchedule({
     required String id,
-    @JsonKey(name: 'school_id') required String schoolId,
-    @JsonKey(name: 'course_id') required String courseId,
-    @JsonKey(name: 'class_id') required String classId,
-    @JsonKey(name: 'teacher_id') String? teacherId,
-    @JsonKey(name: 'slot_id') required String slotId,
-    @JsonKey(name: 'classroom_id') String? classroomId,
-    @JsonKey(name: 'day_of_week') required int dayOfWeek,
+    required String schoolId,
+    required String courseId,
+    required String classId,
+    String? teacherId,
+    required String slotId,
+    String? classroomId,
+    required int dayOfWeek,
     String? location,
-    @JsonKey(name: 'start_date') required DateTime startDate,
-    @JsonKey(name: 'end_date') required DateTime endDate,
-    @JsonKey(name: 'course_name') String? courseName,
-    @JsonKey(name: 'class_name') String? className,
-    @JsonKey(name: 'teacher_name') String? teacherName,
-    @JsonKey(name: 'slot_name') String? slotName,
-    @JsonKey(name: 'classroom_location') String? classroomLocation,
+    required DateTime startDate,
+    required DateTime endDate,
+    String? courseName,
+    String? className,
+    String? teacherName,
+    String? slotName,
+    String? classroomLocation,
   }) = _CourseSchedule;
 
   factory CourseSchedule.fromJson(Map<String, dynamic> json) =>
@@ -46,13 +46,11 @@ abstract class CourseSchedule with _$CourseSchedule {
 @freezed
 abstract class ScheduleStats with _$ScheduleStats {
   const factory ScheduleStats({
-    @JsonKey(name: 'total_rules') required int totalRules,
-    @JsonKey(name: 'total_courses') required int totalCourses,
-    @JsonKey(name: 'scheduled_courses_count')
+    required int totalRules,
+    required int totalCourses,
     required int scheduledCoursesCount,
-    @JsonKey(name: 'unscheduled_courses_count')
     required int unscheduledCoursesCount,
-    @JsonKey(name: 'rules_by_day') required Map<int, int> rulesByDay,
+    required Map<int, int> rulesByDay,
   }) = _ScheduleStats;
 
   factory ScheduleStats.fromJson(Map<String, dynamic> json) =>

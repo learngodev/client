@@ -3,8 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
-import '../../../core/widgets/glass_card.dart';
-import '../../../core/widgets/pill_button.dart';
 import '../../auth/application/school_list_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
@@ -80,7 +78,7 @@ class AdminShell extends HookConsumerWidget {
           )
           .name,
       loading: () => '加载中...',
-      error: (_, __) => account?.schoolId ?? '',
+      error: (_, _) => account?.schoolId ?? '',
     );
 
     final destinations = AdminSection.values
@@ -120,155 +118,9 @@ class AdminShell extends HookConsumerWidget {
         subtitle: account != null
             ? '学校：$schoolName · ${account.role.label}'
             : '请登录以查看个人信息',
-        onTap: () => _showProfile(context, ref, account),
+        onTap: () => context.go('/admin/profile'),
       ),
       child: child,
     );
-  }
-
-  void _showProfile(BuildContext context, WidgetRef ref, Account? account) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final schoolsAsync = ref.watch(schoolListProvider);
-            final schoolName = schoolsAsync.when(
-              data: (schools) {
-                if (account == null) return '';
-                final school = schools.firstWhere(
-                  (s) => s.id == account.schoolId,
-                  orElse: () => School(id: '', name: account.schoolId),
-                );
-                return school.name;
-              },
-              loading: () => '加载中...',
-              error: (_, __) => account?.schoolId ?? '',
-            );
-
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: GlassCard(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme.of(context).colorScheme.primary,
-                                Theme.of(context).colorScheme.secondary,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            _initial(account?.displayName),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 22,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                account?.displayName ?? '未登录',
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest
-                                      .withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  account != null
-                                      ? '学校：$schoolName · ${account.identifier}'
-                                      : '请登录后查看',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: PillButton(
-                            label: '退出登录',
-                            icon: Icons.logout,
-                            variant: PillButtonVariant.outline,
-                            onPressed: account == null
-                                ? null
-                                : () {
-                                    Navigator.pop(context);
-                                    ref
-                                        .read(authStateProvider.notifier)
-                                        .signOut();
-                                  },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        PillButton(
-                          label: '关闭',
-                          variant: PillButtonVariant.ghost,
-                          compact: true,
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _initial(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    return name.characters.first;
   }
 }

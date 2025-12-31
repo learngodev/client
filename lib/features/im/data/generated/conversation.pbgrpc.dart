@@ -32,6 +32,24 @@ class ConversationServiceClient extends $grpc.Client {
 
   ConversationServiceClient(super.channel, {super.options, super.interceptors});
 
+  $grpc.ResponseStream<$0.ConversationStreamResponse> subscribe(
+    $0.JoinConversation request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createStreamingCall(
+        _$subscribe, $async.Stream.fromIterable([request]),
+        options: options);
+  }
+
+  $grpc.ResponseStream<$0.ConversationStreamResponse> subscribeInbox(
+    $0.JoinConversation request, {
+    $grpc.CallOptions? options,
+  }) {
+    return $createStreamingCall(
+        _$subscribeInbox, $async.Stream.fromIterable([request]),
+        options: options);
+  }
+
   $grpc.ResponseStream<$0.ConversationStreamResponse> stream(
     $async.Stream<$0.ConversationStreamRequest> request, {
     $grpc.CallOptions? options,
@@ -40,6 +58,18 @@ class ConversationServiceClient extends $grpc.Client {
   }
 
   // method descriptors
+
+  static final _$subscribe =
+      $grpc.ClientMethod<$0.JoinConversation, $0.ConversationStreamResponse>(
+          '/learngo.api.v1.ConversationService/Subscribe',
+          ($0.JoinConversation value) => value.writeToBuffer(),
+          $0.ConversationStreamResponse.fromBuffer);
+
+  static final _$subscribeInbox =
+      $grpc.ClientMethod<$0.JoinConversation, $0.ConversationStreamResponse>(
+          '/learngo.api.v1.ConversationService/SubscribeInbox',
+          ($0.JoinConversation value) => value.writeToBuffer(),
+          $0.ConversationStreamResponse.fromBuffer);
 
   static final _$stream = $grpc.ClientMethod<$0.ConversationStreamRequest,
           $0.ConversationStreamResponse>(
@@ -53,6 +83,24 @@ abstract class ConversationServiceBase extends $grpc.Service {
   $core.String get $name => 'learngo.api.v1.ConversationService';
 
   ConversationServiceBase() {
+    $addMethod(
+        $grpc.ServiceMethod<$0.JoinConversation, $0.ConversationStreamResponse>(
+            'Subscribe',
+            subscribe_Pre,
+            false,
+            true,
+            ($core.List<$core.int> value) =>
+                $0.JoinConversation.fromBuffer(value),
+            ($0.ConversationStreamResponse value) => value.writeToBuffer()));
+    $addMethod(
+        $grpc.ServiceMethod<$0.JoinConversation, $0.ConversationStreamResponse>(
+            'SubscribeInbox',
+            subscribeInbox_Pre,
+            false,
+            true,
+            ($core.List<$core.int> value) =>
+                $0.JoinConversation.fromBuffer(value),
+            ($0.ConversationStreamResponse value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$0.ConversationStreamRequest,
             $0.ConversationStreamResponse>(
         'Stream',
@@ -63,6 +111,24 @@ abstract class ConversationServiceBase extends $grpc.Service {
             $0.ConversationStreamRequest.fromBuffer(value),
         ($0.ConversationStreamResponse value) => value.writeToBuffer()));
   }
+
+  $async.Stream<$0.ConversationStreamResponse> subscribe_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.JoinConversation> $request) async* {
+    yield* subscribe($call, await $request);
+  }
+
+  $async.Stream<$0.ConversationStreamResponse> subscribe(
+      $grpc.ServiceCall call, $0.JoinConversation request);
+
+  $async.Stream<$0.ConversationStreamResponse> subscribeInbox_Pre(
+      $grpc.ServiceCall $call,
+      $async.Future<$0.JoinConversation> $request) async* {
+    yield* subscribeInbox($call, await $request);
+  }
+
+  $async.Stream<$0.ConversationStreamResponse> subscribeInbox(
+      $grpc.ServiceCall call, $0.JoinConversation request);
 
   $async.Stream<$0.ConversationStreamResponse> stream($grpc.ServiceCall call,
       $async.Stream<$0.ConversationStreamRequest> request);

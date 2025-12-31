@@ -12,14 +12,14 @@ enum MessageKind { text, image, video, audio, file }
 abstract class Message with _$Message {
   const factory Message({
     required String id,
-    @JsonKey(name: 'conversation_id') required String conversationId,
-    @JsonKey(name: 'sender_id') required String senderId,
-    @JsonKey(name: 'sender_role') required AccountRole senderRole,
+    required String conversationId,
+    required String senderId,
+    required AccountRole senderRole,
     required MessageKind kind,
     @Default('') String text,
-    @JsonKey(name: 'media_uri') String? mediaUri,
+    String? mediaUri,
     String? metadata,
-    @JsonKey(name: 'created_at') required DateTime createdAt,
+    required DateTime createdAt,
   }) = _Message;
 
   factory Message.fromJson(Map<String, dynamic> json) =>

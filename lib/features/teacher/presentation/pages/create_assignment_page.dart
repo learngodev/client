@@ -1,15 +1,19 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../domain/teacher_models.dart';
 import '../../domain/teacher_repository.dart';
 import '../../data/teacher_repository.dart';
 import '../../../auth/application/auth_controller.dart';
+import '../../../file/application/file_service.dart';
+import '../../../file/domain/file_model.dart';
 
 class CreateAssignmentPage extends HookConsumerWidget {
   const CreateAssignmentPage({super.key});
@@ -19,6 +23,13 @@ class CreateAssignmentPage extends HookConsumerWidget {
     final theme = Theme.of(context);
     final repository = ref.watch(teacherRepositoryProvider);
     final authState = ref.watch(authStateProvider);
+
+    void showSnack(String message) {
+      if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
 
     final titleController = useTextEditingController();
     final descriptionController = useTextEditingController();
@@ -31,12 +42,38 @@ class CreateAssignmentPage extends HookConsumerWidget {
     final allowResubmit = useState(false);
 
     final questions = useState<List<CreateAssignmentQuestionInput>>([]);
+    final uploadedFiles = useState<List<FileModel>>([]);
+    final isUploading = useState(false);
+    final fileService = ref.read(fileServiceProvider);
 
     final classesSnapshot = useFuture(
       useMemoized(() => repository.listMyClasses()),
     );
 
     final isSubmitting = useState(false);
+
+    Future<void> pickFiles() async {
+      final result = await FilePicker.platform.pickFiles(
+        allowMultiple: true,
+        type: FileType.any,
+      );
+
+      if (result != null) {
+        isUploading.value = true;
+        try {
+          for (final file in result.files) {
+            if (file.path != null) {
+              final uploaded = await fileService.uploadFile(File(file.path!));
+              uploadedFiles.value = [...uploadedFiles.value, uploaded];
+            }
+          }
+        } catch (e) {
+          showSnack('上传失败: $e');
+        } finally {
+          isUploading.value = false;
+        }
+      }
+    }
 
     Future<void> submit() async {
       if (titleController.text.isEmpty) {
@@ -60,18 +97,40 @@ class CreateAssignmentPage extends HookConsumerWidget {
 
       isSubmitting.value = true;
       try {
+        final teacherId = authState.account?.id ?? '';
+        if (teacherId.isEmpty) {
+          showSnack('缺少教师信息，请重新登录后再试。');
+          return;
+        }
+
+        final courseId = selectedClass.value?.courseId ?? '';
+        if (courseId.isEmpty) {
+          showSnack('缺少课程信息，请重新选择班级/课程。');
+          return;
+        }
+
+        final classId = selectedClass.value?.id ?? '';
+        if (classId.isEmpty) {
+          showSnack('缺少班级信息，请重新选择班级/课程。');
+          return;
+        }
+
+        final maxScore = double.tryParse(maxScoreController.text.trim());
         final request = CreateAssignmentRequest(
-          courseId: selectedClass.value!.courseId ?? '',
-          teacherId: authState.account?.id ?? '',
-          classId: selectedClass.value!.id,
+          courseId: courseId,
+          teacherId: teacherId,
+          classId: classId,
           type: selectedType.value,
-          title: titleController.text,
-          description: descriptionController.text,
+          title: titleController.text.trim(),
+          description: descriptionController.text.trim().isEmpty
+              ? null
+              : descriptionController.text.trim(),
           startAt: startAt.value,
           dueAt: dueAt.value,
-          maxScore: double.tryParse(maxScoreController.text),
+          maxScore: maxScore,
           allowResubmit: allowResubmit.value,
           questions: questions.value,
+          attachments: uploadedFiles.value.map((e) => e.fileId).toList(),
         );
 
         await repository.createAssignment(request);
@@ -373,6 +432,40 @@ class CreateAssignmentPage extends HookConsumerWidget {
                 ),
               );
             }),
+          const Divider(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('附件', style: theme.textTheme.titleMedium),
+              if (isUploading.value)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                TextButton.icon(
+                  onPressed: pickFiles,
+                  icon: const Icon(Icons.upload_file),
+                  label: const Text('上传附件'),
+                ),
+            ],
+          ),
+          if (uploadedFiles.value.isNotEmpty)
+            ...uploadedFiles.value.map(
+              (file) => ListTile(
+                leading: const Icon(Icons.attach_file),
+                title: Text(file.fileName),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    uploadedFiles.value = uploadedFiles.value
+                        .where((e) => e.fileId != file.fileId)
+                        .toList();
+                  },
+                ),
+              ),
+            ),
         ],
       ),
     );

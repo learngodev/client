@@ -12,6 +12,7 @@ import 'package:learn_go/features/im/domain/entities/message.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/auth/domain/account.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/gradient_app_bar.dart';
@@ -54,7 +55,11 @@ class ChatScreen extends HookConsumerWidget {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Scaffold(
         appBar: GradientAppBar(
-          title: Text(conversation?.getDisplayName(currentUserId) ?? '对话'),
+          title: Text(
+            conversation?.getDisplayName(currentUserId) ?? '对话',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.of(context).maybePop(),
@@ -286,7 +291,7 @@ class ChatScreen extends HookConsumerWidget {
                                                     conversationId,
                                                     '[图片]',
                                                     kind: MessageKind.image,
-                                                    mediaUri: fileModel.id,
+                                                    mediaUri: fileModel.fileId,
                                                   );
                                             } catch (e) {
                                               if (context.mounted) {
@@ -326,7 +331,7 @@ class ChatScreen extends HookConsumerWidget {
                                                     conversationId,
                                                     fileModel.fileName,
                                                     kind: MessageKind.file,
-                                                    mediaUri: fileModel.id,
+                                                    mediaUri: fileModel.fileId,
                                                   );
                                             } catch (e) {
                                               if (context.mounted) {
@@ -455,50 +460,71 @@ class _FileMessage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final urlAsync = ref.watch(downloadUrlProvider(fileId));
+    final textColor = isMe
+        ? theme.colorScheme.onPrimaryContainer
+        : theme.colorScheme.onSurfaceVariant;
 
-    return GestureDetector(
-      onTap: () {
-        urlAsync.whenData((url) {
-          // TODO: Open file
-          // launchUrl(Uri.parse(url));
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isMe
-              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-              : theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: theme.colorScheme.outline.withValues(alpha: 0.2),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.insert_drive_file,
-              color: isMe
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                fileName,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isMe
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.onSurface,
-                  decoration: TextDecoration.underline,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          try {
+            final url = await ref.read(downloadUrlProvider(fileId).future);
+            final uri = Uri.parse(url);
+            final ok = await launchUrl(uri);
+            if (!ok && context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('无法打开链接')));
+            }
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('获取下载链接失败')));
+            }
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.insert_drive_file, size: 20, color: textColor),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fileName,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '点击打开',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: textColor.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Icon(
+                Icons.open_in_new,
+                size: 18,
+                color: textColor.withValues(alpha: 0.8),
+              ),
+            ],
+          ),
         ),
       ),
     );

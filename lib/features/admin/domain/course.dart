@@ -3,12 +3,14 @@ class Course {
   final String schoolId;
   final String name;
   final String description;
+  final List<Teacher> teachers;
 
   Course({
     required this.id,
     required this.schoolId,
     required this.name,
     required this.description,
+    this.teachers = const [],
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,25 @@ class Course {
       schoolId: json['school_id'] ?? json['SchoolID'] ?? '',
       name: json['name'] ?? json['course_name'] ?? json['CourseName'] ?? '',
       description: json['description'] ?? json['Description'] ?? '',
+      teachers:
+          (json['teachers'] as List?)
+              ?.map((e) => Teacher.fromJson(e))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class Teacher {
+  final String id;
+  final String name;
+
+  Teacher({required this.id, required this.name});
+
+  factory Teacher.fromJson(Map<String, dynamic> json) {
+    return Teacher(
+      id: json['id'] ?? '',
+      name: json['display_name'] ?? json['name'] ?? '',
     );
   }
 }

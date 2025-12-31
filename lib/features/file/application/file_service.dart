@@ -41,6 +41,17 @@ class FileService {
       role: role,
     );
 
+    final method = (fileModel.uploadMethod ?? '').toLowerCase();
+    if (method == 'relay') {
+      // Server-side relay upload (bucket/credential config driven)
+      return repo.relayUploadFile(
+        file: file,
+        fileId: fileModel.fileId,
+        fileName: fileName,
+        fileType: fileType,
+      );
+    }
+
     if (fileModel.uploadUrl == null) {
       throw Exception('Failed to get upload URL');
     }

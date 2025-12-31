@@ -8,14 +8,7 @@ import '../../auth/domain/account.dart';
 import '../../im/application/im_providers.dart';
 import '../application/student_dashboard_controller.dart';
 
-enum StudentSection {
-  overview,
-  courses,
-  schedule,
-  assignments,
-  messages,
-  aiChat,
-}
+enum StudentSection { overview, courses, schedule, assignments, messages }
 
 extension StudentSectionX on StudentSection {
   String get label {
@@ -25,7 +18,6 @@ extension StudentSectionX on StudentSection {
       StudentSection.schedule => '课表',
       StudentSection.assignments => '作业',
       StudentSection.messages => '消息',
-      StudentSection.aiChat => 'AI 助手',
     };
   }
 
@@ -36,7 +28,6 @@ extension StudentSectionX on StudentSection {
       StudentSection.schedule => Icons.calendar_month_outlined,
       StudentSection.assignments => Icons.assignment_outlined,
       StudentSection.messages => Icons.chat_outlined,
-      StudentSection.aiChat => Icons.smart_toy_outlined,
     };
   }
 
@@ -47,7 +38,6 @@ extension StudentSectionX on StudentSection {
       StudentSection.schedule => '/student/schedule',
       StudentSection.assignments => '/student/assignments',
       StudentSection.messages => '/student/messages',
-      StudentSection.aiChat => '/student/ai-chat',
     };
   }
 }
@@ -75,6 +65,10 @@ class StudentShell extends HookConsumerWidget {
       orElse: () => 0,
     );
 
+    // System notifications are temporarily hidden from the messages page,
+    // so we don't include them in the messages badge count.
+    final totalUnreadMessages = unreadMessages;
+
     final destinations = StudentSection.values
         .map(
           (section) => AdaptiveDestination(
@@ -83,7 +77,7 @@ class StudentShell extends HookConsumerWidget {
             selectedIcon: section.icon,
             badgeCount: switch (section) {
               StudentSection.assignments => pendingAssignments,
-              StudentSection.messages => unreadMessages,
+              StudentSection.messages => totalUnreadMessages,
               _ => null,
             },
           ),
@@ -93,8 +87,6 @@ class StudentShell extends HookConsumerWidget {
     final compactPaths = <String>[
       StudentSection.overview.path,
       StudentSection.messages.path,
-      StudentSection.courses.path,
-      StudentSection.schedule.path,
       '/student/profile',
     ];
 
@@ -108,17 +100,7 @@ class StudentShell extends HookConsumerWidget {
         label: '消息',
         icon: Icons.chat_bubble_outline,
         selectedIcon: Icons.chat,
-        badgeCount: unreadMessages,
-      ),
-      const AdaptiveDestination(
-        label: '课程',
-        icon: Icons.book_outlined,
-        selectedIcon: Icons.book,
-      ),
-      const AdaptiveDestination(
-        label: '课表',
-        icon: Icons.calendar_month_outlined,
-        selectedIcon: Icons.calendar_month,
+        badgeCount: totalUnreadMessages,
       ),
       const AdaptiveDestination(
         label: '我',

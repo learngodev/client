@@ -256,6 +256,7 @@ class CreateAssignmentRequest {
     this.maxScore,
     this.allowResubmit = false,
     required this.questions,
+    this.attachments,
   });
 
   final String courseId;
@@ -269,6 +270,7 @@ class CreateAssignmentRequest {
   final double? maxScore;
   final bool allowResubmit;
   final List<CreateAssignmentQuestionInput> questions;
+  final List<String>? attachments;
 
   Map<String, dynamic> toJson() {
     return {
@@ -283,6 +285,7 @@ class CreateAssignmentRequest {
       if (maxScore != null) 'max_score': maxScore,
       'allow_resubmit': allowResubmit,
       'questions': questions.map((e) => e.toJson()).toList(),
+      if (attachments != null) 'attachments': attachments,
     };
   }
 }

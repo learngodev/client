@@ -48,4 +48,26 @@ class FileRepository {
       ),
     );
   }
+
+  Future<FileModel> relayUploadFile({
+    required File file,
+    String? fileId,
+    required String fileName,
+    required String fileType,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path, filename: fileName),
+      if (fileId != null && fileId.isNotEmpty) 'file_id': fileId,
+      'file_name': fileName,
+      'file_type': fileType,
+    });
+
+    final response = await _dio.post(
+      '/api/v1/files/upload/relay',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+
+    return FileModel.fromJson(response.data['data']);
+  }
 }

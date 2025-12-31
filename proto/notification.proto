@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package grpcpb;
+
+option go_package = "learn-go/internal/api/grpcpb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service NotificationService {
+  rpc Subscribe (google.protobuf.Empty) returns (stream NotificationStreamResponse);
+}
+
+message NotificationStreamResponse {
+  oneof payload {
+    NotificationEvent notification = 1;
+  }
+}
+
+message NotificationEvent {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string type = 4;
+  string reference_id = 5;
+  bool is_read = 6;
+  google.protobuf.Timestamp created_at = 7;
+}

@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../auth/application/school_list_provider.dart';
 import '../../auth/domain/account.dart';
+import '../../auth/domain/school.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -11,24 +13,31 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(authStateProvider).account;
-    final theme = Theme.of(context);
+
+    final schoolsAsync = ref.watch(schoolListProvider);
+    final schoolName = schoolsAsync.when(
+      data: (schools) {
+        if (account == null) return '';
+        if (account.schoolId.isEmpty) return '';
+        return schools
+            .firstWhere(
+              (s) => s.id == account.schoolId,
+              orElse: () =>
+                  School(id: account.schoolId, name: account.schoolId),
+            )
+            .name;
+      },
+      loading: () => account?.schoolId.isNotEmpty == true ? '加载中...' : '',
+      error: (_, _) => account?.schoolId ?? '',
+    );
 
     return SafeArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          _ProfileHeader(account: account),
+          _ProfileHeader(account: account, schoolName: schoolName),
           const SizedBox(height: 12),
-          _InfoCard(account: account),
-          const SizedBox(height: 24),
-          Text(
-            '快捷入口',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _QuickActions(account: account),
+          _InfoCard(account: account, schoolName: schoolName),
           const SizedBox(height: 24),
           const _GeneralSection(),
           const SizedBox(height: 24),
@@ -40,17 +49,22 @@ class ProfilePage extends ConsumerWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.account});
+  const _ProfileHeader({required this.account, required this.schoolName});
 
   final Account? account;
+  final String schoolName;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final name = account?.displayName ?? '未登录';
-    final subtitle = account != null
-        ? '${account!.identifier} · ${account!.role.label}'
-        : '请登录后查看完整信息';
+    final subtitle = account == null
+        ? '请登录后查看完整信息'
+        : [
+            if (schoolName.isNotEmpty) '学校：$schoolName',
+            account!.identifier,
+            account!.role.label,
+          ].join(' · ');
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -98,13 +112,23 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({required this.account});
+  const _InfoCard({required this.account, required this.schoolName});
 
   final Account? account;
+  final String schoolName;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    final schoolText = account == null
+        ? '未登录'
+        : account!.schoolId.isEmpty
+        ? '未绑定'
+        : (schoolName.isNotEmpty && schoolName != account!.schoolId)
+        ? '$schoolName（${account!.schoolId}）'
+        : schoolName;
+
     return Card(
       elevation: 0,
       color: theme.colorScheme.surface,
@@ -113,10 +137,8 @@ class _InfoCard extends StatelessWidget {
         children: [
           ListTile(
             leading: const Icon(Icons.school_outlined),
-            title: const Text('学校 ID'),
-            subtitle: Text(
-              account?.schoolId.isNotEmpty == true ? account!.schoolId : '未绑定',
-            ),
+            title: const Text('学校'),
+            subtitle: Text(schoolText),
           ),
           const Divider(height: 1),
           ListTile(
@@ -131,122 +153,6 @@ class _InfoCard extends StatelessWidget {
             subtitle: Text(account?.role.label ?? '未登录'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickActions extends ConsumerWidget {
-  const _QuickActions({required this.account});
-
-  final Account? account;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return GridView.count(
-      crossAxisCount: 4,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      children: [
-        _ActionTile(
-          label: '消息',
-          icon: Icons.chat_outlined,
-          onTap: () {
-            final route = _messageRoute(account?.role);
-            if (route != null) context.go(route);
-          },
-        ),
-        _ActionTile(
-          label: '课程',
-          icon: Icons.class_outlined,
-          onTap: () {
-            final route = _courseRoute(account?.role);
-            if (route != null) context.go(route);
-          },
-        ),
-        _ActionTile(
-          label: '作业',
-          icon: Icons.assignment_outlined,
-          onTap: () {
-            final route = _assignmentRoute(account?.role);
-            if (route != null) context.go(route);
-          },
-        ),
-        _ActionTile(
-          label: 'AI 助手',
-          icon: Icons.smart_toy_outlined,
-          onTap: () {
-            final route = _aiRoute(account?.role);
-            if (route != null) context.go(route);
-          },
-        ),
-      ],
-    );
-  }
-
-  String? _messageRoute(AccountRole? role) {
-    return switch (role) {
-      AccountRole.teacher => '/teacher/conversations',
-      AccountRole.student => '/student/messages',
-      _ => null,
-    };
-  }
-
-  String? _courseRoute(AccountRole? role) {
-    return switch (role) {
-      AccountRole.teacher => '/teacher/courses',
-      AccountRole.student => '/student/courses',
-      _ => null,
-    };
-  }
-
-  String? _assignmentRoute(AccountRole? role) {
-    return switch (role) {
-      AccountRole.teacher => '/teacher/assignments',
-      AccountRole.student => '/student/assignments',
-      _ => null,
-    };
-  }
-
-  String? _aiRoute(AccountRole? role) {
-    return switch (role) {
-      AccountRole.teacher => '/teacher/ai-chat',
-      AccountRole.student => '/student/ai-chat',
-      _ => null,
-    };
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({required this.label, required this.icon, this.onTap});
-
-  final String label;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.25)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: theme.colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(label, style: theme.textTheme.bodyMedium),
-          ],
-        ),
       ),
     );
   }
@@ -306,7 +212,7 @@ class _DangerZone extends ConsumerWidget {
         onTap: account == null
             ? null
             : () async {
-                await ref.read(authStateProvider.notifier).signOut();
+                await ref.read(authControllerProvider.notifier).signOut();
                 if (context.mounted) {
                   context.go('/sign-in');
                 }

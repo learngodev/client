@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -100,6 +102,56 @@ class AIRepository {
     }
     // Fallback to user message if assistant message is not yet ready (though current backend seems synchronous for now)
     return AIChatMessage.fromJson(data['user_message'] as Map<String, dynamic>);
+  }
+
+  Stream<String> streamMessage(String sessionId, String content) async* {
+    final response = await _dio.post(
+      '/api/v1/ai/sessions/$sessionId/messages',
+      data: {'content': content},
+      options: Options(
+        responseType: ResponseType.stream,
+        headers: {'Accept': 'text/event-stream'},
+      ),
+    );
+
+    final stream = response.data.stream as Stream<List<int>>;
+    await for (final chunk in stream.transform(utf8.decoder)) {
+      final lines = chunk.split('\n');
+      for (final line in lines) {
+        if (line.startsWith('data: ')) {
+          final data = line.substring(6);
+          if (data == 'completed') {
+            continue;
+          } // Skip completion marker if simple string
+          // Try to parse if it's JSON (for completed event) or just string
+          // But our backend sends raw chunks for "message" event.
+          // Wait, backend sends: c.SSEvent("message", chunk)
+          // So the line is "event: message\ndata: chunk\n\n"
+          // My parsing logic needs to handle events.
+        }
+      }
+
+      // Better parsing:
+      // We need to buffer lines?
+      // Let's assume standard SSE:
+      // event: type
+      // data: payload
+
+      // But split('\n') might split in the middle of data if data has newlines?
+      // SSE data usually escapes newlines or uses multiple data lines.
+      // Our backend sends "chunk" which might contain newlines.
+      // c.SSEvent handles it by replacing \n with \ndata:.
+
+      // Let's use a simple state machine or just regex if simple.
+      // Or just look for "data: "
+
+      final eventLines = chunk.split('\n');
+      for (final line in eventLines) {
+        if (line.startsWith('data: ')) {
+          yield line.substring(6);
+        }
+      }
+    }
   }
 
   Future<AIUsageSummary> getUsageSummary({DateTime? since}) async {

@@ -15,6 +15,7 @@ class ConversationListWidget extends ConsumerWidget {
     final conversationsAsync = ref.watch(conversationsProvider);
     final currentUserId = ref.watch(authStateProvider).account?.id ?? '';
     final theme = Theme.of(context);
+    final isNarrow = MediaQuery.sizeOf(context).width < 420;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -36,11 +37,19 @@ class ConversationListWidget extends ConsumerWidget {
               actions: [
                 Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: IconButton.filledTonal(
-                    onPressed: () => _showCreateConversationDialog(context),
-                    icon: const Icon(Icons.add_comment_outlined),
-                    tooltip: '新对话',
-                  ),
+                  child: isNarrow
+                      ? IconButton.filled(
+                          onPressed: () =>
+                              _showCreateConversationDialog(context),
+                          icon: const Icon(Icons.add_comment_outlined),
+                          tooltip: '新会话',
+                        )
+                      : FilledButton.icon(
+                          onPressed: () =>
+                              _showCreateConversationDialog(context),
+                          icon: const Icon(Icons.add_comment_outlined),
+                          label: const Text('新会话'),
+                        ),
                 ),
               ],
             ),
@@ -63,6 +72,7 @@ class ConversationListWidget extends ConsumerWidget {
                 ),
               ),
             ),
+            // System notifications are temporarily hidden from the messages page.
             conversationsAsync.when(
               data: (conversations) {
                 if (conversations.isEmpty) {

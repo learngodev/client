@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:grpc/grpc.dart';
 import 'package:dio/dio.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -6,31 +8,32 @@ import 'package:learn_go/features/im/domain/entities/conversation.dart';
 import 'package:learn_go/features/im/domain/entities/message.dart';
 import 'package:learn_go/features/auth/domain/account.dart';
 import 'package:learn_go/core/config/app_environment.dart';
+import 'package:learn_go/core/grpc/grpc_channel.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/im/data/generated/conversation.pbgrpc.dart'
     as grpc;
 import 'package:learn_go/features/im/data/generated/conversation.pb.dart' as pb;
+import 'package:grpc/service_api.dart' as grpc_api;
 
 final imRepositoryProvider = Provider<IMRepository>((ref) {
-  final repo = IMRepository(
-    ref.watch(dioProvider),
-    ref.watch(appEnvironmentProvider).apiBaseUrl,
-    ref,
-  );
+  final repo = IMRepository(ref.watch(dioProvider), ref);
   ref.onDispose(() => repo.dispose());
   return repo;
 });
 
 class IMRepository {
   final Dio _dio;
-  final String _baseUrl;
   final Ref _ref;
-  ClientChannel? _channel;
+  grpc_api.ClientChannel? _channel;
 
-  IMRepository(this._dio, this._baseUrl, this._ref);
+  IMRepository(this._dio, this._ref);
 
   void dispose() {
-    _channel?.shutdown();
+    final ch = _channel;
+    _channel = null;
+    if (ch != null) {
+      unawaited(shutdownGrpcChannel(ch));
+    }
   }
 
   Future<List<Conversation>> getConversations() async {
@@ -110,41 +113,49 @@ class IMRepository {
     return list.map((e) => Account.fromJson(e)).toList();
   }
 
-  ResponseStream<pb.ConversationStreamResponse> connectToStream(
-    Stream<pb.ConversationStreamRequest> requestStream,
+  ResponseStream<pb.ConversationStreamResponse> subscribeConversation(
+    String conversationId,
   ) {
     final token = _ref.read(authStateProvider).tokens?.accessToken;
     if (token == null) {
       throw Exception('Not authenticated');
     }
 
-    final uri = Uri.parse(_baseUrl);
-    final host = uri.host;
-    // gRPC 服务通常运行在独立的端口 (默认 9090)。
-    // 如果您的服务器使用了端口映射 (如 Docker)，请确保此处使用的是映射后的 gRPC 端口。
-    // 如果 _baseUrl 中的端口 (如 6549) 是 HTTP 端口，请不要直接使用它，除非 gRPC 也复用了该端口。
-    const grpcPort = 9090;
+    if (conversationId.trim().isEmpty) {
+      throw ArgumentError.value(conversationId, 'conversationId');
+    }
 
-    _channel ??= ClientChannel(
-      host,
-      port: grpcPort,
-      options: ChannelOptions(
-        credentials: uri.scheme == 'https'
-            ? const ChannelCredentials.secure()
-            : const ChannelCredentials.insecure(),
-        keepAlive: const ClientKeepAliveOptions(
-          pingInterval: Duration(seconds: 30),
-          timeout: Duration(seconds: 10),
-          permitWithoutCalls: true,
-        ),
-      ),
-    );
+    final env = _ref.read(appEnvironmentProvider);
+    _channel ??= createGrpcChannel(env);
 
     final client = grpc.ConversationServiceClient(
       _channel!,
       options: CallOptions(metadata: {'authorization': 'Bearer $token'}),
     );
 
-    return client.stream(requestStream);
+    return client.subscribe(
+      pb.JoinConversation()..conversationId = conversationId,
+    );
+  }
+
+  /// Subscribe to IM inbox events (all conversations) via a single server-streaming RPC.
+  /// The server is responsible for aggregating and pushing events.
+  ResponseStream<pb.ConversationStreamResponse> subscribeInbox() {
+    final token = _ref.read(authStateProvider).tokens?.accessToken;
+    if (token == null) {
+      throw Exception('Not authenticated');
+    }
+
+    final env = _ref.read(appEnvironmentProvider);
+    _channel ??= createGrpcChannel(env);
+
+    final client = grpc.ConversationServiceClient(
+      _channel!,
+      options: CallOptions(metadata: {'authorization': 'Bearer $token'}),
+    );
+
+    // Request payload is unused by the server; we keep JoinConversation for
+    // compatibility with checked-in generated stubs.
+    return client.subscribeInbox(pb.JoinConversation());
   }
 }

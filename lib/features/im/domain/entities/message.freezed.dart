@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Message {
 
- String get id;@JsonKey(name: 'conversation_id') String get conversationId;@JsonKey(name: 'sender_id') String get senderId;@JsonKey(name: 'sender_role') AccountRole get senderRole; MessageKind get kind; String get text;@JsonKey(name: 'media_uri') String? get mediaUri; String? get metadata;@JsonKey(name: 'created_at') DateTime get createdAt;
+ String get id; String get conversationId; String get senderId; AccountRole get senderRole; MessageKind get kind; String get text; String? get mediaUri; String? get metadata; DateTime get createdAt;
 /// Create a copy of Message
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $MessageCopyWith<$Res>  {
   factory $MessageCopyWith(Message value, $Res Function(Message) _then) = _$MessageCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'conversation_id') String conversationId,@JsonKey(name: 'sender_id') String senderId,@JsonKey(name: 'sender_role') AccountRole senderRole, MessageKind kind, String text,@JsonKey(name: 'media_uri') String? mediaUri, String? metadata,@JsonKey(name: 'created_at') DateTime createdAt
+ String id, String conversationId, String senderId, AccountRole senderRole, MessageKind kind, String text, String? mediaUri, String? metadata, DateTime createdAt
 });
 
 
@@ -161,7 +161,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'conversation_id')  String conversationId, @JsonKey(name: 'sender_id')  String senderId, @JsonKey(name: 'sender_role')  AccountRole senderRole,  MessageKind kind,  String text, @JsonKey(name: 'media_uri')  String? mediaUri,  String? metadata, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String conversationId,  String senderId,  AccountRole senderRole,  MessageKind kind,  String text,  String? mediaUri,  String? metadata,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Message() when $default != null:
 return $default(_that.id,_that.conversationId,_that.senderId,_that.senderRole,_that.kind,_that.text,_that.mediaUri,_that.metadata,_that.createdAt);case _:
@@ -182,7 +182,7 @@ return $default(_that.id,_that.conversationId,_that.senderId,_that.senderRole,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'conversation_id')  String conversationId, @JsonKey(name: 'sender_id')  String senderId, @JsonKey(name: 'sender_role')  AccountRole senderRole,  MessageKind kind,  String text, @JsonKey(name: 'media_uri')  String? mediaUri,  String? metadata, @JsonKey(name: 'created_at')  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String conversationId,  String senderId,  AccountRole senderRole,  MessageKind kind,  String text,  String? mediaUri,  String? metadata,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _Message():
 return $default(_that.id,_that.conversationId,_that.senderId,_that.senderRole,_that.kind,_that.text,_that.mediaUri,_that.metadata,_that.createdAt);case _:
@@ -202,7 +202,7 @@ return $default(_that.id,_that.conversationId,_that.senderId,_that.senderRole,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'conversation_id')  String conversationId, @JsonKey(name: 'sender_id')  String senderId, @JsonKey(name: 'sender_role')  AccountRole senderRole,  MessageKind kind,  String text, @JsonKey(name: 'media_uri')  String? mediaUri,  String? metadata, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String conversationId,  String senderId,  AccountRole senderRole,  MessageKind kind,  String text,  String? mediaUri,  String? metadata,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Message() when $default != null:
 return $default(_that.id,_that.conversationId,_that.senderId,_that.senderRole,_that.kind,_that.text,_that.mediaUri,_that.metadata,_that.createdAt);case _:
@@ -217,18 +217,18 @@ return $default(_that.id,_that.conversationId,_that.senderId,_that.senderRole,_t
 @JsonSerializable()
 
 class _Message implements Message {
-  const _Message({required this.id, @JsonKey(name: 'conversation_id') required this.conversationId, @JsonKey(name: 'sender_id') required this.senderId, @JsonKey(name: 'sender_role') required this.senderRole, required this.kind, this.text = '', @JsonKey(name: 'media_uri') this.mediaUri, this.metadata, @JsonKey(name: 'created_at') required this.createdAt});
+  const _Message({required this.id, required this.conversationId, required this.senderId, required this.senderRole, required this.kind, this.text = '', this.mediaUri, this.metadata, required this.createdAt});
   factory _Message.fromJson(Map<String, dynamic> json) => _$MessageFromJson(json);
 
 @override final  String id;
-@override@JsonKey(name: 'conversation_id') final  String conversationId;
-@override@JsonKey(name: 'sender_id') final  String senderId;
-@override@JsonKey(name: 'sender_role') final  AccountRole senderRole;
+@override final  String conversationId;
+@override final  String senderId;
+@override final  AccountRole senderRole;
 @override final  MessageKind kind;
 @override@JsonKey() final  String text;
-@override@JsonKey(name: 'media_uri') final  String? mediaUri;
+@override final  String? mediaUri;
 @override final  String? metadata;
-@override@JsonKey(name: 'created_at') final  DateTime createdAt;
+@override final  DateTime createdAt;
 
 /// Create a copy of Message
 /// with the given fields replaced by the non-null parameter values.
@@ -263,7 +263,7 @@ abstract mixin class _$MessageCopyWith<$Res> implements $MessageCopyWith<$Res> {
   factory _$MessageCopyWith(_Message value, $Res Function(_Message) _then) = __$MessageCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'conversation_id') String conversationId,@JsonKey(name: 'sender_id') String senderId,@JsonKey(name: 'sender_role') AccountRole senderRole, MessageKind kind, String text,@JsonKey(name: 'media_uri') String? mediaUri, String? metadata,@JsonKey(name: 'created_at') DateTime createdAt
+ String id, String conversationId, String senderId, AccountRole senderRole, MessageKind kind, String text, String? mediaUri, String? metadata, DateTime createdAt
 });
 
 

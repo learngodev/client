@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Classroom {
 
- String get id;@JsonKey(name: 'school_id') String get schoolId; String get location;@JsonKey(name: 'created_at') DateTime get createdAt;@JsonKey(name: 'updated_at') DateTime get updatedAt;
+ String get id; String get schoolId; String get location; DateTime get createdAt; DateTime get updatedAt;
 /// Create a copy of Classroom
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ClassroomCopyWith<$Res>  {
   factory $ClassroomCopyWith(Classroom value, $Res Function(Classroom) _then) = _$ClassroomCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'school_id') String schoolId, String location,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'updated_at') DateTime updatedAt
+ String id, String schoolId, String location, DateTime createdAt, DateTime updatedAt
 });
 
 
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId,  String location, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId,  String location,  DateTime createdAt,  DateTime updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Classroom() when $default != null:
 return $default(_that.id,_that.schoolId,_that.location,_that.createdAt,_that.updatedAt);case _:
@@ -178,7 +178,7 @@ return $default(_that.id,_that.schoolId,_that.location,_that.createdAt,_that.upd
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId,  String location, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId,  String location,  DateTime createdAt,  DateTime updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Classroom():
 return $default(_that.id,_that.schoolId,_that.location,_that.createdAt,_that.updatedAt);case _:
@@ -198,7 +198,7 @@ return $default(_that.id,_that.schoolId,_that.location,_that.createdAt,_that.upd
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'school_id')  String schoolId,  String location, @JsonKey(name: 'created_at')  DateTime createdAt, @JsonKey(name: 'updated_at')  DateTime updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId,  String location,  DateTime createdAt,  DateTime updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Classroom() when $default != null:
 return $default(_that.id,_that.schoolId,_that.location,_that.createdAt,_that.updatedAt);case _:
@@ -213,14 +213,14 @@ return $default(_that.id,_that.schoolId,_that.location,_that.createdAt,_that.upd
 @JsonSerializable()
 
 class _Classroom implements Classroom {
-  const _Classroom({required this.id, @JsonKey(name: 'school_id') required this.schoolId, required this.location, @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'updated_at') required this.updatedAt});
+  const _Classroom({required this.id, required this.schoolId, required this.location, required this.createdAt, required this.updatedAt});
   factory _Classroom.fromJson(Map<String, dynamic> json) => _$ClassroomFromJson(json);
 
 @override final  String id;
-@override@JsonKey(name: 'school_id') final  String schoolId;
+@override final  String schoolId;
 @override final  String location;
-@override@JsonKey(name: 'created_at') final  DateTime createdAt;
-@override@JsonKey(name: 'updated_at') final  DateTime updatedAt;
+@override final  DateTime createdAt;
+@override final  DateTime updatedAt;
 
 /// Create a copy of Classroom
 /// with the given fields replaced by the non-null parameter values.
@@ -255,7 +255,7 @@ abstract mixin class _$ClassroomCopyWith<$Res> implements $ClassroomCopyWith<$Re
   factory _$ClassroomCopyWith(_Classroom value, $Res Function(_Classroom) _then) = __$ClassroomCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'school_id') String schoolId, String location,@JsonKey(name: 'created_at') DateTime createdAt,@JsonKey(name: 'updated_at') DateTime updatedAt
+ String id, String schoolId, String location, DateTime createdAt, DateTime updatedAt
 });
 
 

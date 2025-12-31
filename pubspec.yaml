@@ -50,13 +50,14 @@ dependencies:
   isar_community_flutter_libs: ^3.3.0-dev.3
   fl_chart: ^0.69.0
   chinese_font_library: ^1.2.0
-  grpc: ^5.0.0
-  protobuf: ^5.1.0
+  grpc: ^5.1.0
+  protobuf: ^6.0.0
   fixnum: ^1.1.1
   mime: ^2.0.0
   file_picker: ^10.3.8
   image_picker: ^1.2.1
   animations: ^2.1.1
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:

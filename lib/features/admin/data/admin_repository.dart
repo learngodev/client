@@ -461,6 +461,52 @@ class AdminRepository {
     }
   }
 
+  Future<void> updateAccount({
+    required String schoolId,
+    required String accountId,
+    String? name,
+    String? number,
+    String? email,
+    String? phone,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/admin/accounts/$accountId',
+        queryParameters: {'school_id': schoolId},
+        data: {
+          if (name != null) 'name': name,
+          if (number != null) 'number': number,
+          if (email != null) 'email': email,
+          if (phone != null) 'phone': phone,
+        },
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('未能更新账号信息');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '更新账号信息失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
   Future<void> updateAccountStructure({
     required String schoolId,
     required String accountId,
@@ -482,6 +528,81 @@ class AdminRepository {
         final error = body['error'] as Map<String, dynamic>?;
         throw AppException(
           error?['message']?.toString() ?? '更新账号所属失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> addTeacherToClass({
+    required String schoolId,
+    required String classId,
+    required String accountId,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/admin/classes/$classId/teachers',
+        data: {'account_id': accountId},
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('添加教师失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '添加教师失败',
+          details: error?['details']?.toString(),
+        );
+      }
+    } on DioException catch (error) {
+      final body = error.response?.data;
+      String? message;
+      String? details;
+      if (body is Map<String, dynamic>) {
+        final map = body['error'] as Map<String, dynamic>?;
+        message = map?['message']?.toString();
+        details = map?['details']?.toString();
+      }
+      message ??= error.message ?? '网络错误';
+      details ??= body?.toString();
+      throw AppException(message, details: details);
+    }
+  }
+
+  Future<void> removeTeacherFromClass({
+    required String schoolId,
+    required String classId,
+    required String accountId,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/admin/classes/$classId/teachers/$accountId',
+        queryParameters: {'school_id': schoolId},
+      );
+      final body = response.data;
+      if (body == null) {
+        throw const AppException('移除教师失败');
+      }
+      final success = body['success'] as bool? ?? false;
+      if (!success) {
+        final error = body['error'] as Map<String, dynamic>?;
+        throw AppException(
+          error?['message']?.toString() ?? '移除教师失败',
           details: error?['details']?.toString(),
         );
       }
@@ -1011,10 +1132,13 @@ class AdminRepository {
     required String endpoint,
     required String region,
     required String bucket,
+    required String accessKeyId,
+    required String accessKeySecret,
     String directoryPrefix = '',
     String accessKeyDisplay = '',
     bool allowPublicRead = false,
     bool allowMultipartUpload = false,
+    bool useRelayUpload = false,
     bool active = true,
     bool isPrimary = false,
   }) async {
@@ -1028,9 +1152,12 @@ class AdminRepository {
           'region': region,
           'bucket': bucket,
           'directory_prefix': directoryPrefix,
+          'access_key_id': accessKeyId,
+          'access_key_secret': accessKeySecret,
           'access_key_display': accessKeyDisplay,
           'allow_public_read': allowPublicRead,
           'allow_multipart_upload': allowMultipartUpload,
+          'use_relay_upload': useRelayUpload,
           'active': active,
           'is_primary': isPrimary,
         },
@@ -1113,9 +1240,12 @@ class AdminRepository {
     String? region,
     String? bucket,
     String? directoryPrefix,
+    String? accessKeyId,
+    String? accessKeySecret,
     String? accessKeyDisplay,
     bool? allowPublicRead,
     bool? allowMultipartUpload,
+    bool? useRelayUpload,
     bool? active,
     bool? isPrimary,
   }) async {
@@ -1131,12 +1261,17 @@ class AdminRepository {
     putIfNotNull('region', region);
     putIfNotNull('bucket', bucket);
     putIfNotNull('directory_prefix', directoryPrefix);
+    putIfNotNull('access_key_id', accessKeyId);
+    putIfNotNull('access_key_secret', accessKeySecret);
     putIfNotNull('access_key_display', accessKeyDisplay);
     if (allowPublicRead != null) {
       payload['allow_public_read'] = allowPublicRead;
     }
     if (allowMultipartUpload != null) {
       payload['allow_multipart_upload'] = allowMultipartUpload;
+    }
+    if (useRelayUpload != null) {
+      payload['use_relay_upload'] = useRelayUpload;
     }
     if (active != null) {
       payload['active'] = active;

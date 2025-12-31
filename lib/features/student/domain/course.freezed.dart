@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Course {
 
- String get id; String get name; String? get description;@JsonKey(name: 'image_url') String? get imageUrl;@JsonKey(name: 'invitation_code') String? get invitationCode;
+ String get id; String get name; String? get description; String? get imageUrl; String? get invitationCode;
 /// Create a copy of Course
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $CourseCopyWith<$Res>  {
   factory $CourseCopyWith(Course value, $Res Function(Course) _then) = _$CourseCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description,@JsonKey(name: 'image_url') String? imageUrl,@JsonKey(name: 'invitation_code') String? invitationCode
+ String id, String name, String? description, String? imageUrl, String? invitationCode
 });
 
 
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'invitation_code')  String? invitationCode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  String? imageUrl,  String? invitationCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Course() when $default != null:
 return $default(_that.id,_that.name,_that.description,_that.imageUrl,_that.invitationCode);case _:
@@ -178,7 +178,7 @@ return $default(_that.id,_that.name,_that.description,_that.imageUrl,_that.invit
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'invitation_code')  String? invitationCode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? description,  String? imageUrl,  String? invitationCode)  $default,) {final _that = this;
 switch (_that) {
 case _Course():
 return $default(_that.id,_that.name,_that.description,_that.imageUrl,_that.invitationCode);case _:
@@ -198,7 +198,7 @@ return $default(_that.id,_that.name,_that.description,_that.imageUrl,_that.invit
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description, @JsonKey(name: 'image_url')  String? imageUrl, @JsonKey(name: 'invitation_code')  String? invitationCode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? description,  String? imageUrl,  String? invitationCode)?  $default,) {final _that = this;
 switch (_that) {
 case _Course() when $default != null:
 return $default(_that.id,_that.name,_that.description,_that.imageUrl,_that.invitationCode);case _:
@@ -213,14 +213,14 @@ return $default(_that.id,_that.name,_that.description,_that.imageUrl,_that.invit
 @JsonSerializable()
 
 class _Course implements Course {
-  const _Course({required this.id, required this.name, this.description, @JsonKey(name: 'image_url') this.imageUrl, @JsonKey(name: 'invitation_code') this.invitationCode});
+  const _Course({required this.id, required this.name, this.description, this.imageUrl, this.invitationCode});
   factory _Course.fromJson(Map<String, dynamic> json) => _$CourseFromJson(json);
 
 @override final  String id;
 @override final  String name;
 @override final  String? description;
-@override@JsonKey(name: 'image_url') final  String? imageUrl;
-@override@JsonKey(name: 'invitation_code') final  String? invitationCode;
+@override final  String? imageUrl;
+@override final  String? invitationCode;
 
 /// Create a copy of Course
 /// with the given fields replaced by the non-null parameter values.
@@ -255,7 +255,7 @@ abstract mixin class _$CourseCopyWith<$Res> implements $CourseCopyWith<$Res> {
   factory _$CourseCopyWith(_Course value, $Res Function(_Course) _then) = __$CourseCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? description,@JsonKey(name: 'image_url') String? imageUrl,@JsonKey(name: 'invitation_code') String? invitationCode
+ String id, String name, String? description, String? imageUrl, String? invitationCode
 });
 
 

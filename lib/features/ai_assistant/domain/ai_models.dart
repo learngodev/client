@@ -75,6 +75,28 @@ class AIChatMessage {
       latencyMs: (json['latency_ms'] as num?)?.toInt() ?? 0,
     );
   }
+
+  AIChatMessage copyWith({
+    String? id,
+    String? sessionId,
+    String? sender,
+    String? content,
+    DateTime? createdAt,
+    int? promptTokens,
+    int? resultTokens,
+    int? latencyMs,
+  }) {
+    return AIChatMessage(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      sender: sender ?? this.sender,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      promptTokens: promptTokens ?? this.promptTokens,
+      resultTokens: resultTokens ?? this.resultTokens,
+      latencyMs: latencyMs ?? this.latencyMs,
+    );
+  }
 }
 
 class AIUsageSummary {

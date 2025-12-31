@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/storage/login_preference_storage.dart';
@@ -56,23 +58,21 @@ class AuthState {
   }
 }
 
-class AuthController extends Notifier<AuthState> {
+/// Async/Future 风格的 build：允许在 build 里直接 await。
+///
+/// 兼容性说明：对外仍通过 [authStateProvider] 暴露同步的 [AuthState]，
+/// 以避免大量调用点改成处理 AsyncValue。
+class AuthController extends AsyncNotifier<AuthState> {
   @override
-  AuthState build() {
-    Future.microtask(_bootstrap);
-    return const AuthState.unknown();
-  }
-
-  Future<void> _bootstrap() async {
+  FutureOr<AuthState> build() async {
     final storage = ref.read(tokenStorageProvider);
     final storedTokens = await storage.readTokens();
     if (storedTokens == null) {
-      state = const AuthState.unauthenticated();
-      return;
+      return const AuthState.unauthenticated();
     }
 
     // 目前尚未实现刷新和拉取档案，这里仅保留 token 以便后续安全调用。
-    state = const AuthState.unauthenticated().copyWith(tokens: storedTokens);
+    return const AuthState.unauthenticated().copyWith(tokens: storedTokens);
   }
 
   Future<void> signIn({
@@ -101,10 +101,13 @@ class AuthController extends Notifier<AuthState> {
       ),
     );
     ref.invalidate(lastLoginPreferenceProvider);
-    state = AuthState.authenticated(
-      account: result.account,
-      tokens: result.tokens,
-      requiresPasswordReset: result.requiresPasswordReset,
+
+    state = AsyncData(
+      AuthState.authenticated(
+        account: result.account,
+        tokens: result.tokens,
+        requiresPasswordReset: result.requiresPasswordReset,
+      ),
     );
   }
 
@@ -120,19 +123,26 @@ class AuthController extends Notifier<AuthState> {
       accessToken: 'debug-access-token',
       refreshToken: 'debug-refresh-token',
     );
-    state = AuthState.authenticated(account: account, tokens: tokens);
+    state = AsyncData(
+      AuthState.authenticated(account: account, tokens: tokens),
+    );
   }
 
   Future<void> signOut() async {
     final storage = ref.read(tokenStorageProvider);
     await storage.clear();
-    state = const AuthState.unauthenticated();
+    state = const AsyncData(AuthState.unauthenticated());
   }
 }
 
-final authStateProvider = NotifierProvider<AuthController, AuthState>(
+final authControllerProvider = AsyncNotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
+
+final authStateProvider = Provider<AuthState>((ref) {
+  final value = ref.watch(authControllerProvider);
+  return value.valueOrNull ?? const AuthState.unknown();
+});
 
 final currentUserProvider = Provider<Account?>((ref) {
   return ref.watch(authStateProvider).account;

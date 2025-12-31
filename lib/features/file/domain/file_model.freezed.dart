@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$FileModel {
 
- String get id;@JsonKey(name: 'file_name') String get fileName;@JsonKey(name: 'file_type') String get fileType; int get size;@JsonKey(name: 'upload_url') String? get uploadUrl;@JsonKey(name: 'download_url') String? get downloadUrl; String? get key;
+ String get fileId; String get fileName; String get fileType; int get size; String? get uploadMethod; String? get uploadUrl; String? get relayUrl; String? get downloadUrl; String? get key;
 /// Create a copy of FileModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $FileModelCopyWith<FileModel> get copyWith => _$FileModelCopyWithImpl<FileModel>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileModel&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.fileType, fileType) || other.fileType == fileType)&&(identical(other.size, size) || other.size == size)&&(identical(other.uploadUrl, uploadUrl) || other.uploadUrl == uploadUrl)&&(identical(other.downloadUrl, downloadUrl) || other.downloadUrl == downloadUrl)&&(identical(other.key, key) || other.key == key));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileModel&&(identical(other.fileId, fileId) || other.fileId == fileId)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.fileType, fileType) || other.fileType == fileType)&&(identical(other.size, size) || other.size == size)&&(identical(other.uploadMethod, uploadMethod) || other.uploadMethod == uploadMethod)&&(identical(other.uploadUrl, uploadUrl) || other.uploadUrl == uploadUrl)&&(identical(other.relayUrl, relayUrl) || other.relayUrl == relayUrl)&&(identical(other.downloadUrl, downloadUrl) || other.downloadUrl == downloadUrl)&&(identical(other.key, key) || other.key == key));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fileName,fileType,size,uploadUrl,downloadUrl,key);
+int get hashCode => Object.hash(runtimeType,fileId,fileName,fileType,size,uploadMethod,uploadUrl,relayUrl,downloadUrl,key);
 
 @override
 String toString() {
-  return 'FileModel(id: $id, fileName: $fileName, fileType: $fileType, size: $size, uploadUrl: $uploadUrl, downloadUrl: $downloadUrl, key: $key)';
+  return 'FileModel(fileId: $fileId, fileName: $fileName, fileType: $fileType, size: $size, uploadMethod: $uploadMethod, uploadUrl: $uploadUrl, relayUrl: $relayUrl, downloadUrl: $downloadUrl, key: $key)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $FileModelCopyWith<$Res>  {
   factory $FileModelCopyWith(FileModel value, $Res Function(FileModel) _then) = _$FileModelCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'file_name') String fileName,@JsonKey(name: 'file_type') String fileType, int size,@JsonKey(name: 'upload_url') String? uploadUrl,@JsonKey(name: 'download_url') String? downloadUrl, String? key
+ String fileId, String fileName, String fileType, int size, String? uploadMethod, String? uploadUrl, String? relayUrl, String? downloadUrl, String? key
 });
 
 
@@ -65,13 +65,15 @@ class _$FileModelCopyWithImpl<$Res>
 
 /// Create a copy of FileModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fileName = null,Object? fileType = null,Object? size = null,Object? uploadUrl = freezed,Object? downloadUrl = freezed,Object? key = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? fileId = null,Object? fileName = null,Object? fileType = null,Object? size = null,Object? uploadMethod = freezed,Object? uploadUrl = freezed,Object? relayUrl = freezed,Object? downloadUrl = freezed,Object? key = freezed,}) {
   return _then(_self.copyWith(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+fileId: null == fileId ? _self.fileId : fileId // ignore: cast_nullable_to_non_nullable
 as String,fileName: null == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
 as String,fileType: null == fileType ? _self.fileType : fileType // ignore: cast_nullable_to_non_nullable
 as String,size: null == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
-as int,uploadUrl: freezed == uploadUrl ? _self.uploadUrl : uploadUrl // ignore: cast_nullable_to_non_nullable
+as int,uploadMethod: freezed == uploadMethod ? _self.uploadMethod : uploadMethod // ignore: cast_nullable_to_non_nullable
+as String?,uploadUrl: freezed == uploadUrl ? _self.uploadUrl : uploadUrl // ignore: cast_nullable_to_non_nullable
+as String?,relayUrl: freezed == relayUrl ? _self.relayUrl : relayUrl // ignore: cast_nullable_to_non_nullable
 as String?,downloadUrl: freezed == downloadUrl ? _self.downloadUrl : downloadUrl // ignore: cast_nullable_to_non_nullable
 as String?,key: freezed == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -159,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'file_name')  String fileName, @JsonKey(name: 'file_type')  String fileType,  int size, @JsonKey(name: 'upload_url')  String? uploadUrl, @JsonKey(name: 'download_url')  String? downloadUrl,  String? key)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String fileId,  String fileName,  String fileType,  int size,  String? uploadMethod,  String? uploadUrl,  String? relayUrl,  String? downloadUrl,  String? key)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _FileModel() when $default != null:
-return $default(_that.id,_that.fileName,_that.fileType,_that.size,_that.uploadUrl,_that.downloadUrl,_that.key);case _:
+return $default(_that.fileId,_that.fileName,_that.fileType,_that.size,_that.uploadMethod,_that.uploadUrl,_that.relayUrl,_that.downloadUrl,_that.key);case _:
   return orElse();
 
 }
@@ -180,10 +182,10 @@ return $default(_that.id,_that.fileName,_that.fileType,_that.size,_that.uploadUr
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'file_name')  String fileName, @JsonKey(name: 'file_type')  String fileType,  int size, @JsonKey(name: 'upload_url')  String? uploadUrl, @JsonKey(name: 'download_url')  String? downloadUrl,  String? key)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String fileId,  String fileName,  String fileType,  int size,  String? uploadMethod,  String? uploadUrl,  String? relayUrl,  String? downloadUrl,  String? key)  $default,) {final _that = this;
 switch (_that) {
 case _FileModel():
-return $default(_that.id,_that.fileName,_that.fileType,_that.size,_that.uploadUrl,_that.downloadUrl,_that.key);case _:
+return $default(_that.fileId,_that.fileName,_that.fileType,_that.size,_that.uploadMethod,_that.uploadUrl,_that.relayUrl,_that.downloadUrl,_that.key);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +202,10 @@ return $default(_that.id,_that.fileName,_that.fileType,_that.size,_that.uploadUr
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'file_name')  String fileName, @JsonKey(name: 'file_type')  String fileType,  int size, @JsonKey(name: 'upload_url')  String? uploadUrl, @JsonKey(name: 'download_url')  String? downloadUrl,  String? key)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String fileId,  String fileName,  String fileType,  int size,  String? uploadMethod,  String? uploadUrl,  String? relayUrl,  String? downloadUrl,  String? key)?  $default,) {final _that = this;
 switch (_that) {
 case _FileModel() when $default != null:
-return $default(_that.id,_that.fileName,_that.fileType,_that.size,_that.uploadUrl,_that.downloadUrl,_that.key);case _:
+return $default(_that.fileId,_that.fileName,_that.fileType,_that.size,_that.uploadMethod,_that.uploadUrl,_that.relayUrl,_that.downloadUrl,_that.key);case _:
   return null;
 
 }
@@ -215,15 +217,17 @@ return $default(_that.id,_that.fileName,_that.fileType,_that.size,_that.uploadUr
 @JsonSerializable()
 
 class _FileModel implements FileModel {
-  const _FileModel({required this.id, @JsonKey(name: 'file_name') required this.fileName, @JsonKey(name: 'file_type') required this.fileType, required this.size, @JsonKey(name: 'upload_url') this.uploadUrl, @JsonKey(name: 'download_url') this.downloadUrl, this.key});
+  const _FileModel({required this.fileId, required this.fileName, required this.fileType, required this.size, this.uploadMethod, this.uploadUrl, this.relayUrl, this.downloadUrl, this.key});
   factory _FileModel.fromJson(Map<String, dynamic> json) => _$FileModelFromJson(json);
 
-@override final  String id;
-@override@JsonKey(name: 'file_name') final  String fileName;
-@override@JsonKey(name: 'file_type') final  String fileType;
+@override final  String fileId;
+@override final  String fileName;
+@override final  String fileType;
 @override final  int size;
-@override@JsonKey(name: 'upload_url') final  String? uploadUrl;
-@override@JsonKey(name: 'download_url') final  String? downloadUrl;
+@override final  String? uploadMethod;
+@override final  String? uploadUrl;
+@override final  String? relayUrl;
+@override final  String? downloadUrl;
 @override final  String? key;
 
 /// Create a copy of FileModel
@@ -239,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileModel&&(identical(other.id, id) || other.id == id)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.fileType, fileType) || other.fileType == fileType)&&(identical(other.size, size) || other.size == size)&&(identical(other.uploadUrl, uploadUrl) || other.uploadUrl == uploadUrl)&&(identical(other.downloadUrl, downloadUrl) || other.downloadUrl == downloadUrl)&&(identical(other.key, key) || other.key == key));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileModel&&(identical(other.fileId, fileId) || other.fileId == fileId)&&(identical(other.fileName, fileName) || other.fileName == fileName)&&(identical(other.fileType, fileType) || other.fileType == fileType)&&(identical(other.size, size) || other.size == size)&&(identical(other.uploadMethod, uploadMethod) || other.uploadMethod == uploadMethod)&&(identical(other.uploadUrl, uploadUrl) || other.uploadUrl == uploadUrl)&&(identical(other.relayUrl, relayUrl) || other.relayUrl == relayUrl)&&(identical(other.downloadUrl, downloadUrl) || other.downloadUrl == downloadUrl)&&(identical(other.key, key) || other.key == key));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,fileName,fileType,size,uploadUrl,downloadUrl,key);
+int get hashCode => Object.hash(runtimeType,fileId,fileName,fileType,size,uploadMethod,uploadUrl,relayUrl,downloadUrl,key);
 
 @override
 String toString() {
-  return 'FileModel(id: $id, fileName: $fileName, fileType: $fileType, size: $size, uploadUrl: $uploadUrl, downloadUrl: $downloadUrl, key: $key)';
+  return 'FileModel(fileId: $fileId, fileName: $fileName, fileType: $fileType, size: $size, uploadMethod: $uploadMethod, uploadUrl: $uploadUrl, relayUrl: $relayUrl, downloadUrl: $downloadUrl, key: $key)';
 }
 
 
@@ -259,7 +263,7 @@ abstract mixin class _$FileModelCopyWith<$Res> implements $FileModelCopyWith<$Re
   factory _$FileModelCopyWith(_FileModel value, $Res Function(_FileModel) _then) = __$FileModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'file_name') String fileName,@JsonKey(name: 'file_type') String fileType, int size,@JsonKey(name: 'upload_url') String? uploadUrl,@JsonKey(name: 'download_url') String? downloadUrl, String? key
+ String fileId, String fileName, String fileType, int size, String? uploadMethod, String? uploadUrl, String? relayUrl, String? downloadUrl, String? key
 });
 
 
@@ -276,13 +280,15 @@ class __$FileModelCopyWithImpl<$Res>
 
 /// Create a copy of FileModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fileName = null,Object? fileType = null,Object? size = null,Object? uploadUrl = freezed,Object? downloadUrl = freezed,Object? key = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? fileId = null,Object? fileName = null,Object? fileType = null,Object? size = null,Object? uploadMethod = freezed,Object? uploadUrl = freezed,Object? relayUrl = freezed,Object? downloadUrl = freezed,Object? key = freezed,}) {
   return _then(_FileModel(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+fileId: null == fileId ? _self.fileId : fileId // ignore: cast_nullable_to_non_nullable
 as String,fileName: null == fileName ? _self.fileName : fileName // ignore: cast_nullable_to_non_nullable
 as String,fileType: null == fileType ? _self.fileType : fileType // ignore: cast_nullable_to_non_nullable
 as String,size: null == size ? _self.size : size // ignore: cast_nullable_to_non_nullable
-as int,uploadUrl: freezed == uploadUrl ? _self.uploadUrl : uploadUrl // ignore: cast_nullable_to_non_nullable
+as int,uploadMethod: freezed == uploadMethod ? _self.uploadMethod : uploadMethod // ignore: cast_nullable_to_non_nullable
+as String?,uploadUrl: freezed == uploadUrl ? _self.uploadUrl : uploadUrl // ignore: cast_nullable_to_non_nullable
+as String?,relayUrl: freezed == relayUrl ? _self.relayUrl : relayUrl // ignore: cast_nullable_to_non_nullable
 as String?,downloadUrl: freezed == downloadUrl ? _self.downloadUrl : downloadUrl // ignore: cast_nullable_to_non_nullable
 as String?,key: freezed == key ? _self.key : key // ignore: cast_nullable_to_non_nullable
 as String?,

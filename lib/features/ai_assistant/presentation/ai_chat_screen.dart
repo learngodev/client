@@ -20,24 +20,32 @@ class AIChatScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final modern = Theme.of(context).extension<ModernUI>()!;
     final messagesAsync = ref.watch(aiSessionMessagesProvider(sessionId));
-    final controller = ref.watch(aiChatControllerProvider.notifier);
+    final messagesNotifier = ref.read(
+      aiSessionMessagesProvider(sessionId).notifier,
+    );
     final textController = useTextEditingController();
     final scrollController = useScrollController();
     final isSending = useState(false);
 
     // Auto-scroll to bottom when messages change
-    useEffect(() {
-      if (messagesAsync.hasValue && scrollController.hasClients) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          scrollController.animateTo(
-            scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        });
-      }
-      return null;
-    }, [messagesAsync.valueOrNull?.length]);
+    useEffect(
+      () {
+        if (messagesAsync.hasValue && scrollController.hasClients) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            scrollController.animateTo(
+              scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          });
+        }
+        return null;
+      },
+      [
+        messagesAsync.valueOrNull?.length,
+        messagesAsync.valueOrNull?.lastOrNull?.content.length,
+      ],
+    ); // Scroll on content change too
 
     return Scaffold(
       appBar: const GradientAppBar(title: Text('AI 助手')),
@@ -133,10 +141,7 @@ class AIChatScreen extends HookConsumerWidget {
                                 }
                                 isSending.value = true;
                                 try {
-                                  await controller.sendMessage(
-                                    sessionId,
-                                    value,
-                                  );
+                                  await messagesNotifier.sendMessage(value);
                                   textController.clear();
                                 } catch (e) {
                                   if (context.mounted) {
@@ -162,10 +167,7 @@ class AIChatScreen extends HookConsumerWidget {
                                     if (value.trim().isEmpty) return;
                                     isSending.value = true;
                                     try {
-                                      await controller.sendMessage(
-                                        sessionId,
-                                        value,
-                                      );
+                                      await messagesNotifier.sendMessage(value);
                                       textController.clear();
                                     } catch (e) {
                                       if (context.mounted) {

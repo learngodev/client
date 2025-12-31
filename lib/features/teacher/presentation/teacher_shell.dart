@@ -4,18 +4,12 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/layout/adaptive_navigation_scaffold.dart';
 import '../../im/application/im_providers.dart';
+import '../../notification/application/notification_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
 import '../application/teacher_assignment_provider.dart';
 
-enum TeacherSection {
-  overview,
-  schedule,
-  courses,
-  assignments,
-  conversations,
-  aiChat,
-}
+enum TeacherSection { overview, schedule, courses, assignments, conversations }
 
 extension TeacherSectionX on TeacherSection {
   String get label {
@@ -25,7 +19,6 @@ extension TeacherSectionX on TeacherSection {
       TeacherSection.courses => '课程',
       TeacherSection.assignments => '作业',
       TeacherSection.conversations => '消息',
-      TeacherSection.aiChat => 'AI 助手',
     };
   }
 
@@ -36,7 +29,6 @@ extension TeacherSectionX on TeacherSection {
       TeacherSection.courses => Icons.class_outlined,
       TeacherSection.assignments => Icons.assignment_outlined,
       TeacherSection.conversations => Icons.chat_bubble_outline,
-      TeacherSection.aiChat => Icons.smart_toy_outlined,
     };
   }
 
@@ -47,7 +39,6 @@ extension TeacherSectionX on TeacherSection {
       TeacherSection.courses => '/teacher/courses',
       TeacherSection.assignments => '/teacher/assignments',
       TeacherSection.conversations => '/teacher/conversations',
-      TeacherSection.aiChat => '/teacher/ai-chat',
     };
   }
 }
@@ -63,6 +54,8 @@ class TeacherShell extends HookConsumerWidget {
     final account = ref.watch(authStateProvider).account;
     final assignments = ref.watch(teacherAssignmentsProvider);
     final conversations = ref.watch(conversationsProvider);
+    final unreadNotifications =
+        ref.watch(unreadNotificationCountProvider).valueOrNull ?? 0;
 
     final pendingToGrade = assignments.maybeWhen(
       data: (items) =>
@@ -76,6 +69,8 @@ class TeacherShell extends HookConsumerWidget {
       orElse: () => 0,
     );
 
+    final totalUnreadMessages = unreadMessages + unreadNotifications;
+
     final destinations = TeacherSection.values
         .map(
           (section) => AdaptiveDestination(
@@ -84,7 +79,7 @@ class TeacherShell extends HookConsumerWidget {
             selectedIcon: section.icon,
             badgeCount: switch (section) {
               TeacherSection.assignments => pendingToGrade,
-              TeacherSection.conversations => unreadMessages,
+              TeacherSection.conversations => totalUnreadMessages,
               _ => null,
             },
           ),
@@ -108,7 +103,7 @@ class TeacherShell extends HookConsumerWidget {
         label: '消息',
         icon: Icons.chat_bubble_outline,
         selectedIcon: Icons.chat,
-        badgeCount: unreadMessages,
+        badgeCount: totalUnreadMessages,
       ),
       const AdaptiveDestination(
         label: '课程',

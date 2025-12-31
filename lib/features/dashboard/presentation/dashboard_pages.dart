@@ -24,7 +24,7 @@ class AdminDashboardPage extends HookConsumerWidget {
       actions: [
         IconButton(
           tooltip: '退出登录',
-          onPressed: ref.read(authStateProvider.notifier).signOut,
+          onPressed: ref.read(authControllerProvider.notifier).signOut,
           icon: const Icon(Icons.logout),
         ),
       ],
@@ -164,7 +164,7 @@ class TeacherDashboardPage extends HookConsumerWidget {
       actions: [
         IconButton(
           tooltip: '退出登录',
-          onPressed: ref.read(authStateProvider.notifier).signOut,
+          onPressed: ref.read(authControllerProvider.notifier).signOut,
           icon: const Icon(Icons.logout),
         ),
       ],

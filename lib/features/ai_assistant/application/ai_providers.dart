@@ -12,11 +12,68 @@ final aiSessionsProvider = FutureProvider.autoDispose<List<AIChatSession>>((
   return repo.getSessions();
 });
 
-final aiSessionMessagesProvider = FutureProvider.autoDispose
-    .family<List<AIChatMessage>, String>((ref, sessionId) {
-      final repo = ref.watch(aiRepositoryProvider);
-      return repo.getMessages(sessionId);
-    });
+final aiSessionMessagesProvider = AsyncNotifierProvider.autoDispose
+    .family<AIChatMessagesNotifier, List<AIChatMessage>, String>(
+      AIChatMessagesNotifier.new,
+    );
+
+class AIChatMessagesNotifier
+    extends AutoDisposeFamilyAsyncNotifier<List<AIChatMessage>, String> {
+  @override
+  Future<List<AIChatMessage>> build(String arg) {
+    final repo = ref.watch(aiRepositoryProvider);
+    return repo.getMessages(arg);
+  }
+
+  Future<void> sendMessage(String content) async {
+    final repo = ref.read(aiRepositoryProvider);
+
+    final userMsg = AIChatMessage(
+      id: 'temp-user-${DateTime.now().millisecondsSinceEpoch}',
+      sessionId: arg,
+      sender: 'user',
+      content: content,
+      createdAt: DateTime.now(),
+    );
+
+    final previousState = state.valueOrNull ?? [];
+    state = AsyncValue.data([...previousState, userMsg]);
+
+    final assistantMsgId = 'temp-ai-${DateTime.now().millisecondsSinceEpoch}';
+    final assistantMsg = AIChatMessage(
+      id: assistantMsgId,
+      sessionId: arg,
+      sender: 'assistant',
+      content: '',
+      createdAt: DateTime.now(),
+    );
+    state = AsyncValue.data([...previousState, userMsg, assistantMsg]);
+
+    try {
+      final stream = repo.streamMessage(arg, content);
+      String fullContent = '';
+
+      await for (final chunk in stream) {
+        fullContent += chunk;
+
+        final currentMessages = state.valueOrNull ?? [];
+        final updatedMessages = currentMessages.map((msg) {
+          if (msg.id == assistantMsgId) {
+            return msg.copyWith(content: fullContent);
+          }
+          return msg;
+        }).toList();
+        state = AsyncValue.data(updatedMessages);
+      }
+
+      ref.invalidateSelf();
+      ref.invalidate(aiSessionsProvider);
+      ref.invalidate(aiUsageProvider);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
 
 final aiUsageProvider = FutureProvider.autoDispose<AIUsageSummary>((ref) {
   final repo = ref.watch(aiRepositoryProvider);
@@ -40,21 +97,6 @@ class AIChatController extends AutoDisposeAsyncNotifier<void> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
       return null;
-    }
-  }
-
-  Future<void> sendMessage(String sessionId, String content) async {
-    // We don't set global loading state here to avoid blocking the UI,
-    // but we might want to handle optimistic updates in the UI.
-    try {
-      final repo = ref.read(aiRepositoryProvider);
-      await repo.sendMessage(sessionId, content);
-      ref.invalidate(aiSessionMessagesProvider(sessionId));
-      ref.invalidate(aiSessionsProvider); // Update last message time/count
-      ref.invalidate(aiUsageProvider);
-    } catch (e) {
-      // Handle error (maybe show snackbar in UI)
-      rethrow;
     }
   }
 

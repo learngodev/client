@@ -6,12 +6,14 @@ part 'file_model.g.dart';
 @freezed
 abstract class FileModel with _$FileModel {
   const factory FileModel({
-    required String id,
-    @JsonKey(name: 'file_name') required String fileName,
-    @JsonKey(name: 'file_type') required String fileType,
+    required String fileId,
+    required String fileName,
+    required String fileType,
     required int size,
-    @JsonKey(name: 'upload_url') String? uploadUrl,
-    @JsonKey(name: 'download_url') String? downloadUrl,
+    String? uploadMethod,
+    String? uploadUrl,
+    String? relayUrl,
+    String? downloadUrl,
     String? key,
   }) = _FileModel;
 

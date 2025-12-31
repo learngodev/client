@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learn_go/features/student/application/student_dashboard_controller.dart';
+import 'package:learn_go/features/file/application/file_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../application/assignment_controller.dart';
 import '../../data/student_repository.dart';
@@ -271,6 +273,57 @@ class AssignmentDetailPage extends HookConsumerWidget {
                           detail.description,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
+                        if (detail.attachments.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            '附件',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          ...detail.attachments.map(
+                            (file) => Card(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                leading: const Icon(Icons.attach_file),
+                                title: Text(file.name),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.download),
+                                  onPressed: () async {
+                                    try {
+                                      final url = await ref
+                                          .read(fileServiceProvider)
+                                          .getDownloadUrl(file.id);
+                                      final uri = Uri.parse(url);
+                                      if (await canLaunchUrl(uri)) {
+                                        await launchUrl(uri);
+                                        return;
+                                      }
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('无法打开链接'),
+                                          ),
+                                        );
+                                      }
+                                    } catch (_) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('获取下载链接失败'),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                         const Divider(height: 32),
                         ...detail.questions.map((q) {
                           itemKeys.value.putIfAbsent(q.id, () => GlobalKey());
@@ -281,6 +334,64 @@ class AssignmentDetailPage extends HookConsumerWidget {
                               answers.value = {...answers.value, q.id: value};
                             },
                             currentAnswer: answers.value[q.id],
+                            onAiCheck: !isExam && !isSubmitted.value
+                                ? () async {
+                                    final content =
+                                        answers.value[q.id]?.toString() ?? '';
+                                    if (content.trim().isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('请先填写本题答案'),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    try {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (c) => const Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+
+                                      final result = await ref
+                                          .read(studentRepositoryProvider)
+                                          .checkAssignment(
+                                            title: detail.title,
+                                            description: q.prompt,
+                                            content: content,
+                                          );
+
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+                                        showModalBottomSheet(
+                                          context: context,
+                                          isScrollControlled: true,
+                                          useSafeArea: true,
+                                          builder: (context) =>
+                                              _AICheckResultSheet(
+                                                result: result,
+                                              ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        Navigator.pop(context);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text('AI 检查失败: $e'),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                : null,
                           );
                         }),
                         const SizedBox(height: 24),
@@ -288,80 +399,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
                     ),
                   ),
                 ),
-                if (!isExam && !isSubmitted.value)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        onPressed: isSubmitting.value
-                            ? null
-                            : () async {
-                                final content = answers.value.entries
-                                    .map((e) {
-                                      final q = detail.questions.firstWhere(
-                                        (q) => q.id == e.key,
-                                        orElse: () => const AssignmentQuestion(
-                                          id: '',
-                                          prompt: '',
-                                          type: QuestionType.essay,
-                                          score: 0,
-                                          orderIndex: 0,
-                                        ),
-                                      );
-                                      return '题目: ${q.prompt}\n回答: ${e.value}';
-                                    })
-                                    .join('\n\n');
 
-                                if (content.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('请先填写作业内容')),
-                                  );
-                                  return;
-                                }
-
-                                try {
-                                  // Show loading
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (c) => const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  );
-
-                                  final result = await ref
-                                      .read(studentRepositoryProvider)
-                                      .checkAssignment(
-                                        title: detail.title,
-                                        description: detail.description,
-                                        content: content,
-                                      );
-
-                                  if (context.mounted) {
-                                    Navigator.pop(context); // Hide loading
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      useSafeArea: true,
-                                      builder: (context) =>
-                                          _AICheckResultSheet(result: result),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    Navigator.pop(context); // Hide loading
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('AI 检查失败: $e')),
-                                    );
-                                  }
-                                }
-                              },
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('AI 智能预检'),
-                      ),
-                    ),
-                  ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: SizedBox(
@@ -583,11 +621,13 @@ class _QuestionCard extends StatelessWidget {
     required this.question,
     required this.onAnswerChanged,
     this.currentAnswer,
+    this.onAiCheck,
   });
 
   final AssignmentQuestion question;
   final ValueChanged<dynamic> onAnswerChanged;
   final dynamic currentAnswer;
+  final VoidCallback? onAiCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -598,9 +638,25 @@ class _QuestionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${question.orderIndex + 1}. ${question.prompt} (${question.score}分)',
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    '${question.orderIndex + 1}. ${question.prompt} (${question.score}分)',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                if (onAiCheck != null)
+                  IconButton(
+                    icon: const Icon(Icons.auto_awesome, size: 20),
+                    tooltip: 'AI 预检',
+                    onPressed: onAiCheck,
+                    style: IconButton.styleFrom(
+                      foregroundColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
             _buildInput(context),

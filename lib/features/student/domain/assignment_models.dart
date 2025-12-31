@@ -108,6 +108,7 @@ class AssignmentDetail {
     this.allowResubmit = false,
     this.dueAt,
     this.startAt,
+    this.attachments = const [],
   });
 
   final String id;
@@ -119,6 +120,7 @@ class AssignmentDetail {
   final bool allowResubmit;
   final DateTime? dueAt;
   final DateTime? startAt;
+  final List<AssignmentAttachment> attachments;
 
   factory AssignmentDetail.fromJson(Map<String, dynamic> json) {
     final questionsList = json['questions'] as List?;
@@ -130,6 +132,15 @@ class AssignmentDetail {
 
     // Sort questions by orderIndex
     questions.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+
+    final attachmentsList = json['attachments'] as List?;
+    final attachments =
+        attachmentsList
+            ?.map(
+              (e) => AssignmentAttachment.fromJson(e as Map<String, dynamic>),
+            )
+            .toList() ??
+        [];
 
     return AssignmentDetail(
       id: json['id'] as String? ?? '',
@@ -145,6 +156,30 @@ class AssignmentDetail {
       startAt: json['start_at'] == null
           ? null
           : DateTime.tryParse(json['start_at'] as String)?.toLocal(),
+      attachments: attachments,
+    );
+  }
+}
+
+class AssignmentAttachment {
+  const AssignmentAttachment({
+    required this.id,
+    required this.name,
+    required this.url,
+    required this.type,
+  });
+
+  final String id;
+  final String name;
+  final String url;
+  final String type;
+
+  factory AssignmentAttachment.fromJson(Map<String, dynamic> json) {
+    return AssignmentAttachment(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      url: json['url'] as String? ?? '',
+      type: json['type'] as String? ?? '',
     );
   }
 }

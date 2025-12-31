@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/im/data/repositories/im_repository.dart';
 import 'package:learn_go/features/im/domain/entities/conversation.dart';
 import 'package:learn_go/features/im/domain/entities/message.dart';
@@ -9,6 +10,85 @@ import 'package:learn_go/features/im/data/generated/conversation.pb.dart' as pb;
 import 'package:learn_go/features/im/data/generated/google/protobuf/timestamp.pb.dart'
     as $google_pb;
 import 'package:learn_go/features/auth/domain/account.dart';
+
+/// Keep IM gRPC subscriptions alive after login so conversation list/unread
+/// badges can update even when user is not inside a specific chat screen.
+final imRealtimeSyncProvider = Provider<IMRealtimeSync>((ref) {
+  final sync = IMRealtimeSync(ref);
+  ref.onDispose(sync.dispose);
+  return sync;
+});
+
+class IMRealtimeSync {
+  final Ref _ref;
+  StreamSubscription<pb.ConversationStreamResponse>? _eventSub;
+  Timer? _refreshDebounce;
+  bool _active = false;
+
+  IMRealtimeSync(this._ref) {
+    _ref.listen<AuthState>(authStateProvider, (previous, next) {
+      final wasAuthed = previous?.hasTokens ?? false;
+      final isAuthed = next.hasTokens;
+
+      if (!wasAuthed && isAuthed) {
+        _start();
+      } else if (wasAuthed && !isAuthed) {
+        _stop();
+      }
+    });
+
+    // Handle the case where provider is first created after user is already
+    // authenticated.
+    if (_ref.read(authStateProvider).hasTokens) {
+      _start();
+    }
+  }
+
+  void _start() {
+    if (_active) return;
+    _active = true;
+
+    final repository = _ref.read(imRepositoryProvider);
+
+    // Force an initial conversation list fetch so UI has up-to-date data.
+    unawaited(_ref.read(conversationsProvider.future));
+
+    _eventSub = repository.subscribeInbox().listen(
+      (event) {
+        // Any read/new-message event can affect unreadCount/preview.
+        if (event.hasMessageEvent() || event.hasReadEvent()) {
+          _scheduleConversationListRefresh();
+        }
+      },
+      onError: (e) {
+        debugPrint('IM realtime event stream error: $e');
+      },
+    );
+  }
+
+  void _stop() {
+    if (!_active) return;
+    _active = false;
+
+    _refreshDebounce?.cancel();
+    _refreshDebounce = null;
+
+    _eventSub?.cancel();
+    _eventSub = null;
+  }
+
+  void _scheduleConversationListRefresh() {
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!_active) return;
+      _ref.invalidate(conversationsProvider);
+    });
+  }
+
+  void dispose() {
+    _stop();
+  }
+}
 
 final conversationsProvider = FutureProvider<List<Conversation>>((ref) async {
   final repository = ref.watch(imRepositoryProvider);
@@ -24,71 +104,58 @@ final imServiceProvider = Provider<IMService>((ref) {
 
 class IMService {
   final IMRepository _repository;
-  final StreamController<pb.ConversationStreamRequest> _requestController =
-      StreamController.broadcast();
   final StreamController<pb.ConversationStreamResponse> _mergedController =
       StreamController.broadcast();
-
-  StreamSubscription? _responseSubscription;
-  StreamSubscription? _appRequestSubscription;
-  StreamController<pb.ConversationStreamRequest>? _currentGrpcRequestController;
   final Set<String> _joinedConversations = {};
   bool _isDisposed = false;
 
-  IMService(this._repository) {
-    _appRequestSubscription = _requestController.stream.listen((request) {
-      if (_currentGrpcRequestController != null &&
-          !_currentGrpcRequestController!.isClosed) {
-        _currentGrpcRequestController!.add(request);
-      }
-    });
-    _connect();
+  final Map<String, StreamSubscription<pb.ConversationStreamResponse>>
+  _subscriptions = {};
+  final Map<String, Timer> _reconnectTimers = {};
+
+  IMService(this._repository);
+
+  void _ensureSubscribed(String conversationId) {
+    if (_isDisposed) return;
+    if (_subscriptions.containsKey(conversationId)) return;
+    _startSubscription(conversationId);
   }
 
-  void _connect() {
+  void _startSubscription(String conversationId) {
     if (_isDisposed) return;
+    if (!_joinedConversations.contains(conversationId)) return;
 
-    _responseSubscription?.cancel();
-    _currentGrpcRequestController?.close();
-
-    _currentGrpcRequestController =
-        StreamController<pb.ConversationStreamRequest>();
+    _subscriptions[conversationId]?.cancel();
 
     try {
-      final stream = _repository.connectToStream(
-        _currentGrpcRequestController!.stream,
-      );
-
-      _responseSubscription = stream.listen(
+      final stream = _repository.subscribeConversation(conversationId);
+      _subscriptions[conversationId] = stream.listen(
         (event) => _mergedController.add(event),
         onError: (e) {
           debugPrint('gRPC Stream Error: $e');
-          _handleReconnect();
+          _scheduleReconnect(conversationId);
         },
         onDone: () {
           debugPrint('gRPC Stream Closed');
-          _handleReconnect();
+          _scheduleReconnect(conversationId);
         },
       );
-
-      // Re-join conversations upon reconnection
-      for (final conversationId in _joinedConversations) {
-        final request = pb.ConversationStreamRequest()
-          ..join = (pb.JoinConversation()..conversationId = conversationId);
-        _currentGrpcRequestController?.add(request);
-      }
     } catch (e) {
       debugPrint('gRPC Connection Error: $e');
-      _handleReconnect();
+      _scheduleReconnect(conversationId);
     }
   }
 
-  void _handleReconnect() {
+  void _scheduleReconnect(String conversationId) {
     if (_isDisposed) return;
+    if (!_joinedConversations.contains(conversationId)) return;
 
-    Future.delayed(const Duration(seconds: 3), () {
+    _reconnectTimers[conversationId]?.cancel();
+    _reconnectTimers[conversationId] = Timer(const Duration(seconds: 3), () {
+      if (_isDisposed) return;
+      if (!_joinedConversations.contains(conversationId)) return;
       debugPrint('Reconnecting gRPC stream...');
-      _connect();
+      _startSubscription(conversationId);
     });
   }
 
@@ -96,14 +163,14 @@ class IMService {
 
   void joinConversation(String conversationId) {
     _joinedConversations.add(conversationId);
-    _requestController.add(
-      pb.ConversationStreamRequest()
-        ..join = (pb.JoinConversation()..conversationId = conversationId),
-    );
+    _ensureSubscribed(conversationId);
   }
 
   void leaveConversation(String conversationId) {
     _joinedConversations.remove(conversationId);
+
+    _reconnectTimers.remove(conversationId)?.cancel();
+    _subscriptions.remove(conversationId)?.cancel();
   }
 
   Future<void> markAsRead(String conversationId, String messageId) async {
@@ -131,10 +198,19 @@ class IMService {
 
   void dispose() {
     _isDisposed = true;
-    _appRequestSubscription?.cancel();
-    _requestController.close();
-    _currentGrpcRequestController?.close();
-    _responseSubscription?.cancel();
+
+    _joinedConversations.clear();
+
+    for (final t in _reconnectTimers.values) {
+      t.cancel();
+    }
+    _reconnectTimers.clear();
+
+    for (final sub in _subscriptions.values) {
+      sub.cancel();
+    }
+    _subscriptions.clear();
+
     _mergedController.close();
   }
 }

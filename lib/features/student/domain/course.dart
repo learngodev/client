@@ -9,8 +9,8 @@ abstract class Course with _$Course {
     required String id,
     required String name,
     String? description,
-    @JsonKey(name: 'image_url') String? imageUrl,
-    @JsonKey(name: 'invitation_code') String? invitationCode,
+    String? imageUrl,
+    String? invitationCode,
   }) = _Course;
 
   factory Course.fromJson(Map<String, dynamic> json) => _$CourseFromJson(json);

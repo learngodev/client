@@ -7,6 +7,7 @@ import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/domain/account.dart';
 import '../../features/auth/presentation/sign_in_page.dart';
 import '../../features/auth/presentation/password_reset_page.dart';
+import '../../features/notification/presentation/notification_page.dart';
 import '../../features/admin/presentation/admin_shell.dart';
 import '../../features/admin/presentation/pages/admin_pages.dart';
 import '../../features/admin/presentation/pages/admin_ai_settings_page.dart';
@@ -28,11 +29,14 @@ import '../../features/teacher/presentation/pages/teacher_class_students_page.da
 import '../../features/teacher/domain/teacher_models.dart';
 import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
-import '../../features/ai_assistant/presentation/ai_chat_list_screen.dart';
-import '../../features/ai_assistant/presentation/ai_chat_screen.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/profile/presentation/settings_page.dart';
 import '../widgets/status_pages.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _adminShellNavigatorKey = GlobalKey<NavigatorState>();
+final _teacherShellNavigatorKey = GlobalKey<NavigatorState>();
+final _studentShellNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -105,6 +109,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           context: context,
           state: state,
           child: const SettingsPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => _sharedAxisTransitionPage(
+          context: context,
+          state: state,
+          child: const NotificationPage(),
         ),
       ),
       GoRoute(
@@ -186,6 +200,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               context: context,
               state: state,
               child: const AdminOverviewPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/admin/profile',
+            name: 'adminProfile',
+            redirect: (context, state) =>
+                _guardRole(authState, AccountRole.admin, state),
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const ProfilePage(),
             ),
           ),
           GoRoute(
@@ -373,28 +398,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               child: const ProfilePage(),
             ),
           ),
-
-          GoRoute(
-            path: '/teacher/ai-chat',
-            name: 'teacherAIChat',
-            pageBuilder: (context, state) => _sharedAxisTransitionPage(
-              context: context,
-              state: state,
-              child: const AIChatListScreen(),
-            ),
-          ),
-          GoRoute(
-            path: '/teacher/ai-chat/:id',
-            name: 'teacherAIChatDetail',
-            pageBuilder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return _sharedAxisTransitionPage(
-                context: context,
-                state: state,
-                child: AIChatScreen(sessionId: id),
-              );
-            },
-          ),
         ],
       ),
       ShellRoute(
@@ -440,6 +443,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               child: const StudentAssignmentsPage(),
             ),
           ),
+          GoRoute(
+            path: '/student/exams',
+            name: 'studentExams',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const StudentExamsPage(),
+            ),
+          ),
 
           GoRoute(
             path: '/student/messages',
@@ -459,48 +471,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               child: const ProfilePage(),
             ),
           ),
-          GoRoute(
-            path: '/student/ai-chat',
-            name: 'studentAIChat',
-            pageBuilder: (context, state) => _sharedAxisTransitionPage(
-              context: context,
-              state: state,
-              child: const AIChatListScreen(),
-            ),
-          ),
-          GoRoute(
-            path: '/student/ai-chat/:id',
-            name: 'studentAIChatDetail',
-            pageBuilder: (context, state) {
-              final id = state.pathParameters['id']!;
-              return _sharedAxisTransitionPage(
-                context: context,
-                state: state,
-                child: AIChatScreen(sessionId: id),
-              );
-            },
-          ),
         ],
       ),
     ],
-    errorPageBuilder: (context, state) => _sharedAxisTransitionPage(
-      context: context,
-      state: state,
-      child: const NotFoundPage(),
-    ),
   );
 });
-
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
-final _adminShellNavigatorKey = GlobalKey<NavigatorState>(
-  debugLabel: 'adminShell',
-);
-final _teacherShellNavigatorKey = GlobalKey<NavigatorState>(
-  debugLabel: 'teacherShell',
-);
-final _studentShellNavigatorKey = GlobalKey<NavigatorState>(
-  debugLabel: 'studentShell',
-);
 
 String _roleHomePath(AccountRole? role) {
   return switch (role) {
@@ -583,6 +558,7 @@ Page<void> _sharedAxisTransitionPage({
         animation: animation,
         secondaryAnimation: secondaryAnimation,
         transitionType: effectiveTransitionType,
+        fillColor: Colors.transparent,
         child: child,
       );
     },

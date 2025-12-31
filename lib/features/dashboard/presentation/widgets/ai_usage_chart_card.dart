@@ -19,7 +19,20 @@ class AIUsageChartCard extends HookConsumerWidget {
       ..sort((a, b) => a.date.compareTo(b.date));
 
     if (sortedData.isEmpty) {
-      return const SizedBox.shrink();
+      return Card(
+        elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('AI 消耗趋势', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 24),
+              const Center(child: Text('暂无数据')),
+            ],
+          ),
+        ),
+      );
     }
 
     final maxTokens = sortedData
@@ -56,7 +69,9 @@ class AIUsageChartCard extends HookConsumerWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    color: theme.colorScheme.primaryContainer.withValues(
+                      alpha: 0.3,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -80,7 +95,7 @@ class AIUsageChartCard extends HookConsumerWidget {
                     horizontalInterval: maxY / 4,
                     getDrawingHorizontalLine: (value) {
                       return FlLine(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withValues(alpha: 0.1),
                         strokeWidth: 1,
                       );
                     },
@@ -156,7 +171,7 @@ class AIUsageChartCard extends HookConsumerWidget {
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
                       ),
                     ),
                   ],
