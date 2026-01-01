@@ -6,8 +6,6 @@ import '../../admin/application/admin_providers.dart';
 import '../../admin/presentation/admin_shell.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../teacher/domain/sample_data.dart' as teacher_data;
-import '../application/dashboard_providers.dart';
-import 'widgets/ai_usage_chart_card.dart';
 
 class AdminDashboardPage extends HookConsumerWidget {
   const AdminDashboardPage({super.key});
@@ -16,7 +14,6 @@ class AdminDashboardPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final account = ref.watch(authStateProvider).account;
     final metrics = ref.watch(adminDepartmentMetricsProvider);
-    final aiUsage = ref.watch(aiUsageTimelineProvider);
     final theme = Theme.of(context);
     return _DashboardScaffold(
       title: '管理员后台',
@@ -83,17 +80,6 @@ class AdminDashboardPage extends HookConsumerWidget {
                     onTap: () => context.go(AdminSection.structures.path),
                   ),
                 ],
-              ),
-              const SizedBox(height: 24),
-              aiUsage.when(
-                data: (data) => AIUsageChartCard(data: data),
-                loading: () => const Card(
-                  child: SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-                error: (err, stack) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 24),
               _DashboardSectionHeader(

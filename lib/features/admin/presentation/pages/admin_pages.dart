@@ -10,8 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../dashboard/application/dashboard_providers.dart';
-import '../../../dashboard/presentation/widgets/ai_usage_chart_card.dart';
 import '../../application/admin_providers.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../../../../core/exceptions/app_exception.dart';
@@ -79,7 +77,6 @@ class AdminOverviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tree = ref.watch(adminDepartmentTreeProvider);
-    final aiUsage = ref.watch(aiUsageTimelineProvider);
 
     return ColoredBox(
       color: Theme.of(context).scaffoldBackgroundColor,
@@ -197,17 +194,6 @@ class AdminOverviewPage extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.tertiary,
                   ),
                 ],
-              ),
-              const SizedBox(height: 24),
-              aiUsage.when(
-                data: (data) => AIUsageChartCard(data: data),
-                loading: () => const Card(
-                  child: SizedBox(
-                    height: 200,
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-                error: (err, stack) => const SizedBox.shrink(),
               ),
               const SizedBox(height: 24),
               _AccountSectionCard(
