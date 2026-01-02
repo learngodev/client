@@ -55,6 +55,23 @@ abstract class TeacherRepository {
     List<String>? classIds,
   });
 
+  Future<TeacherCourse> updateCourse({
+    required String courseId,
+    String? name,
+    String? description,
+    String? imageUrl,
+  });
+
+  Future<void> assignCourseClass({
+    required String courseId,
+    required String classId,
+  });
+
+  Future<void> removeCourseClass({
+    required String courseId,
+    required String classId,
+  });
+
   Future<List<CourseChapterSummary>> listCourseChapters(String courseId);
   Future<CourseChapterDetail> getCourseChapter(
     String courseId,

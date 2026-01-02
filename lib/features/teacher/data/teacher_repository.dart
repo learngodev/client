@@ -515,6 +515,68 @@ class TeacherApiRepository implements TeacherRepository {
     }
   }
 
+  @override
+  Future<TeacherCourse> updateCourse({
+    required String courseId,
+    String? name,
+    String? description,
+    String? imageUrl,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (name != null) payload['name'] = name;
+      if (description != null) payload['description'] = description;
+      if (imageUrl != null) payload['image_url'] = imageUrl;
+      if (payload.isEmpty) {
+        throw AppException('未提供需要更新的字段');
+      }
+
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId',
+        data: payload,
+      );
+      final data = _extractData(response.data, '未能更新课程');
+      final courseJson = data['course'] as Map<String, dynamic>?;
+      if (courseJson == null) {
+        throw AppException('未能更新课程');
+      }
+      return TeacherCourse.fromJson(courseJson);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法更新课程');
+    }
+  }
+
+  @override
+  Future<void> assignCourseClass({
+    required String courseId,
+    required String classId,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/classes',
+        data: {'class_id': classId},
+      );
+      _extractData(response.data, '未能分配班级');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法分配班级');
+    }
+  }
+
+  @override
+  Future<void> removeCourseClass({
+    required String courseId,
+    required String classId,
+  }) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/classes/$classId',
+      );
+      _extractData(response.data, '未能移除班级');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法移除班级');
+    }
+  }
+
   Map<String, dynamic> _extractData(
     Map<String, dynamic>? body,
     String fallbackMessage,
