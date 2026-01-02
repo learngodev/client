@@ -1,4 +1,5 @@
 import 'assignment_models.dart';
+import 'course_chapter_models.dart';
 import 'course.dart';
 import 'sample_data.dart';
 import 'time_slot.dart';
@@ -106,6 +107,15 @@ class StudentDashboardData {
 abstract class StudentRepository {
   Future<StudentDashboardData> fetchDashboard();
   Future<List<TimeSlot>> listTimeSlots();
+  Future<List<StudentAssignmentItem>> listAssignments({
+    String? courseId,
+    int limit = 20,
+  });
+  Future<List<CourseChapterSummary>> listCourseChapters(String courseId);
+  Future<CourseChapterDetail> getCourseChapter(
+    String courseId,
+    String chapterId,
+  );
   Future<AssignmentDetail> getAssignmentDetail(String id);
   Future<StudentSubmissionDetail?> getSubmissionDetail(String assignmentId);
   Future<SubmissionResult> submitAssignment(

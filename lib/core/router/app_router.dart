@@ -15,8 +15,11 @@ import '../../features/admin/presentation/pages/course_management_page.dart';
 import '../../features/admin/presentation/pages/schedule_management_page.dart';
 import '../../features/admin/presentation/pages/classroom_management_page.dart';
 import '../../features/student/presentation/pages/assignment_detail_page.dart';
+import '../../features/student/presentation/pages/student_course_detail_page.dart';
+import '../../features/student/presentation/pages/student_course_chapter_detail_page.dart';
 import '../../features/student/presentation/pages/submission_detail_page.dart';
 import '../../features/student/presentation/pages/student_pages.dart';
+import '../../features/student/presentation/pages/student_video_player_page.dart';
 import '../../features/student/presentation/student_shell.dart';
 import '../../features/teacher/presentation/pages/teacher_pages.dart';
 import '../../features/teacher/presentation/pages/grading_page.dart';
@@ -24,8 +27,10 @@ import '../../features/teacher/presentation/pages/teacher_assignments_page.dart'
 import '../../features/teacher/presentation/pages/assignment_submissions_page.dart';
 import '../../features/teacher/presentation/pages/create_assignment_page.dart';
 import '../../features/teacher/presentation/pages/teacher_courses_page.dart';
-import '../../features/teacher/presentation/pages/teacher_course_classes_page.dart';
+import '../../features/teacher/presentation/pages/teacher_course_detail_page.dart';
 import '../../features/teacher/presentation/pages/teacher_class_students_page.dart';
+import '../../features/teacher/presentation/pages/teacher_course_chapters_page.dart';
+import '../../features/teacher/presentation/pages/teacher_course_chapter_edit_page.dart';
 import '../../features/teacher/domain/teacher_models.dart';
 import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
@@ -140,6 +145,55 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             context: context,
             state: state,
             child: ChatScreen(conversationId: conversationId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/student/courses/:courseId',
+        name: 'studentCourseDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: StudentCourseDetailPage(courseId: courseId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/student/courses/:courseId/chapters/:chapterId',
+        name: 'studentCourseChapterDetail',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final courseId = state.pathParameters['courseId']!;
+          final chapterId = state.pathParameters['chapterId']!;
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: StudentCourseChapterDetailPage(
+              courseId: courseId,
+              chapterId: chapterId,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/student/video',
+        name: 'studentVideo',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          String title = '视频播放';
+          String url = '';
+          if (extra is Map) {
+            title = extra['title']?.toString() ?? title;
+            url = extra['url']?.toString() ?? url;
+          }
+          return _sharedAxisTransitionPage(
+            context: context,
+            state: state,
+            child: StudentVideoPlayerPage(title: title, url: url),
           );
         },
       ),
@@ -338,7 +392,47 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               return _sharedAxisTransitionPage(
                 context: context,
                 state: state,
-                child: TeacherCourseClassesPage(courseId: id),
+                child: TeacherCourseDetailPage(courseId: id),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/teacher/courses/:id/chapters',
+            name: 'teacherCourseChapters',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: TeacherCourseChaptersPage(courseId: id),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/teacher/courses/:id/chapters/create',
+            name: 'teacherCreateCourseChapter',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: TeacherCourseChapterEditPage(courseId: id),
+              );
+            },
+          ),
+          GoRoute(
+            path: '/teacher/courses/:id/chapters/:chapterId/edit',
+            name: 'teacherEditCourseChapter',
+            pageBuilder: (context, state) {
+              final courseId = state.pathParameters['id']!;
+              final chapterId = state.pathParameters['chapterId']!;
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: TeacherCourseChapterEditPage(
+                  courseId: courseId,
+                  chapterId: chapterId,
+                ),
               );
             },
           ),

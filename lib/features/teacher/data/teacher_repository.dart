@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/exceptions/app_exception.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../student/domain/assignment_models.dart';
+import '../../student/domain/course_chapter_models.dart';
 import '../domain/teacher_models.dart';
 import '../domain/teacher_repository.dart';
 import '../domain/teacher_schedule_model.dart';
@@ -187,6 +188,136 @@ class TeacherApiRepository implements TeacherRepository {
           [];
     } on DioException catch (error) {
       throw _asAppException(error, '无法加载班级列表');
+    }
+  }
+
+  @override
+  Future<List<CourseChapterSummary>> listCourseChapters(String courseId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters',
+      );
+      final data = _extractData(response.data, '未能获取章节列表');
+      final list = data['items'] as List?;
+      return list
+              ?.map(
+                (e) => CourseChapterSummary.fromJson(
+                  (e as Map).cast<String, dynamic>(),
+                ),
+              )
+              .toList() ??
+          [];
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载章节列表');
+    }
+  }
+
+  @override
+  Future<CourseChapterDetail> getCourseChapter(
+    String courseId,
+    String chapterId,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters/$chapterId',
+      );
+      final data = _extractData(response.data, '未能获取章节详情');
+      return CourseChapterDetail.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载章节详情');
+    }
+  }
+
+  @override
+  Future<CourseChapterSummary> createCourseChapter(
+    String courseId, {
+    required String title,
+    String content = '',
+    int orderIndex = 0,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters',
+        data: {'title': title, 'content': content, 'order_index': orderIndex},
+      );
+      final data = _extractData(response.data, '未能创建章节');
+      final chapter = (data['chapter'] as Map?)?.cast<String, dynamic>();
+      if (chapter == null) {
+        throw AppException('未能创建章节');
+      }
+      return CourseChapterSummary.fromJson(chapter);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法创建章节');
+    }
+  }
+
+  @override
+  Future<void> updateCourseChapter(
+    String courseId,
+    String chapterId, {
+    String? title,
+    String? content,
+    int? orderIndex,
+  }) async {
+    try {
+      final payload = <String, dynamic>{};
+      if (title != null) payload['title'] = title;
+      if (content != null) payload['content'] = content;
+      if (orderIndex != null) payload['order_index'] = orderIndex;
+      if (payload.isEmpty) return;
+
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters/$chapterId',
+        data: payload,
+      );
+      _extractData(response.data, '未能更新章节');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法更新章节');
+    }
+  }
+
+  @override
+  Future<void> deleteCourseChapter(String courseId, String chapterId) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters/$chapterId',
+      );
+      _extractData(response.data, '未能删除章节');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法删除章节');
+    }
+  }
+
+  @override
+  Future<void> attachCourseChapterFile(
+    String courseId,
+    String chapterId,
+    String fileId,
+  ) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters/$chapterId/attachments',
+        data: {'file_id': fileId},
+      );
+      _extractData(response.data, '未能绑定附件');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法绑定附件');
+    }
+  }
+
+  @override
+  Future<void> detachCourseChapterFile(
+    String courseId,
+    String chapterId,
+    String fileId,
+  ) async {
+    try {
+      final response = await _dio.delete<Map<String, dynamic>>(
+        '/api/v1/teacher/courses/$courseId/chapters/$chapterId/attachments/$fileId',
+      );
+      _extractData(response.data, '未能解绑附件');
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法解绑附件');
     }
   }
 

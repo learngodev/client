@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show IconData, Icons;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +11,7 @@ import '../../../core/network/dio_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
 import '../domain/assignment_models.dart';
+import '../domain/course_chapter_models.dart';
 import '../domain/course.dart';
 import '../domain/sample_data.dart' as sample;
 import '../domain/student_repository.dart';
@@ -68,7 +68,7 @@ class StudentApiRepository implements StudentRepository {
   Future<StudentDashboardData> fetchDashboard() async {
     final noteFuture = _fetchNotes();
     final messageFuture = _fetchMessages();
-    final assignmentFuture = _fetchAssignments();
+    final assignmentFuture = listAssignments(limit: 20);
     final examFuture = _fetchExams();
     final scheduleFuture = _fetchSchedule();
     final customReminderFuture = _fetchCustomReminders();
@@ -100,6 +100,105 @@ class StudentApiRepository implements StudentRepository {
         exams: exams,
       ),
     );
+  }
+
+  @override
+  Future<List<sample.StudentAssignmentItem>> listAssignments({
+    String? courseId,
+    int limit = 20,
+  }) async {
+    try {
+      final query = <String, dynamic>{'limit': limit};
+      final trimmed = courseId?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        query['course_id'] = trimmed;
+      }
+
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/student/assignments',
+        queryParameters: query,
+      );
+      final data = _extractData(response.data, '未能获取作业列表');
+      final rawList = _extractMapList(data, 'assignments');
+      final items = <sample.StudentAssignmentItem>[];
+
+      for (final raw in rawList) {
+        final id = raw['id']?.toString();
+        if (id == null || id.isEmpty) {
+          continue;
+        }
+
+        final dueAt = _parseDateTime(raw['due_at']);
+        final startAt = _parseDateTime(raw['start_at']);
+        final status = _parseAssignmentStatus(raw['status']);
+        final isOverdue = raw['is_overdue'] == true;
+
+        items.add(
+          sample.StudentAssignmentItem(
+            id: id,
+            title: _sanitizeNonEmpty(raw['title']) ?? '未命名作业',
+            course: _sanitizeNonEmpty(raw['course_name']) ?? '课程',
+            teacher: _sanitizeNonEmpty(raw['teacher_name']) ?? '授课教师',
+            dueLabel: _formatAssignmentDueLabel(
+              dueAt: dueAt,
+              status: status,
+              isOverdue: isOverdue,
+            ),
+            status: status,
+            progress: _guessAssignmentProgress(
+              status: status,
+              isOverdue: isOverdue,
+            ),
+            allowResubmit: raw['allow_resubmit'] == true,
+            isOverdue: isOverdue,
+            scoreLabel: _buildScoreLabel(raw['score']),
+            feedback: _sanitizeString(raw['feedback']),
+            dueAt: dueAt,
+            startAt: startAt,
+          ),
+        );
+      }
+
+      return List.unmodifiable(items);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载作业列表');
+    }
+  }
+
+  @override
+  Future<List<CourseChapterSummary>> listCourseChapters(String courseId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/student/courses/$courseId/chapters',
+      );
+      final data = _extractData(response.data, '未能获取章节列表');
+      final rawList = _extractMapList(data, 'items');
+
+      return List.unmodifiable(
+        rawList
+            .map((e) => CourseChapterSummary.fromJson(e))
+            .where((e) => e.id.isNotEmpty)
+            .toList(growable: false),
+      );
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载章节列表');
+    }
+  }
+
+  @override
+  Future<CourseChapterDetail> getCourseChapter(
+    String courseId,
+    String chapterId,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/api/v1/student/courses/$courseId/chapters/$chapterId',
+      );
+      final data = _extractData(response.data, '未能获取章节详情');
+      return CourseChapterDetail.fromJson(data);
+    } on DioException catch (error) {
+      throw _asAppException(error, '无法加载章节详情');
+    }
   }
 
   @override
@@ -302,59 +401,6 @@ class StudentApiRepository implements StudentRepository {
         return [];
       }
       throw _asAppException(error, '无法获取消息列表');
-    }
-  }
-
-  Future<List<sample.StudentAssignmentItem>> _fetchAssignments() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/assignments',
-        queryParameters: const {'limit': 20},
-      );
-      final data = _extractData(response.data, '未能获取作业列表');
-      final rawList = _extractMapList(data, 'assignments');
-      final items = <sample.StudentAssignmentItem>[];
-
-      for (final raw in rawList) {
-        final id = raw['id']?.toString();
-        if (id == null || id.isEmpty) {
-          continue;
-        }
-
-        final dueAt = _parseDateTime(raw['due_at']);
-        final startAt = _parseDateTime(raw['start_at']);
-        final status = _parseAssignmentStatus(raw['status']);
-        final isOverdue = raw['is_overdue'] == true;
-
-        items.add(
-          sample.StudentAssignmentItem(
-            id: id,
-            title: _sanitizeNonEmpty(raw['title']) ?? '未命名作业',
-            course: _sanitizeNonEmpty(raw['course_name']) ?? '课程',
-            teacher: _sanitizeNonEmpty(raw['teacher_name']) ?? '授课教师',
-            dueLabel: _formatAssignmentDueLabel(
-              dueAt: dueAt,
-              status: status,
-              isOverdue: isOverdue,
-            ),
-            status: status,
-            progress: _guessAssignmentProgress(
-              status: status,
-              isOverdue: isOverdue,
-            ),
-            allowResubmit: raw['allow_resubmit'] == true,
-            isOverdue: isOverdue,
-            scoreLabel: _buildScoreLabel(raw['score']),
-            feedback: _sanitizeString(raw['feedback']),
-            dueAt: dueAt,
-            startAt: startAt,
-          ),
-        );
-      }
-
-      return List.unmodifiable(items);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载作业列表');
     }
   }
 
@@ -1136,6 +1182,38 @@ class FakeStudentRepository implements StudentRepository {
   Future<List<TimeSlot>> listTimeSlots() async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     return [];
+  }
+
+  @override
+  Future<List<sample.StudentAssignmentItem>> listAssignments({
+    String? courseId,
+    int limit = 20,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return sample.studentAssignments.take(limit).toList(growable: false);
+  }
+
+  @override
+  Future<List<CourseChapterSummary>> listCourseChapters(String courseId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return const [];
+  }
+
+  @override
+  Future<CourseChapterDetail> getCourseChapter(
+    String courseId,
+    String chapterId,
+  ) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return const CourseChapterDetail(
+      id: '',
+      courseId: '',
+      teacherId: '',
+      title: '',
+      content: '',
+      orderIndex: 0,
+      attachments: [],
+    );
   }
 
   @override
