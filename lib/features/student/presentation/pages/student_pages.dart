@@ -97,15 +97,13 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
         padding: const EdgeInsets.all(16),
         children: [
           _buildHeader(theme, account?.displayName ?? '同学'),
-          const SizedBox(height: 24),
-          _buildStats(theme, data),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildQuickActions(context),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildSectionTitle(theme, '今日课程'),
           const SizedBox(height: 12),
           _buildScheduleList(theme, data.todaySchedule),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildSectionTitle(theme, '待办作业'),
           const SizedBox(height: 12),
           _buildAssignmentList(context, theme, data.pendingAssignments),
@@ -119,7 +117,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
     final dateStr = DateFormat('M月d日 EEEE', 'zh_CN').format(now);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -150,10 +148,10 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
                     color: theme.colorScheme.onPrimary.withOpacity(0.9),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   '你好，\n$name',
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                  style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onPrimary,
                     height: 1.2,
@@ -169,7 +167,7 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
               shape: BoxShape.circle,
             ),
             child: CircleAvatar(
-              radius: 32,
+              radius: 26,
               backgroundColor: theme.colorScheme.surface,
               child: Text(
                 name.isNotEmpty ? name[0] : 'S',
@@ -182,42 +180,6 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStats(ThemeData theme, StudentDashboardData data) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            '待办作业',
-            '${data.pendingAssignments.length}',
-            Icons.assignment_outlined,
-            Colors.orange,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            '近期考试',
-            '${data.upcomingExams.length}',
-            Icons.event_note_outlined,
-            Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            theme,
-            '今日课程',
-            '${data.todaySchedule.length}',
-            Icons.class_outlined,
-            Colors.green,
-          ),
-        ),
-      ],
     );
   }
 
@@ -296,13 +258,6 @@ class _StudentOverviewPageState extends ConsumerState<StudentOverviewPage> {
               '课表',
               '/student/schedule',
               Colors.purple,
-            ),
-            _buildActionItem(
-              context,
-              Icons.grade_outlined,
-              '成绩',
-              '/student/exams',
-              Colors.teal,
             ),
           ],
         ),

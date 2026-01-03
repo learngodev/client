@@ -109,6 +109,7 @@ class IMService {
   final Set<String> _joinedConversations = {};
   bool _isDisposed = false;
 
+  final Map<String, IMConversationBidiConnection> _connections = {};
   final Map<String, StreamSubscription<pb.ConversationStreamResponse>>
   _subscriptions = {};
   final Map<String, Timer> _reconnectTimers = {};
@@ -126,22 +127,24 @@ class IMService {
     if (!_joinedConversations.contains(conversationId)) return;
 
     _subscriptions[conversationId]?.cancel();
+    unawaited(_connections.remove(conversationId)?.close());
 
     try {
-      final stream = _repository.subscribeConversation(conversationId);
-      _subscriptions[conversationId] = stream.listen(
+      final connection = _repository.connectConversationBidi(conversationId);
+      _connections[conversationId] = connection;
+      _subscriptions[conversationId] = connection.responses.listen(
         (event) => _mergedController.add(event),
         onError: (e) {
-          debugPrint('gRPC Stream Error: $e');
+          debugPrint('IM stream error: $e');
           _scheduleReconnect(conversationId);
         },
         onDone: () {
-          debugPrint('gRPC Stream Closed');
+          debugPrint('IM stream closed');
           _scheduleReconnect(conversationId);
         },
       );
     } catch (e) {
-      debugPrint('gRPC Connection Error: $e');
+      debugPrint('IM connection error: $e');
       _scheduleReconnect(conversationId);
     }
   }
@@ -154,7 +157,7 @@ class IMService {
     _reconnectTimers[conversationId] = Timer(const Duration(seconds: 3), () {
       if (_isDisposed) return;
       if (!_joinedConversations.contains(conversationId)) return;
-      debugPrint('Reconnecting gRPC stream...');
+      debugPrint('Reconnecting IM stream...');
       _startSubscription(conversationId);
     });
   }
@@ -171,10 +174,46 @@ class IMService {
 
     _reconnectTimers.remove(conversationId)?.cancel();
     _subscriptions.remove(conversationId)?.cancel();
+    unawaited(_connections.remove(conversationId)?.close());
   }
 
   Future<void> markAsRead(String conversationId, String messageId) async {
+    final connection = _connections[conversationId];
+    if (connection != null) {
+      connection.send(
+        pb.ConversationStreamRequest()
+          ..read = (pb.ConversationRead()..messageId = messageId),
+      );
+      return;
+    }
     await _repository.markConversationAsRead(conversationId, messageId);
+  }
+
+  /// Returns a [Message] only when REST fallback was used.
+  Future<Message?> sendMessage(
+    String conversationId,
+    String text, {
+    MessageKind kind = MessageKind.text,
+    String? mediaUri,
+  }) async {
+    final connection = _connections[conversationId];
+    if (connection != null) {
+      final create = pb.MessageCreate()
+        ..conversationId = conversationId
+        ..kind = kind.name
+        ..text = text;
+      if (mediaUri != null) create.mediaUri = mediaUri;
+
+      connection.send(pb.ConversationStreamRequest()..create_3 = create);
+      return null;
+    }
+
+    return _repository.sendMessage(
+      conversationId,
+      text,
+      kind: kind,
+      mediaUri: mediaUri,
+    );
   }
 
   void emitLocalMessage(Message message) {
@@ -210,6 +249,11 @@ class IMService {
       sub.cancel();
     }
     _subscriptions.clear();
+
+    for (final c in _connections.values) {
+      unawaited(c.close());
+    }
+    _connections.clear();
 
     _mergedController.close();
   }
@@ -323,17 +367,19 @@ class IMController {
     MessageKind kind = MessageKind.text,
     String? mediaUri,
   }) async {
-    final repository = _ref.read(imRepositoryProvider);
     final imService = _ref.read(imServiceProvider);
 
-    final sentMessage = await repository.sendMessage(
+    final sentMessage = await imService.sendMessage(
       conversationId,
       text,
       kind: kind,
       mediaUri: mediaUri,
     );
-    // Optimistically update the stream to ensure UI updates immediately
-    imService.emitLocalMessage(sentMessage);
+    // Only emit locally when REST fallback was used (to avoid duplicates when
+    // server echoes stream-created messages with a different ID).
+    if (sentMessage != null) {
+      imService.emitLocalMessage(sentMessage);
+    }
 
     // Refresh conversation list to update the latest message preview
     await refreshConversations();
