@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../application/student_dashboard_controller.dart';
 import '../../data/student_repository.dart';
 
 class JoinCourseDialog extends HookConsumerWidget {
@@ -50,6 +51,7 @@ class JoinCourseDialog extends HookConsumerWidget {
                         .joinCourse(codeController.text);
 
                     if (context.mounted) {
+                      ref.invalidate(studentCoursesProvider);
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(
                         context,

@@ -1030,6 +1030,7 @@ class AdminRepository {
     required String schoolId,
     required String name,
     required String endpoint,
+    String internalEndpoint = '',
     required String region,
     required String bucket,
     required String accessKeyId,
@@ -1049,6 +1050,7 @@ class AdminRepository {
           'school_id': schoolId,
           'name': name,
           'endpoint': endpoint,
+          'internal_endpoint': internalEndpoint,
           'region': region,
           'bucket': bucket,
           'directory_prefix': directoryPrefix,
@@ -1137,6 +1139,7 @@ class AdminRepository {
     required String credentialId,
     String? name,
     String? endpoint,
+    String? internalEndpoint,
     String? region,
     String? bucket,
     String? directoryPrefix,
@@ -1158,6 +1161,7 @@ class AdminRepository {
 
     putIfNotNull('name', name);
     putIfNotNull('endpoint', endpoint);
+    putIfNotNull('internal_endpoint', internalEndpoint);
     putIfNotNull('region', region);
     putIfNotNull('bucket', bucket);
     putIfNotNull('directory_prefix', directoryPrefix);

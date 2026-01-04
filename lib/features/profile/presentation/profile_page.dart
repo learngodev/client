@@ -125,8 +125,6 @@ class _InfoCard extends StatelessWidget {
         ? '未登录'
         : account!.schoolId.isEmpty
         ? '未绑定'
-        : (schoolName.isNotEmpty && schoolName != account!.schoolId)
-        ? '$schoolName（${account!.schoolId}）'
         : schoolName;
 
     return Card(

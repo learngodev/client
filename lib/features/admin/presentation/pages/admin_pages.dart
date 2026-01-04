@@ -2548,6 +2548,9 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       final payload = StringBuffer()
         ..writeln('名称：${credential.name}')
         ..writeln('Endpoint：${credential.endpoint}')
+        ..writeln(
+          'Internal Endpoint：${credential.internalEndpoint.isEmpty ? '-' : credential.internalEndpoint}',
+        )
         ..writeln('Bucket：${credential.bucket}')
         ..writeln('访问凭证：${credential.accessKeyMasked}');
       await Clipboard.setData(ClipboardData(text: payload.toString()));
@@ -2608,6 +2611,7 @@ class AdminOssSettingsPage extends HookConsumerWidget {
       final formKey = GlobalKey<FormState>();
       final nameController = TextEditingController();
       final endpointController = TextEditingController();
+      final internalEndpointController = TextEditingController();
       final regionController = TextEditingController();
       final bucketController = TextEditingController();
       final prefixController = TextEditingController();
@@ -2625,6 +2629,7 @@ class AdminOssSettingsPage extends HookConsumerWidget {
               ({
                 String name,
                 String endpoint,
+                String internalEndpoint,
                 String region,
                 String bucket,
                 String directoryPrefix,
@@ -2676,6 +2681,13 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                   }
                                   return null;
                                 },
+                              ),
+                              TextFormField(
+                                controller: internalEndpointController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Internal Endpoint（可选）',
+                                  helperText: '用于服务端上传加速（内网），下载仍使用公网 Endpoint',
+                                ),
                               ),
                               TextFormField(
                                 controller: regionController,
@@ -2821,6 +2833,8 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                         Navigator.of(dialogContext).pop((
                           name: nameController.text.trim(),
                           endpoint: endpointController.text.trim(),
+                          internalEndpoint: internalEndpointController.text
+                              .trim(),
                           region: regionController.text.trim(),
                           bucket: bucketController.text.trim(),
                           directoryPrefix: prefixController.text.trim(),
@@ -2848,6 +2862,7 @@ class AdminOssSettingsPage extends HookConsumerWidget {
         final created = await ossNotifier.createCredential(
           name: result.name,
           endpoint: result.endpoint,
+          internalEndpoint: result.internalEndpoint,
           region: result.region,
           bucket: result.bucket,
           accessKeyId: result.accessKeyId,
@@ -2867,6 +2882,7 @@ class AdminOssSettingsPage extends HookConsumerWidget {
         creatingCredential.value = false;
         nameController.dispose();
         endpointController.dispose();
+        internalEndpointController.dispose();
         regionController.dispose();
         bucketController.dispose();
         prefixController.dispose();
@@ -3226,6 +3242,10 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                             final endpointController = TextEditingController(
                               text: credential.endpoint,
                             );
+                            final internalEndpointController =
+                                TextEditingController(
+                                  text: credential.internalEndpoint,
+                                );
                             final regionController = TextEditingController(
                               text: credential.region,
                             );
@@ -3248,6 +3268,7 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                     ({
                                       String name,
                                       String endpoint,
+                                      String internalEndpoint,
                                       String region,
                                       String bucket,
                                       String directoryPrefix,
@@ -3298,6 +3319,17 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                                     }
                                                     return null;
                                                   },
+                                                ),
+                                                const SizedBox(height: 12),
+                                                TextFormField(
+                                                  controller:
+                                                      internalEndpointController,
+                                                  decoration: const InputDecoration(
+                                                    labelText:
+                                                        'Internal Endpoint（可选）',
+                                                    helperText:
+                                                        '用于服务端上传加速（内网），下载仍使用公网 Endpoint',
+                                                  ),
                                                 ),
                                                 const SizedBox(height: 12),
                                                 TextFormField(
@@ -3398,6 +3430,10 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                                 endpoint: endpointController
                                                     .text
                                                     .trim(),
+                                                internalEndpoint:
+                                                    internalEndpointController
+                                                        .text
+                                                        .trim(),
                                                 region: regionController.text
                                                     .trim(),
                                                 bucket: bucketController.text
@@ -3434,6 +3470,8 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                                         credentialId: credential.id,
                                         name: result.name,
                                         endpoint: result.endpoint,
+                                        internalEndpoint:
+                                            result.internalEndpoint,
                                         region: result.region,
                                         bucket: result.bucket,
                                         directoryPrefix: result.directoryPrefix,
@@ -3455,6 +3493,7 @@ class AdminOssSettingsPage extends HookConsumerWidget {
                             } finally {
                               nameController.dispose();
                               endpointController.dispose();
+                              internalEndpointController.dispose();
                               regionController.dispose();
                               bucketController.dispose();
                               prefixController.dispose();

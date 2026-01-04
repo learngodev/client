@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:learn_go/features/file/application/file_service.dart';
 
 import '../../application/teacher_courses_provider.dart';
 import '../../domain/teacher_models.dart';
@@ -100,6 +101,14 @@ class _TeacherCourseCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    bool looksLikeFileId(String? value) {
+      if (value == null) return false;
+      final v = value.trim();
+      if (v.isEmpty) return false;
+      if (v.startsWith('http://') || v.startsWith('https://')) return false;
+      return RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(v);
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -118,32 +127,72 @@ class _TeacherCourseCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color:
-                        course.imageUrl != null && course.imageUrl!.isNotEmpty
-                        ? null
-                        : (isDark
-                              ? colorSet.icon.withValues(alpha: 0.2)
-                              : colorSet.bg),
-                    borderRadius: BorderRadius.circular(8),
-                    image:
-                        course.imageUrl != null && course.imageUrl!.isNotEmpty
-                        ? DecorationImage(
-                            image: NetworkImage(course.imageUrl!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child:
+                        (course.imageUrl != null &&
+                            course.imageUrl!.trim().isNotEmpty)
+                        ? (looksLikeFileId(course.imageUrl)
+                              ? Consumer(
+                                  builder: (context, ref, _) {
+                                    final urlAsync = ref.watch(
+                                      downloadUrlProvider(
+                                        course.imageUrl!.trim(),
+                                      ),
+                                    );
+                                    return urlAsync.when(
+                                      data: (url) =>
+                                          Image.network(url, fit: BoxFit.cover),
+                                      loading: () => Container(
+                                        color: isDark
+                                            ? colorSet.icon.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : colorSet.bg,
+                                        alignment: Alignment.center,
+                                        child: const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      error: (e, _) => Container(
+                                        color: isDark
+                                            ? colorSet.icon.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : colorSet.bg,
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          color: colorSet.icon,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Image.network(
+                                  course.imageUrl!.trim(),
+                                  fit: BoxFit.cover,
+                                ))
+                        : Container(
+                            color: isDark
+                                ? colorSet.icon.withValues(alpha: 0.2)
+                                : colorSet.bg,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.book,
+                              color: colorSet.icon,
+                              size: 24,
+                            ),
+                          ),
                   ),
-                  child: course.imageUrl == null || course.imageUrl!.isEmpty
-                      ? Icon(
-                          Icons.book, // Default icon for teacher courses
-                          color: colorSet.icon,
-                          size: 24,
-                        )
-                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

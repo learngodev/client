@@ -267,10 +267,24 @@ class StudentApiRepository implements StudentRepository {
         '/api/v1/student/courses/join',
         data: {'code': code},
       );
-      _extractData(response.data, '加入课程失败');
+      _ensureSuccess(response.data, '加入课程失败');
     } on DioException catch (error) {
       throw _asAppException(error, '加入课程失败');
     }
+  }
+
+  void _ensureSuccess(Map<String, dynamic>? body, String fallbackMessage) {
+    if (body == null) {
+      throw AppException(fallbackMessage);
+    }
+    final success = body['success'] as bool? ?? false;
+    if (success) {
+      return;
+    }
+    final error = body['error'] as Map<String, dynamic>?;
+    final message = error?['message']?.toString() ?? fallbackMessage;
+    final details = error?['details']?.toString();
+    throw AppException(message, details: details);
   }
 
   @override

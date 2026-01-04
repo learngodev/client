@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -366,7 +367,35 @@ class _TeacherChapterAttachmentTile extends ConsumerWidget {
                 icon: const Icon(Icons.delete_outline),
                 onPressed: onDetach,
               ),
-              onTap: () {
+              onTap: () async {
+                if (!kIsWeb &&
+                    defaultTargetPlatform == TargetPlatform.windows) {
+                  final uri = Uri.tryParse(url);
+                  if (uri == null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('视频地址无效')));
+                    return;
+                  }
+                  try {
+                    final ok = await launchUrl(
+                      uri,
+                      mode: LaunchMode.externalApplication,
+                    );
+                    if (!ok && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('无法调用系统播放器打开')),
+                      );
+                    }
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('无法调用系统播放器打开：$e')));
+                  }
+                  return;
+                }
+
                 context.push(
                   '/student/video',
                   extra: {

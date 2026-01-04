@@ -41,6 +41,7 @@ class AdminOssCredential {
     required this.id,
     required this.name,
     required this.endpoint,
+    this.internalEndpoint = '',
     required this.region,
     required this.bucket,
     required this.directoryPrefix,
@@ -57,6 +58,7 @@ class AdminOssCredential {
   final String id;
   final String name;
   final String endpoint;
+  final String internalEndpoint;
   final String region;
   final String bucket;
   final String directoryPrefix;
@@ -81,6 +83,7 @@ class AdminOssCredential {
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       endpoint: json['endpoint']?.toString() ?? '',
+      internalEndpoint: json['internal_endpoint']?.toString() ?? '',
       region: json['region']?.toString() ?? '',
       bucket: json['bucket']?.toString() ?? '',
       directoryPrefix: json['directory_prefix']?.toString() ?? '',
@@ -100,6 +103,7 @@ class AdminOssCredential {
   AdminOssCredential copyWith({
     String? name,
     String? endpoint,
+    String? internalEndpoint,
     String? region,
     String? bucket,
     String? directoryPrefix,
@@ -116,6 +120,7 @@ class AdminOssCredential {
       id: id,
       name: name ?? this.name,
       endpoint: endpoint ?? this.endpoint,
+      internalEndpoint: internalEndpoint ?? this.internalEndpoint,
       region: region ?? this.region,
       bucket: bucket ?? this.bucket,
       directoryPrefix: directoryPrefix ?? this.directoryPrefix,

@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/exceptions/app_exception.dart';
 import '../../../core/network/dio_provider.dart';
+import '../../auth/application/auth_controller.dart';
 import '../../student/domain/assignment_models.dart';
 import '../../student/domain/course_chapter_models.dart';
 import '../domain/teacher_models.dart';
@@ -11,9 +12,20 @@ import '../domain/teacher_schedule_model.dart';
 import '../domain/time_slot.dart';
 
 class TeacherApiRepository implements TeacherRepository {
-  TeacherApiRepository({required Dio dio}) : _dio = dio;
+  TeacherApiRepository({required Dio dio, required String Function() schoolId})
+    : _dio = dio,
+      _schoolId = schoolId;
 
   final Dio _dio;
+  final String Function() _schoolId;
+
+  String _requireSchoolId() {
+    final value = _schoolId().trim();
+    if (value.isEmpty) {
+      throw AppException('缺少学校信息，请重新登录后再试。');
+    }
+    return value;
+  }
 
   @override
   Future<List<TimeSlot>> listTimeSlots() async {
@@ -499,14 +511,23 @@ class TeacherApiRepository implements TeacherRepository {
     List<String>? classIds,
   }) async {
     try {
+      final schoolId = _requireSchoolId();
+
+      final payload = <String, dynamic>{
+        'name': name,
+        'description': description,
+      };
+      if (imageUrl != null) {
+        payload['image_url'] = imageUrl;
+      }
+      if (classIds != null) {
+        payload['class_ids'] = classIds;
+      }
+
       final response = await _dio.post<Map<String, dynamic>>(
         '/api/v1/teacher/courses',
-        data: {
-          'name': name,
-          'description': description,
-          'image_url': imageUrl,
-          'class_ids': classIds,
-        },
+        queryParameters: {'school_id': schoolId},
+        data: payload,
       );
       final data = _extractData(response.data, '未能创建课程');
       return TeacherCourse.fromJson(data);
@@ -523,6 +544,8 @@ class TeacherApiRepository implements TeacherRepository {
     String? imageUrl,
   }) async {
     try {
+      final schoolId = _requireSchoolId();
+
       final payload = <String, dynamic>{};
       if (name != null) payload['name'] = name;
       if (description != null) payload['description'] = description;
@@ -533,6 +556,7 @@ class TeacherApiRepository implements TeacherRepository {
 
       final response = await _dio.patch<Map<String, dynamic>>(
         '/api/v1/teacher/courses/$courseId',
+        queryParameters: {'school_id': schoolId},
         data: payload,
       );
       final data = _extractData(response.data, '未能更新课程');
@@ -618,5 +642,8 @@ class TeacherApiRepository implements TeacherRepository {
 
 final teacherRepositoryProvider = Provider<TeacherRepository>((ref) {
   final dio = ref.watch(dioProvider);
-  return TeacherApiRepository(dio: dio);
+  return TeacherApiRepository(
+    dio: dio,
+    schoolId: () => ref.read(authStateProvider).account?.schoolId ?? '',
+  );
 });

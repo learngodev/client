@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:learn_go/features/file/application/file_service.dart';
 
 import '../../application/teacher_classes_provider.dart';
 import '../../application/teacher_courses_provider.dart';
@@ -13,11 +17,49 @@ class CreateCourseDialog extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nameController = useTextEditingController();
     final descriptionController = useTextEditingController();
-    final imageUrlController = useTextEditingController();
+    // NOTE: imageUrl in course payload is used as either a public URL OR an uploaded file_id.
+    // We store uploaded cover as file_id to avoid users manually inputting URLs.
+    final coverFileId = useState<String?>(null);
+    final coverLocalFile = useState<File?>(null);
+    final isUploadingCover = useState(false);
     final selectedClassIds = useState<List<String>>([]);
     final isLoading = useState(false);
 
     final classesAsync = ref.watch(teacherClassesProvider);
+
+    Future<void> pickAndUploadCover() async {
+      if (isUploadingCover.value || isLoading.value) return;
+
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+
+      if (picked == null) return;
+
+      final file = File(picked.path);
+      coverLocalFile.value = file;
+      isUploadingCover.value = true;
+      try {
+        final fileModel = await ref.read(fileServiceProvider).uploadFile(file);
+        coverFileId.value = fileModel.fileId;
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('封面上传成功')));
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('封面上传失败: $e')));
+        }
+      } finally {
+        isUploadingCover.value = false;
+      }
+    }
 
     return AlertDialog(
       title: const Text('创建课程'),
@@ -42,12 +84,49 @@ class CreateCourseDialog extends HookConsumerWidget {
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: imageUrlController,
-              decoration: const InputDecoration(
-                labelText: '封面图片 URL (可选)',
-                hintText: '请输入图片链接',
-              ),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('封面图片 (可选)'),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: coverLocalFile.value != null
+                        ? Image.file(coverLocalFile.value!, fit: BoxFit.cover)
+                        : Container(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            alignment: Alignment.center,
+                            child: const Icon(Icons.image_outlined),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: (isUploadingCover.value || isLoading.value)
+                        ? null
+                        : pickAndUploadCover,
+                    icon: isUploadingCover.value
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.cloud_upload_outlined),
+                    label: Text(
+                      coverFileId.value == null ? '选择图片并上传' : '重新选择并上传',
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             const Align(
@@ -95,7 +174,7 @@ class CreateCourseDialog extends HookConsumerWidget {
           child: const Text('取消'),
         ),
         FilledButton(
-          onPressed: isLoading.value
+          onPressed: (isLoading.value || isUploadingCover.value)
               ? null
               : () async {
                   if (nameController.text.isEmpty) {
@@ -112,9 +191,7 @@ class CreateCourseDialog extends HookConsumerWidget {
                         .createCourse(
                           name: nameController.text,
                           description: descriptionController.text,
-                          imageUrl: imageUrlController.text.isEmpty
-                              ? null
-                              : imageUrlController.text,
+                          imageUrl: coverFileId.value,
                           classIds: selectedClassIds.value.isEmpty
                               ? null
                               : selectedClassIds.value,

@@ -235,7 +235,10 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border(
-            top: BorderSide(color: modern.borderSubtle.withValues(alpha: 0.4)),
+            top: BorderSide(
+              color: modern.borderSubtle.withValues(alpha: 0.1),
+              width: 0.5,
+            ),
           ),
         ),
         child: SafeArea(

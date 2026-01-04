@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:learn_go/features/file/application/file_service.dart';
 
 import '../../application/student_dashboard_controller.dart';
 import '../../../auth/application/auth_controller.dart';
@@ -785,6 +786,14 @@ class _CourseCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    bool looksLikeFileId(String? value) {
+      if (value == null) return false;
+      final v = value.trim();
+      if (v.isEmpty) return false;
+      if (v.startsWith('http://') || v.startsWith('https://')) return false;
+      return RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(v);
+    }
+
     // Generate random color based on course name
     final colors = [
       Colors.red,
@@ -817,24 +826,64 @@ class _CourseCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: course.imageUrl != null
-                        ? null
-                        : (isDark ? color.withValues(alpha: 0.2) : imageColor),
-                    borderRadius: BorderRadius.circular(8),
-                    image: course.imageUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(course.imageUrl!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child:
+                        (course.imageUrl != null &&
+                            course.imageUrl!.trim().isNotEmpty)
+                        ? (looksLikeFileId(course.imageUrl)
+                              ? Consumer(
+                                  builder: (context, ref, _) {
+                                    final urlAsync = ref.watch(
+                                      downloadUrlProvider(
+                                        course.imageUrl!.trim(),
+                                      ),
+                                    );
+                                    return urlAsync.when(
+                                      data: (url) =>
+                                          Image.network(url, fit: BoxFit.cover),
+                                      loading: () => Container(
+                                        color: isDark
+                                            ? color.withValues(alpha: 0.2)
+                                            : imageColor,
+                                        alignment: Alignment.center,
+                                        child: const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        ),
+                                      ),
+                                      error: (e, _) => Container(
+                                        color: isDark
+                                            ? color.withValues(alpha: 0.2)
+                                            : imageColor,
+                                        alignment: Alignment.center,
+                                        child: Icon(
+                                          Icons.broken_image_outlined,
+                                          color: color,
+                                          size: 24,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Image.network(
+                                  course.imageUrl!.trim(),
+                                  fit: BoxFit.cover,
+                                ))
+                        : Container(
+                            color: isDark
+                                ? color.withValues(alpha: 0.2)
+                                : imageColor,
+                            alignment: Alignment.center,
+                            child: Icon(Icons.book, color: color, size: 24),
+                          ),
                   ),
-                  child: course.imageUrl == null
-                      ? Icon(Icons.book, color: color, size: 24)
-                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -845,13 +894,6 @@ class _CourseCard extends StatelessWidget {
                         course.name,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '教师: 未知', // Placeholder
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                       if (course.description != null) ...[
