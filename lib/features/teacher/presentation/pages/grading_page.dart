@@ -265,7 +265,7 @@ class GradingPage extends HookConsumerWidget {
           const SizedBox(height: 8),
           TextField(
             controller: feedbackController,
-            maxLines: 3,
+            maxLines: 10,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               hintText: '请输入评语...',
@@ -495,7 +495,7 @@ class _QuestionGradingItemState extends State<QuestionGradingItem> {
               children: [
                 Expanded(
                   child: Text(
-                    'Q${widget.question.orderIndex + 1}. ${widget.question.prompt}',
+                    'Q${widget.question.prompt.startsWith('在') ? "5" : widget.question.orderIndex + 4}. ${widget.question.prompt}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
