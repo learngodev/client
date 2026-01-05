@@ -122,10 +122,11 @@ abstract class StudentRepository {
     String id,
     Map<String, dynamic> answers,
   );
-  Future<CheckAssignmentResult> checkAssignment({
+  Future<ExplainQuestionResult> explainQuestion({
     required String title,
-    required String description,
-    required String content,
+    required String prompt,
+    required String questionType,
+    List<String> options = const [],
   });
   Future<void> joinCourse(String code);
   Future<List<Course>> listCourses();

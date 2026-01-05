@@ -249,24 +249,30 @@ class StudentSubmissionDetail {
   final List<SubmissionItem> items;
 }
 
-class CheckAssignmentResult {
-  CheckAssignmentResult({
-    required this.issues,
-    required this.suggestions,
-    required this.overall,
+class ExplainQuestionResult {
+  ExplainQuestionResult({
+    required this.analysis,
+    required this.steps,
+    required this.keyPoints,
+    required this.pitfalls,
+    required this.checklist,
   });
 
-  factory CheckAssignmentResult.fromJson(Map<String, dynamic> json) {
-    return CheckAssignmentResult(
-      issues: List<String>.from(json['issues'] ?? []),
-      suggestions: List<String>.from(json['suggestions'] ?? []),
-      overall: json['overall'] as String? ?? '',
+  factory ExplainQuestionResult.fromJson(Map<String, dynamic> json) {
+    return ExplainQuestionResult(
+      analysis: json['analysis'] as String? ?? '',
+      steps: List<String>.from(json['steps'] ?? []),
+      keyPoints: List<String>.from(json['key_points'] ?? []),
+      pitfalls: List<String>.from(json['pitfalls'] ?? []),
+      checklist: List<String>.from(json['checklist'] ?? []),
     );
   }
 
-  final List<String> issues;
-  final List<String> suggestions;
-  final String overall;
+  final String analysis;
+  final List<String> steps;
+  final List<String> keyPoints;
+  final List<String> pitfalls;
+  final List<String> checklist;
 }
 
 class GradeAssignmentResult {

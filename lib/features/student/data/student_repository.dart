@@ -243,20 +243,26 @@ class StudentApiRepository implements StudentRepository {
   }
 
   @override
-  Future<CheckAssignmentResult> checkAssignment({
+  Future<ExplainQuestionResult> explainQuestion({
     required String title,
-    required String description,
-    required String content,
+    required String prompt,
+    required String questionType,
+    List<String> options = const [],
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/ai/check_assignment',
-        data: {'title': title, 'description': description, 'content': content},
+        '/api/v1/ai/explain_question',
+        data: {
+          'title': title,
+          'prompt': prompt,
+          'question_type': questionType,
+          'options': options,
+        },
       );
-      final data = _extractData(response.data, 'AI 检查失败');
-      return CheckAssignmentResult.fromJson(data);
+      final data = _extractData(response.data, 'AI 解析失败');
+      return ExplainQuestionResult.fromJson(data);
     } on DioException catch (error) {
-      throw _asAppException(error, 'AI 检查失败');
+      throw _asAppException(error, 'AI 解析失败');
     }
   }
 
@@ -1280,16 +1286,19 @@ class FakeStudentRepository implements StudentRepository {
   }
 
   @override
-  Future<CheckAssignmentResult> checkAssignment({
+  Future<ExplainQuestionResult> explainQuestion({
     required String title,
-    required String description,
-    required String content,
+    required String prompt,
+    required String questionType,
+    List<String> options = const [],
   }) async {
     await Future<void>.delayed(const Duration(seconds: 1));
-    return CheckAssignmentResult(
-      issues: ['模拟问题1', '模拟问题2'],
-      suggestions: ['模拟建议1', '模拟建议2'],
-      overall: '模拟总体评价',
+    return ExplainQuestionResult(
+      analysis: '模拟题意解析：这道题主要考察你对题干信息的理解。',
+      steps: ['模拟思路步骤 1', '模拟思路步骤 2'],
+      keyPoints: ['模拟关键知识点 1', '模拟关键知识点 2'],
+      pitfalls: ['模拟易错点 1', '模拟易错点 2'],
+      checklist: ['模拟自查项 1', '模拟自查项 2'],
     );
   }
 

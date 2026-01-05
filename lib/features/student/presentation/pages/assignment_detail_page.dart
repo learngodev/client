@@ -336,19 +336,6 @@ class AssignmentDetailPage extends HookConsumerWidget {
                             currentAnswer: answers.value[q.id],
                             onAiCheck: !isExam && !isSubmitted.value
                                 ? () async {
-                                    final content =
-                                        answers.value[q.id]?.toString() ?? '';
-                                    if (content.trim().isEmpty) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('请先填写本题答案'),
-                                        ),
-                                      );
-                                      return;
-                                    }
-
                                     try {
                                       showDialog(
                                         context: context,
@@ -360,10 +347,11 @@ class AssignmentDetailPage extends HookConsumerWidget {
 
                                       final result = await ref
                                           .read(studentRepositoryProvider)
-                                          .checkAssignment(
+                                          .explainQuestion(
                                             title: detail.title,
-                                            description: q.prompt,
-                                            content: content,
+                                            prompt: q.prompt,
+                                            questionType: q.type.label,
+                                            options: q.options,
                                           );
 
                                       if (context.mounted) {
@@ -373,7 +361,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
                                           isScrollControlled: true,
                                           useSafeArea: true,
                                           builder: (context) =>
-                                              _AICheckResultSheet(
+                                              _AIExplainResultSheet(
                                                 result: result,
                                               ),
                                         );
@@ -385,7 +373,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
                                           context,
                                         ).showSnackBar(
                                           SnackBar(
-                                            content: Text('AI 检查失败: $e'),
+                                            content: Text('AI 解析失败: $e'),
                                           ),
                                         );
                                       }
@@ -650,7 +638,7 @@ class _QuestionCard extends StatelessWidget {
                 if (onAiCheck != null)
                   IconButton(
                     icon: const Icon(Icons.auto_awesome, size: 20),
-                    tooltip: 'AI 预检',
+                    tooltip: 'AI 解析',
                     onPressed: onAiCheck,
                     style: IconButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.primary,
@@ -805,10 +793,10 @@ class _TextInput extends HookWidget {
   }
 }
 
-class _AICheckResultSheet extends StatelessWidget {
-  const _AICheckResultSheet({required this.result});
+class _AIExplainResultSheet extends StatelessWidget {
+  const _AIExplainResultSheet({required this.result});
 
-  final CheckAssignmentResult result;
+  final ExplainQuestionResult result;
 
   @override
   Widget build(BuildContext context) {
@@ -821,7 +809,7 @@ class _AICheckResultSheet extends StatelessWidget {
         return Column(
           children: [
             AppBar(
-              title: const Text('AI 预检报告'),
+              title: const Text('AI 解析'),
               leading: const SizedBox(),
               actions: [
                 IconButton(
@@ -837,9 +825,9 @@ class _AICheckResultSheet extends StatelessWidget {
                 controller: scrollController,
                 padding: const EdgeInsets.all(16),
                 children: [
-                  if (result.overall.isNotEmpty) ...[
+                  if (result.analysis.isNotEmpty) ...[
                     Text(
-                      '总体评价',
+                      '题意解析',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
@@ -851,19 +839,52 @@ class _AICheckResultSheet extends StatelessWidget {
                         ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(result.overall),
+                      child: Text(result.analysis),
                     ),
                     const SizedBox(height: 24),
                   ],
-                  if (result.issues.isNotEmpty) ...[
+                  if (result.steps.isNotEmpty) ...[
                     Text(
-                      '发现的问题',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                      '思路引导',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    ...result.issues.map(
+                    ...result.steps.map(
+                      (e) => ListTile(
+                        leading: Icon(
+                          Icons.format_list_numbered,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(e),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (result.keyPoints.isNotEmpty) ...[
+                    Text(
+                      '关键知识点',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    ...result.keyPoints.map(
+                      (e) => ListTile(
+                        leading: Icon(
+                          Icons.lightbulb_outline,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(e),
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (result.pitfalls.isNotEmpty) ...[
+                    Text('易错点', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    ...result.pitfalls.map(
                       (e) => ListTile(
                         leading: Icon(
                           Icons.warning_amber,
@@ -876,18 +897,16 @@ class _AICheckResultSheet extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                   ],
-                  if (result.suggestions.isNotEmpty) ...[
+                  if (result.checklist.isNotEmpty) ...[
                     Text(
-                      '修改建议',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      '自查清单',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    ...result.suggestions.map(
+                    ...result.checklist.map(
                       (e) => ListTile(
                         leading: Icon(
-                          Icons.lightbulb_outline,
+                          Icons.check_circle_outline,
                           color: Theme.of(context).colorScheme.primary,
                         ),
                         title: Text(e),
