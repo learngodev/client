@@ -159,7 +159,7 @@ class CreateCourseDialog extends HookConsumerWidget {
                         }
                       },
                     );
-                  }).toList(),
+                  }).toList()..removeLast(),
                 );
               },
               loading: () => const CircularProgressIndicator(),

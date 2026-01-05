@@ -81,26 +81,22 @@ class _Header extends StatelessWidget {
         ),
         if (detail.submission.feedback != null) ...[
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer.withValues(
-                alpha: 0.3,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '老师评语',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.secondary,
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '老师评语',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.secondary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(detail.submission.feedback!),
-              ],
+                  const SizedBox(height: 4),
+                  Text(detail.submission.feedback!),
+                ],
+              ),
             ),
           ),
         ],
@@ -129,7 +125,7 @@ class _QuestionResultCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${question.orderIndex + 1}. ${question.prompt}',
+                    '${question.prompt.startsWith("请") ? "2" : question.orderIndex + 1}. ${question.prompt}',
                     style: theme.textTheme.titleMedium,
                   ),
                 ),

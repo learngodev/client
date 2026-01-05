@@ -1714,7 +1714,7 @@ class AdminStructuresPage extends HookConsumerWidget {
                         for (final dept in departments)
                           DropdownMenuItem<String>(
                             value: dept.id,
-                            child: Text('${dept.name}（${dept.id}）'),
+                            child: Text(dept.name),
                           ),
                       ],
                       onChanged: submitting
