@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/core/utils/logger.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/im/data/repositories/im_repository.dart';
 import 'package:learn_go/features/im/domain/entities/conversation.dart';
@@ -61,7 +61,7 @@ class IMRealtimeSync {
         }
       },
       onError: (e) {
-        debugPrint('IM realtime event stream error: $e');
+        logger.e('IM realtime event stream error: $e');
       },
     );
   }
@@ -135,16 +135,16 @@ class IMService {
       _subscriptions[conversationId] = connection.responses.listen(
         (event) => _mergedController.add(event),
         onError: (e) {
-          debugPrint('IM stream error: $e');
+          logger.e('IM stream error: $e');
           _scheduleReconnect(conversationId);
         },
         onDone: () {
-          debugPrint('IM stream closed');
+          logger.w('IM stream closed');
           _scheduleReconnect(conversationId);
         },
       );
     } catch (e) {
-      debugPrint('IM connection error: $e');
+      logger.e('IM connection error: $e');
       _scheduleReconnect(conversationId);
     }
   }
@@ -157,7 +157,7 @@ class IMService {
     _reconnectTimers[conversationId] = Timer(const Duration(seconds: 3), () {
       if (_isDisposed) return;
       if (!_joinedConversations.contains(conversationId)) return;
-      debugPrint('Reconnecting IM stream...');
+      logger.i('Reconnecting IM stream...');
       _startSubscription(conversationId);
     });
   }

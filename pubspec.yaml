@@ -59,6 +59,7 @@ dependencies:
   animations: ^2.1.1
   url_launcher: ^6.2.5
   video_player: ^2.10.1
+  logger: ^2.6.2
 
 dev_dependencies:
   flutter_test:

@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/services.dart';
+import 'package:learn_go/core/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1649,7 +1650,11 @@ class AdminStructuresPage extends HookConsumerWidget {
                               if (!dialogCtx.mounted) return;
                               Navigator.of(dialogCtx).pop(true);
                             } catch (error, stackTrace) {
-                              debugPrint('创建院系异常: $error\n$stackTrace');
+                              logger.e(
+                                '创建院系异常: $error',
+                                error: error,
+                                stackTrace: stackTrace,
+                              );
                               setState(() {
                                 errorText = '创建失败：${error.toString()}';
                                 submitting = false;
@@ -1836,7 +1841,11 @@ class AdminStructuresPage extends HookConsumerWidget {
                               if (!dialogCtx.mounted) return;
                               Navigator.of(dialogCtx).pop(true);
                             } catch (error, stackTrace) {
-                              debugPrint('创建班级异常: $error\n$stackTrace');
+                              logger.e(
+                                '创建班级异常: $error',
+                                error: error,
+                                stackTrace: stackTrace,
+                              );
                               setState(() {
                                 errorText = '创建失败：${error.toString()}';
                                 submitting = false;

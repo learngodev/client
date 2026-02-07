@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:grpc/grpc.dart';
 import 'package:grpc/service_api.dart' as grpc_api;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learn_go/core/config/app_environment.dart';
+import 'package:learn_go/core/utils/logger.dart';
 import 'package:learn_go/core/grpc/grpc_channel.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/generated/proto/notification.pbgrpc.dart';
@@ -257,9 +257,7 @@ class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
       nextRetryIn: delay,
     );
 
-    if (kDebugMode) {
-      debugPrint('[gRPC] reconnect in $delay (attempt=$nextAttempt): $error');
-    }
+    logger.w('[gRPC] reconnect in $delay (attempt=$nextAttempt): $error');
 
     _setReconnectTimer(gen, delay);
   }

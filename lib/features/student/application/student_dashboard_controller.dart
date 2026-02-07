@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/core/utils/logger.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../auth/application/auth_controller.dart';
@@ -165,8 +166,11 @@ class StudentDashboardController
       await _persistCustomReminders(updated.reminders);
       return true;
     } catch (error, stackTrace) {
-      debugPrint('Failed to save custom reminders: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      logger.e(
+        'Failed to save custom reminders: $error',
+        error: error,
+        stackTrace: stackTrace,
+      );
       state = AsyncValue.data(previous);
       return false;
     }
@@ -202,8 +206,11 @@ class StudentDashboardController
       await _persistCustomReminders(updated.reminders);
       return true;
     } catch (error, stackTrace) {
-      debugPrint('Failed to delete custom reminder: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      logger.e(
+        'Failed to delete custom reminder: $error',
+        error: error,
+        stackTrace: stackTrace,
+      );
       state = AsyncValue.data(previous);
       return false;
     }
@@ -268,8 +275,11 @@ class StudentDashboardController
       await _persistCustomReminders(dashboardUpdated.reminders);
       return true;
     } catch (error, stackTrace) {
-      debugPrint('Failed to edit custom reminder: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      logger.e(
+        'Failed to edit custom reminder: $error',
+        error: error,
+        stackTrace: stackTrace,
+      );
       state = AsyncValue.data(previous);
       return false;
     }
@@ -303,8 +313,11 @@ class StudentDashboardController
       await _persistCustomReminders(dashboardUpdated.reminders);
       return true;
     } catch (error, stackTrace) {
-      debugPrint('Failed to mark all reminders complete: $error');
-      debugPrintStack(stackTrace: stackTrace);
+      logger.e(
+        'Failed to mark all reminders complete: $error',
+        error: error,
+        stackTrace: stackTrace,
+      );
       state = AsyncValue.data(previous);
       return false;
     }

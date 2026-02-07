@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/core/utils/logger.dart';
 import 'package:learn_go/features/student/application/student_dashboard_controller.dart';
 import 'package:learn_go/features/file/application/file_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,11 +123,11 @@ class AssignmentDetailPage extends HookConsumerWidget {
                 }
               }
             } catch (e) {
-              debugPrint('Failed to load submission: $e');
+              logger.e('Failed to load submission: $e');
             }
           }
         } catch (e) {
-          debugPrint('Failed to load initial data: $e');
+          logger.e('Failed to load initial data: $e');
         }
       }
 
@@ -145,7 +146,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
               jsonEncode(answers.value),
             );
           } catch (e) {
-            debugPrint('Failed to save draft: $e');
+            logger.e('Failed to save draft: $e');
           }
         }
       });
