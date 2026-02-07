@@ -1,29 +1,26 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'assignment_models.dart';
 import 'course_chapter_models.dart';
 import 'course.dart';
 import 'sample_data.dart';
 import 'time_slot.dart';
 
-class StudentDashboardData {
-  const StudentDashboardData({
-    required this.reminders,
-    required this.schedule,
-    required this.assignments,
-    required this.exams,
-    required this.notes,
-    required this.messages,
-    required this.quickLinks,
-    required this.insights,
-  });
+part 'student_repository.freezed.dart';
 
-  final List<StudentReminderItem> reminders;
-  final List<StudentScheduleItem> schedule;
-  final List<StudentAssignmentItem> assignments;
-  final List<StudentExamItem> exams;
-  final List<StudentNoteItem> notes;
-  final List<StudentMessageItem> messages;
-  final List<StudentQuickLink> quickLinks;
-  final List<StudentInsightItem> insights;
+@freezed
+abstract class StudentDashboardData with _$StudentDashboardData {
+  const StudentDashboardData._();
+
+  const factory StudentDashboardData({
+    required List<StudentReminderItem> reminders,
+    required List<StudentScheduleItem> schedule,
+    required List<StudentAssignmentItem> assignments,
+    required List<StudentExamItem> exams,
+    required List<StudentNoteItem> notes,
+    required List<StudentMessageItem> messages,
+    required List<StudentQuickLink> quickLinks,
+    required List<StudentInsightItem> insights,
+  }) = _StudentDashboardData;
 
   List<StudentReminderItem> get pendingReminders {
     return reminders.where((item) => !item.isCompleted).toList(growable: false);
@@ -79,28 +76,6 @@ class StudentDashboardData {
     return exams
         .where((item) => item.status == StudentExamStatus.completed)
         .toList(growable: false);
-  }
-
-  StudentDashboardData copyWith({
-    List<StudentReminderItem>? reminders,
-    List<StudentScheduleItem>? schedule,
-    List<StudentAssignmentItem>? assignments,
-    List<StudentExamItem>? exams,
-    List<StudentNoteItem>? notes,
-    List<StudentMessageItem>? messages,
-    List<StudentQuickLink>? quickLinks,
-    List<StudentInsightItem>? insights,
-  }) {
-    return StudentDashboardData(
-      reminders: reminders ?? this.reminders,
-      schedule: schedule ?? this.schedule,
-      assignments: assignments ?? this.assignments,
-      exams: exams ?? this.exams,
-      notes: notes ?? this.notes,
-      messages: messages ?? this.messages,
-      quickLinks: quickLinks ?? this.quickLinks,
-      insights: insights ?? this.insights,
-    );
   }
 }
 

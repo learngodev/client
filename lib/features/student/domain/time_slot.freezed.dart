@@ -1,0 +1,301 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'time_slot.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$TimeSlot implements DiagnosticableTreeMixin {
+
+@JsonKey(fromJson: _trimString) String get id; String get name; String get startTime; String get endTime; int get sortOrder;
+/// Create a copy of TimeSlot
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TimeSlotCopyWith<TimeSlot> get copyWith => _$TimeSlotCopyWithImpl<TimeSlot>(this as TimeSlot, _$identity);
+
+  /// Serializes this TimeSlot to a JSON map.
+  Map<String, dynamic> toJson();
+
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'TimeSlot'))
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('name', name))..add(DiagnosticsProperty('startTime', startTime))..add(DiagnosticsProperty('endTime', endTime))..add(DiagnosticsProperty('sortOrder', sortOrder));
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TimeSlot&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,startTime,endTime,sortOrder);
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'TimeSlot(id: $id, name: $name, startTime: $startTime, endTime: $endTime, sortOrder: $sortOrder)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TimeSlotCopyWith<$Res>  {
+  factory $TimeSlotCopyWith(TimeSlot value, $Res Function(TimeSlot) _then) = _$TimeSlotCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(fromJson: _trimString) String id, String name, String startTime, String endTime, int sortOrder
+});
+
+
+
+
+}
+/// @nodoc
+class _$TimeSlotCopyWithImpl<$Res>
+    implements $TimeSlotCopyWith<$Res> {
+  _$TimeSlotCopyWithImpl(this._self, this._then);
+
+  final TimeSlot _self;
+  final $Res Function(TimeSlot) _then;
+
+/// Create a copy of TimeSlot
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? startTime = null,Object? endTime = null,Object? sortOrder = null,}) {
+  return _then(_self.copyWith(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
+as String,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
+as String,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [TimeSlot].
+extension TimeSlotPatterns on TimeSlot {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TimeSlot value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TimeSlot() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TimeSlot value)  $default,){
+final _that = this;
+switch (_that) {
+case _TimeSlot():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TimeSlot value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TimeSlot() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _trimString)  String id,  String name,  String startTime,  String endTime,  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TimeSlot() when $default != null:
+return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrder);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _trimString)  String id,  String name,  String startTime,  String endTime,  int sortOrder)  $default,) {final _that = this;
+switch (_that) {
+case _TimeSlot():
+return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrder);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _trimString)  String id,  String name,  String startTime,  String endTime,  int sortOrder)?  $default,) {final _that = this;
+switch (_that) {
+case _TimeSlot() when $default != null:
+return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrder);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+@JsonSerializable(fieldRename: FieldRename.snake)
+class _TimeSlot with DiagnosticableTreeMixin implements TimeSlot {
+  const _TimeSlot({@JsonKey(fromJson: _trimString) required this.id, required this.name, required this.startTime, required this.endTime, this.sortOrder = 0});
+  factory _TimeSlot.fromJson(Map<String, dynamic> json) => _$TimeSlotFromJson(json);
+
+@override@JsonKey(fromJson: _trimString) final  String id;
+@override final  String name;
+@override final  String startTime;
+@override final  String endTime;
+@override@JsonKey() final  int sortOrder;
+
+/// Create a copy of TimeSlot
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TimeSlotCopyWith<_TimeSlot> get copyWith => __$TimeSlotCopyWithImpl<_TimeSlot>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TimeSlotToJson(this, );
+}
+@override
+void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+  properties
+    ..add(DiagnosticsProperty('type', 'TimeSlot'))
+    ..add(DiagnosticsProperty('id', id))..add(DiagnosticsProperty('name', name))..add(DiagnosticsProperty('startTime', startTime))..add(DiagnosticsProperty('endTime', endTime))..add(DiagnosticsProperty('sortOrder', sortOrder));
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TimeSlot&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.startTime, startTime) || other.startTime == startTime)&&(identical(other.endTime, endTime) || other.endTime == endTime)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,startTime,endTime,sortOrder);
+
+@override
+String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
+  return 'TimeSlot(id: $id, name: $name, startTime: $startTime, endTime: $endTime, sortOrder: $sortOrder)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TimeSlotCopyWith<$Res> implements $TimeSlotCopyWith<$Res> {
+  factory _$TimeSlotCopyWith(_TimeSlot value, $Res Function(_TimeSlot) _then) = __$TimeSlotCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(fromJson: _trimString) String id, String name, String startTime, String endTime, int sortOrder
+});
+
+
+
+
+}
+/// @nodoc
+class __$TimeSlotCopyWithImpl<$Res>
+    implements _$TimeSlotCopyWith<$Res> {
+  __$TimeSlotCopyWithImpl(this._self, this._then);
+
+  final _TimeSlot _self;
+  final $Res Function(_TimeSlot) _then;
+
+/// Create a copy of TimeSlot
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? startTime = null,Object? endTime = null,Object? sortOrder = null,}) {
+  return _then(_TimeSlot(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,startTime: null == startTime ? _self.startTime : startTime // ignore: cast_nullable_to_non_nullable
+as String,endTime: null == endTime ? _self.endTime : endTime // ignore: cast_nullable_to_non_nullable
+as String,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+// dart format on

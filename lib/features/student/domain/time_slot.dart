@@ -1,25 +1,24 @@
-class TimeSlot {
-  final String id;
-  final String name;
-  final String startTime;
-  final String endTime;
-  final int sortOrder;
+import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const TimeSlot({
-    required this.id,
-    required this.name,
-    required this.startTime,
-    required this.endTime,
-    required this.sortOrder,
-  });
+part 'time_slot.freezed.dart';
+part 'time_slot.g.dart';
 
-  factory TimeSlot.fromJson(Map<String, dynamic> json) {
-    return TimeSlot(
-      id: (json['id'] as String).trim(),
-      name: json['name'] as String,
-      startTime: json['start_time'] as String,
-      endTime: json['end_time'] as String,
-      sortOrder: json['sort_order'] as int? ?? 0,
-    );
-  }
+@freezed
+abstract class TimeSlot with _$TimeSlot {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory TimeSlot({
+    @JsonKey(fromJson: _trimString) required String id,
+    required String name,
+    required String startTime,
+    required String endTime,
+    @Default(0) int sortOrder,
+  }) = _TimeSlot;
+
+  factory TimeSlot.fromJson(Map<String, dynamic> json) =>
+      _$TimeSlotFromJson(json);
+}
+
+String _trimString(dynamic value) {
+  return value.toString().trim();
 }

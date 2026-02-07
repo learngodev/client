@@ -1,86 +1,59 @@
-class CourseChapterSummary {
-  const CourseChapterSummary({
-    required this.id,
-    required this.courseId,
-    required this.teacherId,
-    required this.title,
-    required this.orderIndex,
-    this.createdAt,
-    this.updatedAt,
-  });
+import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String id;
-  final String courseId;
-  final String teacherId;
-  final String title;
-  final int orderIndex;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+part 'course_chapter_models.freezed.dart';
+part 'course_chapter_models.g.dart';
 
-  factory CourseChapterSummary.fromJson(Map<String, dynamic> json) {
-    return CourseChapterSummary(
-      id: json['id']?.toString() ?? '',
-      courseId: json['course_id']?.toString() ?? '',
-      teacherId: json['teacher_id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      orderIndex: (json['order_index'] as num?)?.toInt() ?? 0,
-      createdAt: _parseDateTime(json['created_at']),
-      updatedAt: _parseDateTime(json['updated_at']),
-    );
-  }
+@freezed
+abstract class CourseChapterSummary with _$CourseChapterSummary {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory CourseChapterSummary({
+    @Default('') String id,
+    @Default('') String courseId,
+    @Default('') String teacherId,
+    @Default('') String title,
+    @Default(0) int orderIndex,
+    @JsonKey(fromJson: _parseDateTime) DateTime? createdAt,
+    @JsonKey(fromJson: _parseDateTime) DateTime? updatedAt,
+  }) = _CourseChapterSummary;
+
+  factory CourseChapterSummary.fromJson(Map<String, dynamic> json) =>
+      _$CourseChapterSummaryFromJson(json);
 }
 
-class CourseChapterAttachment {
-  const CourseChapterAttachment({
-    required this.id,
-    required this.name,
-    required this.type,
-    required this.size,
-    required this.relayUrl,
-  });
+@freezed
+abstract class CourseChapterAttachment with _$CourseChapterAttachment {
+  const CourseChapterAttachment._();
 
-  final String id;
-  final String name;
-  final String type;
-  final int size;
-  final String relayUrl;
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory CourseChapterAttachment({
+    @Default('') String id,
+    @Default('') String name,
+    @Default('application/octet-stream') String type,
+    @Default(0) int size,
+    @Default('') String relayUrl,
+  }) = _CourseChapterAttachment;
 
   bool get isImage => type.toLowerCase().startsWith('image/');
   bool get isVideo => type.toLowerCase().startsWith('video/');
 
-  factory CourseChapterAttachment.fromJson(Map<String, dynamic> json) {
-    return CourseChapterAttachment(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      type: json['type']?.toString() ?? 'application/octet-stream',
-      size: (json['size'] as num?)?.toInt() ?? 0,
-      relayUrl: json['relay_url']?.toString() ?? '',
-    );
-  }
+  factory CourseChapterAttachment.fromJson(Map<String, dynamic> json) =>
+      _$CourseChapterAttachmentFromJson(json);
 }
 
-class CourseChapterDetail {
-  const CourseChapterDetail({
-    required this.id,
-    required this.courseId,
-    required this.teacherId,
-    required this.title,
-    required this.content,
-    required this.orderIndex,
-    required this.attachments,
-    this.createdAt,
-    this.updatedAt,
-  });
-
-  final String id;
-  final String courseId;
-  final String teacherId;
-  final String title;
-  final String content;
-  final int orderIndex;
-  final List<CourseChapterAttachment> attachments;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+@freezed
+abstract class CourseChapterDetail with _$CourseChapterDetail {
+  const factory CourseChapterDetail({
+    @Default('') String id,
+    @Default('') String courseId,
+    @Default('') String teacherId,
+    @Default('') String title,
+    @Default('') String content,
+    @Default(0) int orderIndex,
+    @Default([]) List<CourseChapterAttachment> attachments,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) = _CourseChapterDetail;
 
   factory CourseChapterDetail.fromJson(Map<String, dynamic> json) {
     final chapter =

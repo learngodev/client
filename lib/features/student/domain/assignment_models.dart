@@ -1,4 +1,9 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'assignment_models.freezed.dart';
+part 'assignment_models.g.dart';
 
 enum QuestionType {
   singleChoice,
@@ -52,248 +57,159 @@ extension AssignmentTypeX on AssignmentType {
   }
 }
 
-class AssignmentQuestion {
-  const AssignmentQuestion({
-    required this.id,
-    required this.prompt,
-    required this.type,
-    required this.score,
-    this.options = const [],
-    this.orderIndex = 0,
-    this.answer,
-  });
+@freezed
+abstract class AssignmentQuestion with _$AssignmentQuestion {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory AssignmentQuestion({
+    @Default('') String id,
+    @Default('') String prompt,
+    @JsonKey(fromJson: QuestionTypeX.fromString) required QuestionType type,
+    @Default(0.0) double score,
+    @JsonKey(fromJson: _parseOptions) @Default([]) List<String> options,
+    @Default(0) int orderIndex,
+    String? answer,
+  }) = _AssignmentQuestion;
 
-  final String id;
-  final String prompt;
-  final QuestionType type;
-  final double score;
-  final List<String> options;
-  final int orderIndex;
-  final String? answer;
-
-  factory AssignmentQuestion.fromJson(Map<String, dynamic> json) {
-    var optionsList = <String>[];
-    final optionsJson = json['options'];
-    if (optionsJson is List) {
-      optionsList = optionsJson.map((e) => e.toString()).toList();
-    } else if (optionsJson is String) {
-      try {
-        final decoded = jsonDecode(optionsJson);
-        if (decoded is List) {
-          optionsList = decoded.map((e) => e.toString()).toList();
-        }
-      } catch (_) {}
-    }
-
-    return AssignmentQuestion(
-      id: json['id'] as String? ?? '',
-      prompt: json['prompt'] as String? ?? '',
-      type: QuestionTypeX.fromString(json['type'] as String? ?? ''),
-      score: (json['score'] as num?)?.toDouble() ?? 0.0,
-      options: optionsList,
-      orderIndex: (json['order_index'] as num?)?.toInt() ?? 0,
-      answer: json['answer'] as String?,
-    );
-  }
+  factory AssignmentQuestion.fromJson(Map<String, dynamic> json) =>
+      _$AssignmentQuestionFromJson(json);
 }
 
-class AssignmentDetail {
-  const AssignmentDetail({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.questions,
-    required this.maxScore,
-    this.type = AssignmentType.homework,
-    this.allowResubmit = false,
-    this.dueAt,
-    this.startAt,
-    this.attachments = const [],
-  });
-
-  final String id;
-  final String title;
-  final String description;
-  final List<AssignmentQuestion> questions;
-  final double maxScore;
-  final AssignmentType type;
-  final bool allowResubmit;
-  final DateTime? dueAt;
-  final DateTime? startAt;
-  final List<AssignmentAttachment> attachments;
-
-  factory AssignmentDetail.fromJson(Map<String, dynamic> json) {
-    final questionsList = json['questions'] as List?;
-    final questions =
-        questionsList
-            ?.map((e) => AssignmentQuestion.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        [];
-
-    // Sort questions by orderIndex
-    questions.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
-
-    final attachmentsList = json['attachments'] as List?;
-    final attachments =
-        attachmentsList
-            ?.map(
-              (e) => AssignmentAttachment.fromJson(e as Map<String, dynamic>),
-            )
-            .toList() ??
-        [];
-
-    return AssignmentDetail(
-      id: json['id'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      questions: questions,
-      maxScore: (json['max_score'] as num?)?.toDouble() ?? 0.0,
-      type: AssignmentTypeX.fromString(json['type'] as String? ?? ''),
-      allowResubmit: json['allow_resubmit'] as bool? ?? false,
-      dueAt: json['due_at'] == null
-          ? null
-          : DateTime.tryParse(json['due_at'] as String)?.toLocal(),
-      startAt: json['start_at'] == null
-          ? null
-          : DateTime.tryParse(json['start_at'] as String)?.toLocal(),
-      attachments: attachments,
-    );
+List<String> _parseOptions(dynamic optionsJson) {
+  if (optionsJson is List) {
+    return optionsJson.map((e) => e.toString()).toList();
+  } else if (optionsJson is String) {
+    try {
+      final decoded = jsonDecode(optionsJson);
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toList();
+      }
+    } catch (_) {}
   }
+  return [];
 }
 
-class AssignmentAttachment {
-  const AssignmentAttachment({
-    required this.id,
-    required this.name,
-    required this.url,
-    required this.type,
-  });
+@freezed
+abstract class AssignmentDetail with _$AssignmentDetail {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory AssignmentDetail({
+    @Default('') String id,
+    @Default('') String title,
+    @Default('') String description,
+    @JsonKey(fromJson: _parseAndSortQuestions)
+    @Default([])
+    List<AssignmentQuestion> questions,
+    @Default(0.0) double maxScore,
+    @Default(AssignmentType.homework)
+    @JsonKey(fromJson: AssignmentTypeX.fromString)
+    AssignmentType type,
+    @Default(false) bool allowResubmit,
+    @JsonKey(fromJson: _parseDateTime) DateTime? dueAt,
+    @JsonKey(fromJson: _parseDateTime) DateTime? startAt,
+    @Default([]) List<AssignmentAttachment> attachments,
+  }) = _AssignmentDetail;
 
-  final String id;
-  final String name;
-  final String url;
-  final String type;
-
-  factory AssignmentAttachment.fromJson(Map<String, dynamic> json) {
-    return AssignmentAttachment(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      url: json['url'] as String? ?? '',
-      type: json['type'] as String? ?? '',
-    );
-  }
+  factory AssignmentDetail.fromJson(Map<String, dynamic> json) =>
+      _$AssignmentDetailFromJson(json);
 }
 
-class SubmissionResult {
-  const SubmissionResult({
-    required this.id,
-    required this.score,
-    required this.status,
-    required this.submittedAt,
-    this.feedback,
-  });
-
-  final String id;
-  final double? score;
-  final String status;
-  final DateTime submittedAt;
-  final String? feedback;
-
-  factory SubmissionResult.fromJson(Map<String, dynamic> json) {
-    return SubmissionResult(
-      id: json['id'] as String? ?? '',
-      score: (json['score'] as num?)?.toDouble(),
-      status: json['status'] as String? ?? '',
-      submittedAt:
-          (json['submitted_at'] == null
-              ? null
-              : DateTime.tryParse(json['submitted_at'] as String)?.toLocal()) ??
-          DateTime.now(),
-      feedback: json['feedback'] as String?,
-    );
-  }
+List<AssignmentQuestion> _parseAndSortQuestions(dynamic list) {
+  if (list is! List) return [];
+  final questions = list
+      .map((e) => AssignmentQuestion.fromJson(e as Map<String, dynamic>))
+      .toList();
+  questions.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
+  return questions;
 }
 
-class SubmissionItem {
-  const SubmissionItem({
-    required this.id,
-    required this.questionId,
-    required this.answer,
-    this.score,
-  });
-
-  final String id;
-  final String questionId;
-  final String answer;
-  final double? score;
-
-  factory SubmissionItem.fromJson(Map<String, dynamic> json) {
-    return SubmissionItem(
-      id: json['id'] as String? ?? '',
-      questionId: json['question_id'] as String? ?? '',
-      answer: json['answer'] as String? ?? '',
-      score: (json['score'] as num?)?.toDouble(),
-    );
+DateTime? _parseDateTime(dynamic value) {
+  if (value == null) return null;
+  if (value is String) {
+    return DateTime.tryParse(value)?.toLocal();
   }
+  return null;
 }
 
-class StudentSubmissionDetail {
-  const StudentSubmissionDetail({
-    required this.assignment,
-    required this.submission,
-    required this.items,
-  });
+@freezed
+abstract class AssignmentAttachment with _$AssignmentAttachment {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory AssignmentAttachment({
+    @Default('') String id,
+    @Default('') String name,
+    @Default('') String url,
+    @Default('') String type,
+  }) = _AssignmentAttachment;
 
-  final AssignmentDetail assignment;
-  final SubmissionResult submission;
-  final List<SubmissionItem> items;
+  factory AssignmentAttachment.fromJson(Map<String, dynamic> json) =>
+      _$AssignmentAttachmentFromJson(json);
 }
 
-class ExplainQuestionResult {
-  ExplainQuestionResult({
-    required this.analysis,
-    required this.steps,
-    required this.keyPoints,
-    required this.pitfalls,
-    required this.checklist,
-  });
+@freezed
+abstract class SubmissionResult with _$SubmissionResult {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory SubmissionResult({
+    @Default('') String id,
+    double? score,
+    @Default('') String status,
+    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime submittedAt,
+    String? feedback,
+  }) = _SubmissionResult;
 
-  factory ExplainQuestionResult.fromJson(Map<String, dynamic> json) {
-    return ExplainQuestionResult(
-      analysis: json['analysis'] as String? ?? '',
-      steps: List<String>.from(json['steps'] ?? []),
-      keyPoints: List<String>.from(json['key_points'] ?? []),
-      pitfalls: List<String>.from(json['pitfalls'] ?? []),
-      checklist: List<String>.from(json['checklist'] ?? []),
-    );
-  }
-
-  final String analysis;
-  final List<String> steps;
-  final List<String> keyPoints;
-  final List<String> pitfalls;
-  final List<String> checklist;
+  factory SubmissionResult.fromJson(Map<String, dynamic> json) =>
+      _$SubmissionResultFromJson(json);
 }
 
-class GradeAssignmentResult {
-  GradeAssignmentResult({
-    required this.score,
-    required this.summary,
-    required this.suggestions,
-    this.itemScores = const [],
-  });
+DateTime _parseDateTimeOrNow(dynamic value) {
+  return _parseDateTime(value) ?? DateTime.now();
+}
 
-  factory GradeAssignmentResult.fromJson(Map<String, dynamic> json) {
-    return GradeAssignmentResult(
-      score: json['score'] as int? ?? 0,
-      summary: json['summary'] as String? ?? '',
-      suggestions: List<String>.from(json['suggestions'] ?? []),
-      itemScores: List<int>.from(json['item_scores'] ?? []),
-    );
-  }
+@freezed
+abstract class SubmissionItem with _$SubmissionItem {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory SubmissionItem({
+    @Default('') String id,
+    @Default('') String questionId,
+    @Default('') String answer,
+    double? score,
+  }) = _SubmissionItem;
 
-  final int score;
-  final String summary;
-  final List<String> suggestions;
-  final List<int> itemScores;
+  factory SubmissionItem.fromJson(Map<String, dynamic> json) =>
+      _$SubmissionItemFromJson(json);
+}
+
+@freezed
+abstract class StudentSubmissionDetail with _$StudentSubmissionDetail {
+  const factory StudentSubmissionDetail({
+    required AssignmentDetail assignment,
+    required SubmissionResult submission,
+    required List<SubmissionItem> items,
+  }) = _StudentSubmissionDetail;
+}
+
+@freezed
+abstract class ExplainQuestionResult with _$ExplainQuestionResult {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory ExplainQuestionResult({
+    @Default('') String analysis,
+    @Default([]) List<String> steps,
+    @Default([]) List<String> keyPoints,
+    @Default([]) List<String> pitfalls,
+    @Default([]) List<String> checklist,
+  }) = _ExplainQuestionResult;
+
+  factory ExplainQuestionResult.fromJson(Map<String, dynamic> json) =>
+      _$ExplainQuestionResultFromJson(json);
+}
+
+@freezed
+abstract class GradeAssignmentResult with _$GradeAssignmentResult {
+  @JsonSerializable(fieldRename: FieldRename.snake)
+  const factory GradeAssignmentResult({
+    @Default(0) int score,
+    @Default('') String summary,
+    @Default([]) List<String> suggestions,
+    @Default([]) List<int> itemScores,
+  }) = _GradeAssignmentResult;
+
+  factory GradeAssignmentResult.fromJson(Map<String, dynamic> json) =>
+      _$GradeAssignmentResultFromJson(json);
 }

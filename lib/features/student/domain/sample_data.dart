@@ -1,4 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'sample_data.freezed.dart';
 
 enum StudentScheduleType { mandatory, elective, lab, activity }
 
@@ -13,32 +17,23 @@ extension StudentScheduleTypeX on StudentScheduleType {
   }
 }
 
-class StudentScheduleItem {
-  const StudentScheduleItem({
-    required this.course,
-    required this.teacher,
-    required this.dayLabel,
-    required this.timeRange,
-    required this.startTime,
-    required this.location,
-    required this.type,
-    this.isOnline = false,
-    this.slotId,
-    this.slotName,
-    this.weekDay,
-  });
+@freezed
+abstract class StudentScheduleItem with _$StudentScheduleItem {
+  const StudentScheduleItem._();
 
-  final String course;
-  final String teacher;
-  final String dayLabel;
-  final String timeRange;
-  final String startTime;
-  final String location;
-  final StudentScheduleType type;
-  final bool isOnline;
-  final String? slotId;
-  final String? slotName;
-  final int? weekDay;
+  const factory StudentScheduleItem({
+    required String course,
+    required String teacher,
+    required String dayLabel,
+    required String timeRange,
+    required String startTime,
+    required String location,
+    required StudentScheduleType type,
+    @Default(false) bool isOnline,
+    String? slotId,
+    String? slotName,
+    int? weekDay,
+  }) = _StudentScheduleItem;
 
   bool matchesQuery(String query) {
     final normalized = query.trim().toLowerCase();
@@ -122,28 +117,21 @@ class _StudentReminderIconCodec {
   }
 }
 
-class StudentReminderItem {
-  const StudentReminderItem({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.timeLabel,
-    required this.icon,
-    this.priority = StudentReminderPriority.normal,
-    this.route,
-    this.isCompleted = false,
-    this.isCustom = false,
-  });
+@freezed
+abstract class StudentReminderItem with _$StudentReminderItem {
+  const StudentReminderItem._();
 
-  final String id;
-  final String title;
-  final String description;
-  final String timeLabel;
-  final IconData icon;
-  final StudentReminderPriority priority;
-  final String? route;
-  final bool isCompleted;
-  final bool isCustom;
+  const factory StudentReminderItem({
+    required String id,
+    required String title,
+    required String description,
+    required String timeLabel,
+    required IconData icon,
+    @Default(StudentReminderPriority.normal) StudentReminderPriority priority,
+    String? route,
+    @Default(false) bool isCompleted,
+    @Default(false) bool isCustom,
+  }) = _StudentReminderItem;
 
   Color badgeColor(ThemeData theme) {
     return priority == StudentReminderPriority.high
@@ -159,30 +147,6 @@ class StudentReminderItem {
     return title.toLowerCase().contains(normalized) ||
         description.toLowerCase().contains(normalized) ||
         timeLabel.toLowerCase().contains(normalized);
-  }
-
-  StudentReminderItem copyWith({
-    String? id,
-    String? title,
-    String? description,
-    String? timeLabel,
-    IconData? icon,
-    StudentReminderPriority? priority,
-    String? route,
-    bool? isCompleted,
-    bool? isCustom,
-  }) {
-    return StudentReminderItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      description: description ?? this.description,
-      timeLabel: timeLabel ?? this.timeLabel,
-      icon: icon ?? this.icon,
-      priority: priority ?? this.priority,
-      route: route ?? this.route,
-      isCompleted: isCompleted ?? this.isCompleted,
-      isCustom: isCustom ?? this.isCustom,
-    );
   }
 
   Map<String, dynamic> toJson() {
@@ -239,36 +203,25 @@ extension StudentAssignmentStatusX on StudentAssignmentStatus {
   }
 }
 
-class StudentAssignmentItem {
-  const StudentAssignmentItem({
-    required this.id,
-    required this.title,
-    required this.course,
-    required this.teacher,
-    required this.dueLabel,
-    required this.status,
-    this.progress = 0,
-    this.allowResubmit = false,
-    this.isOverdue = false,
-    this.scoreLabel,
-    this.feedback,
-    this.dueAt,
-    this.startAt,
-  });
+@freezed
+abstract class StudentAssignmentItem with _$StudentAssignmentItem {
+  const StudentAssignmentItem._();
 
-  final String id;
-  final String title;
-  final String course;
-  final String teacher;
-  final String dueLabel;
-  final StudentAssignmentStatus status;
-  final int progress;
-  final bool allowResubmit;
-  final bool isOverdue;
-  final String? scoreLabel;
-  final String? feedback;
-  final DateTime? dueAt;
-  final DateTime? startAt;
+  const factory StudentAssignmentItem({
+    required String id,
+    required String title,
+    required String course,
+    required String teacher,
+    required String dueLabel,
+    required StudentAssignmentStatus status,
+    @Default(0) int progress,
+    @Default(false) bool allowResubmit,
+    @Default(false) bool isOverdue,
+    String? scoreLabel,
+    String? feedback,
+    DateTime? dueAt,
+    DateTime? startAt,
+  }) = _StudentAssignmentItem;
 
   double get progressValue => (progress.clamp(0, 100)) / 100;
 
@@ -292,38 +245,6 @@ class StudentAssignmentItem {
       StudentAssignmentStatus.returned => Icons.assignment_return_outlined,
     };
   }
-
-  StudentAssignmentItem copyWith({
-    String? id,
-    String? title,
-    String? course,
-    String? teacher,
-    String? dueLabel,
-    StudentAssignmentStatus? status,
-    int? progress,
-    bool? allowResubmit,
-    bool? isOverdue,
-    String? scoreLabel,
-    String? feedback,
-    DateTime? dueAt,
-    DateTime? startAt,
-  }) {
-    return StudentAssignmentItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      course: course ?? this.course,
-      teacher: teacher ?? this.teacher,
-      dueLabel: dueLabel ?? this.dueLabel,
-      status: status ?? this.status,
-      progress: progress ?? this.progress,
-      allowResubmit: allowResubmit ?? this.allowResubmit,
-      isOverdue: isOverdue ?? this.isOverdue,
-      scoreLabel: scoreLabel ?? this.scoreLabel,
-      feedback: feedback ?? this.feedback,
-      dueAt: dueAt ?? this.dueAt,
-      startAt: startAt ?? this.startAt,
-    );
-  }
 }
 
 enum StudentExamStatus { upcoming, completed }
@@ -337,70 +258,39 @@ extension StudentExamStatusX on StudentExamStatus {
   }
 }
 
-class StudentExamItem {
-  const StudentExamItem({
-    required this.id,
-    required this.course,
-    required this.dateLabel,
-    required this.timeRange,
-    required this.location,
-    required this.status,
-    required this.countdownLabel,
-    this.seat,
-    this.scoreLabel,
-    this.startAt,
-    this.endAt,
-  });
+@freezed
+abstract class StudentExamItem with _$StudentExamItem {
+  const StudentExamItem._();
 
-  final String id;
-  final String course;
-  final String dateLabel;
-  final String timeRange;
-  final String location;
-  final StudentExamStatus status;
-  final String countdownLabel;
-  final String? seat;
-  final String? scoreLabel;
-  final DateTime? startAt;
-  final DateTime? endAt;
+  const factory StudentExamItem({
+    required String id,
+    required String course,
+    required String dateLabel,
+    required String timeRange,
+    required String location,
+    required StudentExamStatus status,
+    required String countdownLabel,
+    String? seat,
+    String? scoreLabel,
+    DateTime? startAt,
+    DateTime? endAt,
+  }) = _StudentExamItem;
 
   bool get isUpcoming => status == StudentExamStatus.upcoming;
 }
 
-class StudentNoteItem {
-  const StudentNoteItem({
-    required this.id,
-    required this.title,
-    required this.updatedAtLabel,
-    required this.preview,
-    this.tags = const [],
-    this.pinned = false,
-  });
+@freezed
+abstract class StudentNoteItem with _$StudentNoteItem {
+  const StudentNoteItem._();
 
-  final String id;
-  final String title;
-  final String updatedAtLabel;
-  final String preview;
-  final List<String> tags;
-  final bool pinned;
-
-  StudentNoteItem copyWith({
-    String? id,
-    String? title,
-    String? updatedAtLabel,
-    String? preview,
-    List<String>? tags,
-    bool? pinned,
-  }) {
-    return StudentNoteItem(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      updatedAtLabel: updatedAtLabel ?? this.updatedAtLabel,
-      preview: preview ?? this.preview,
-      tags: tags ?? this.tags,
-      pinned: pinned ?? this.pinned,
-    );
-  }
+  const factory StudentNoteItem({
+    required String id,
+    required String title,
+    required String updatedAtLabel,
+    required String preview,
+    @Default([]) List<String> tags,
+    @Default(false) bool pinned,
+  }) = _StudentNoteItem;
 
   bool matches(String query) {
     final normalized = query.trim().toLowerCase();
@@ -436,38 +326,19 @@ extension StudentMessageCategoryX on StudentMessageCategory {
   }
 }
 
-class StudentMessageItem {
-  const StudentMessageItem({
-    required this.sender,
-    required this.preview,
-    required this.timeLabel,
-    required this.category,
-    this.unreadCount = 0,
-  });
+@freezed
+abstract class StudentMessageItem with _$StudentMessageItem {
+  const StudentMessageItem._();
 
-  final String sender;
-  final String preview;
-  final String timeLabel;
-  final StudentMessageCategory category;
-  final int unreadCount;
+  const factory StudentMessageItem({
+    required String sender,
+    required String preview,
+    required String timeLabel,
+    required StudentMessageCategory category,
+    @Default(0) int unreadCount,
+  }) = _StudentMessageItem;
 
   bool get isUnread => unreadCount > 0;
-
-  StudentMessageItem copyWith({
-    String? sender,
-    String? preview,
-    String? timeLabel,
-    StudentMessageCategory? category,
-    int? unreadCount,
-  }) {
-    return StudentMessageItem(
-      sender: sender ?? this.sender,
-      preview: preview ?? this.preview,
-      timeLabel: timeLabel ?? this.timeLabel,
-      category: category ?? this.category,
-      unreadCount: unreadCount ?? this.unreadCount,
-    );
-  }
 
   String get initials {
     final trimmed = sender.trim();
@@ -496,38 +367,31 @@ class StudentMessageItem {
   }
 }
 
-class StudentInsightItem {
-  const StudentInsightItem({
-    required this.label,
-    required this.value,
-    required this.progress,
-    required this.hint,
-    this.isAlert = false,
-  });
+@freezed
+abstract class StudentInsightItem with _$StudentInsightItem {
+  const StudentInsightItem._();
 
-  final String label;
-  final String value;
-  final double progress;
-  final String hint;
-  final bool isAlert;
+  const factory StudentInsightItem({
+    required String label,
+    required String value,
+    required double progress,
+    required String hint,
+    @Default(false) bool isAlert,
+  }) = _StudentInsightItem;
 
   Color barColor(ThemeData theme) {
     return isAlert ? theme.colorScheme.error : theme.colorScheme.primary;
   }
 }
 
-class StudentQuickLink {
-  const StudentQuickLink({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.route,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String route;
+@freezed
+abstract class StudentQuickLink with _$StudentQuickLink {
+  const factory StudentQuickLink({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String route,
+  }) = _StudentQuickLink;
 }
 
 const List<StudentScheduleItem> studentScheduleItems = [

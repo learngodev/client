@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:grpc/grpc.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:grpc/service_api.dart' as grpc_api;
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learn_go/core/config/app_environment.dart';
 import 'package:learn_go/core/utils/logger.dart';
@@ -10,6 +12,8 @@ import 'package:learn_go/core/grpc/grpc_channel.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/generated/proto/notification.pbgrpc.dart';
 import 'package:protobuf/well_known_types/google/protobuf/empty.pb.dart';
+
+part 'grpc_connection_manager.freezed.dart';
 
 enum GrpcConnectionStatus {
   disconnected,
@@ -19,35 +23,17 @@ enum GrpcConnectionStatus {
   error,
 }
 
-class GrpcConnectionState {
-  const GrpcConnectionState({
-    required this.status,
-    this.attempt = 0,
-    this.lastErrorMessage,
-    this.nextRetryIn,
-  });
-
-  const GrpcConnectionState.disconnected()
-    : this(status: GrpcConnectionStatus.disconnected);
-
-  final GrpcConnectionStatus status;
-  final int attempt;
-  final String? lastErrorMessage;
-  final Duration? nextRetryIn;
-
-  GrpcConnectionState copyWith({
-    GrpcConnectionStatus? status,
-    int? attempt,
+@freezed
+abstract class GrpcConnectionState with _$GrpcConnectionState {
+  const factory GrpcConnectionState({
+    required GrpcConnectionStatus status,
+    @Default(0) int attempt,
     String? lastErrorMessage,
     Duration? nextRetryIn,
-  }) {
-    return GrpcConnectionState(
-      status: status ?? this.status,
-      attempt: attempt ?? this.attempt,
-      lastErrorMessage: lastErrorMessage ?? this.lastErrorMessage,
-      nextRetryIn: nextRetryIn ?? this.nextRetryIn,
-    );
-  }
+  }) = _GrpcConnectionState;
+
+  factory GrpcConnectionState.disconnected() =>
+      const GrpcConnectionState(status: GrpcConnectionStatus.disconnected);
 }
 
 class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
@@ -105,7 +91,7 @@ class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
       }
     });
 
-    return const GrpcConnectionState.disconnected();
+    return GrpcConnectionState.disconnected();
   }
 
   void _startOrRestart() {
@@ -119,7 +105,7 @@ class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
     if (_disposed) return;
     _generation++;
     _cancelReconnectTimer();
-    state = const GrpcConnectionState.disconnected();
+    state = GrpcConnectionState.disconnected();
     unawaited(_notificationSub?.cancel());
     _notificationSub = null;
     unawaited(_shutdownChannel());
@@ -135,7 +121,7 @@ class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
     final auth = ref.read(authStateProvider);
     final token = auth.tokens?.accessToken;
     if (!auth.isAuthenticated || token == null || token.isEmpty) {
-      state = const GrpcConnectionState.disconnected();
+      state = GrpcConnectionState.disconnected();
       return;
     }
 
@@ -160,7 +146,7 @@ class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
     final auth = ref.read(authStateProvider);
     final token = auth.tokens?.accessToken;
     if (!auth.isAuthenticated || token == null || token.isEmpty) {
-      state = const GrpcConnectionState.disconnected();
+      state = GrpcConnectionState.disconnected();
       return;
     }
 
@@ -225,7 +211,7 @@ class GrpcConnectionManager extends Notifier<GrpcConnectionState> {
 
     final auth = ref.read(authStateProvider);
     if (!auth.isAuthenticated) {
-      state = const GrpcConnectionState.disconnected();
+      state = GrpcConnectionState.disconnected();
       return;
     }
 
