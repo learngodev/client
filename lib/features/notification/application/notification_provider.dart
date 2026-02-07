@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learn_go/core/grpc/grpc_connection_manager.dart';
 import 'package:learn_go/features/notification/data/notification_repository.dart';
 import 'package:learn_go/features/notification/domain/notification.dart';
-import 'package:learn_go/proto/notification.pb.dart';
+import 'package:learn_go/generated/proto/notification.pbgrpc.dart';
 
 final notificationStreamProvider = StreamProvider<NotificationEvent>((ref) {
   return ref.watch(grpcNotificationEventsProvider);

@@ -8,7 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learn_go/core/config/app_environment.dart';
 import 'package:learn_go/core/grpc/grpc_channel.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
-import 'package:learn_go/proto/notification.pbgrpc.dart';
+import 'package:learn_go/generated/proto/notification.pbgrpc.dart';
 import 'package:protobuf/well_known_types/google/protobuf/empty.pb.dart';
 
 enum GrpcConnectionStatus {
