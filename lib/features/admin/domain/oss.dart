@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:intl/intl.dart';
+
+part 'oss.freezed.dart';
+part 'oss.g.dart';
 
 enum AdminOssPolicyStatus { enabled, readOnly, disabled }
 
@@ -36,104 +40,49 @@ extension AdminOssPolicyStatusX on AdminOssPolicyStatus {
   }
 }
 
-class AdminOssCredential {
-  const AdminOssCredential({
-    required this.id,
-    required this.name,
-    required this.endpoint,
-    this.internalEndpoint = '',
-    required this.region,
-    required this.bucket,
-    required this.directoryPrefix,
-    required this.accessKeyMasked,
-    required this.allowPublicRead,
-    required this.allowMultipartUpload,
-    required this.useRelayUpload,
-    required this.isPrimary,
-    required this.active,
-    required this.createdAt,
-    this.lastRotatedAt,
-  });
+AdminOssPolicyStatus _parsePolicyStatus(dynamic value) {
+  return AdminOssPolicyStatusX.fromApi((value ?? '').toString());
+}
 
-  final String id;
-  final String name;
-  final String endpoint;
-  final String internalEndpoint;
-  final String region;
-  final String bucket;
-  final String directoryPrefix;
-  final String accessKeyMasked;
-  final bool allowPublicRead;
-  final bool allowMultipartUpload;
-  final bool useRelayUpload;
-  final bool isPrimary;
-  final bool active;
-  final DateTime createdAt;
-  final DateTime? lastRotatedAt;
-
-  factory AdminOssCredential.fromJson(Map<String, dynamic> json) {
-    DateTime? parseNullable(String? value) {
-      if (value == null || value.isEmpty) {
-        return null;
-      }
-      return DateTime.tryParse(value);
-    }
-
-    return AdminOssCredential(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      endpoint: json['endpoint']?.toString() ?? '',
-      internalEndpoint: json['internal_endpoint']?.toString() ?? '',
-      region: json['region']?.toString() ?? '',
-      bucket: json['bucket']?.toString() ?? '',
-      directoryPrefix: json['directory_prefix']?.toString() ?? '',
-      accessKeyMasked: json['access_key_masked']?.toString() ?? '',
-      allowPublicRead: json['allow_public_read'] as bool? ?? false,
-      allowMultipartUpload: json['allow_multipart_upload'] as bool? ?? false,
-      useRelayUpload: json['use_relay_upload'] as bool? ?? false,
-      isPrimary: json['is_primary'] as bool? ?? false,
-      active: json['active'] as bool? ?? false,
-      createdAt:
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-      lastRotatedAt: parseNullable(json['last_rotated_at']?.toString()),
-    );
+DateTime? _parseNullableDate(dynamic value) {
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value);
   }
+  return null;
+}
 
-  AdminOssCredential copyWith({
-    String? name,
-    String? endpoint,
-    String? internalEndpoint,
-    String? region,
-    String? bucket,
-    String? directoryPrefix,
-    String? accessKeyMasked,
-    bool? allowPublicRead,
-    bool? allowMultipartUpload,
-    bool? useRelayUpload,
-    bool? isPrimary,
-    bool? active,
-    DateTime? createdAt,
-    DateTime? lastRotatedAt,
-  }) {
-    return AdminOssCredential(
-      id: id,
-      name: name ?? this.name,
-      endpoint: endpoint ?? this.endpoint,
-      internalEndpoint: internalEndpoint ?? this.internalEndpoint,
-      region: region ?? this.region,
-      bucket: bucket ?? this.bucket,
-      directoryPrefix: directoryPrefix ?? this.directoryPrefix,
-      accessKeyMasked: accessKeyMasked ?? this.accessKeyMasked,
-      allowPublicRead: allowPublicRead ?? this.allowPublicRead,
-      allowMultipartUpload: allowMultipartUpload ?? this.allowMultipartUpload,
-      useRelayUpload: useRelayUpload ?? this.useRelayUpload,
-      isPrimary: isPrimary ?? this.isPrimary,
-      active: active ?? this.active,
-      createdAt: createdAt ?? this.createdAt,
-      lastRotatedAt: lastRotatedAt ?? this.lastRotatedAt,
-    );
+DateTime _parseDateDefault0(dynamic value) {
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
   }
+  return DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+@freezed
+abstract class AdminOssCredential with _$AdminOssCredential {
+  const AdminOssCredential._();
+
+  const factory AdminOssCredential({
+    @Default('') String id,
+    @Default('') String name,
+    @Default('') String endpoint,
+    @Default('') String internalEndpoint,
+    @Default('') String region,
+    @Default('') String bucket,
+    @Default('') String directoryPrefix,
+    @Default('') String accessKeyMasked,
+    @Default(false) bool allowPublicRead,
+
+    @Default(false) bool allowMultipartUpload,
+    @Default(false) bool useRelayUpload,
+    @Default(false) bool isPrimary,
+    @Default(false) bool active,
+    @JsonKey(fromJson: _parseDateDefault0) required DateTime createdAt,
+    @JsonKey(fromJson: _parseNullableDate) DateTime? lastRotatedAt,
+  }) = _AdminOssCredential;
+
+  factory AdminOssCredential.fromJson(Map<String, dynamic> json) =>
+      _$AdminOssCredentialFromJson(json);
 
   String get statusLabel => active ? '启用' : '停用';
 
@@ -154,49 +103,21 @@ class AdminOssCredential {
   }
 }
 
-class AdminOssPolicy {
-  const AdminOssPolicy({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.status,
-    required this.appliesTo,
-    required this.lastUpdatedAt,
-  });
+@freezed
+abstract class AdminOssPolicy with _$AdminOssPolicy {
+  const AdminOssPolicy._();
 
-  final String id;
-  final String name;
-  final String description;
-  final AdminOssPolicyStatus status;
-  final String appliesTo;
-  final DateTime lastUpdatedAt;
+  const factory AdminOssPolicy({
+    @Default('') String id,
+    @Default('') String name,
+    @Default('') String description,
+    @JsonKey(fromJson: _parsePolicyStatus) required AdminOssPolicyStatus status,
+    @Default('') String appliesTo,
+    @JsonKey(fromJson: _parseDateDefault0) required DateTime lastUpdatedAt,
+  }) = _AdminOssPolicy;
 
-  factory AdminOssPolicy.fromJson(Map<String, dynamic> json) {
-    return AdminOssPolicy(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      status: AdminOssPolicyStatusX.fromApi(json['status']?.toString() ?? ''),
-      appliesTo: json['applies_to']?.toString() ?? '',
-      lastUpdatedAt:
-          DateTime.tryParse(json['last_updated_at']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
-
-  AdminOssPolicy copyWith({
-    AdminOssPolicyStatus? status,
-    DateTime? lastUpdatedAt,
-  }) {
-    return AdminOssPolicy(
-      id: id,
-      name: name,
-      description: description,
-      status: status ?? this.status,
-      appliesTo: appliesTo,
-      lastUpdatedAt: lastUpdatedAt ?? this.lastUpdatedAt,
-    );
-  }
+  factory AdminOssPolicy.fromJson(Map<String, dynamic> json) =>
+      _$AdminOssPolicyFromJson(json);
 
   String get lastUpdatedLabel {
     final formatter = DateFormat('更新于 MM-dd HH:mm');
@@ -204,32 +125,20 @@ class AdminOssPolicy {
   }
 }
 
-class AdminOssAuditLog {
-  const AdminOssAuditLog({
-    required this.id,
-    required this.action,
-    required this.operator,
-    required this.detail,
-    required this.createdAt,
-  });
+@freezed
+abstract class AdminOssAuditLog with _$AdminOssAuditLog {
+  const AdminOssAuditLog._();
 
-  final String id;
-  final String action;
-  final String operator;
-  final String detail;
-  final DateTime createdAt;
+  const factory AdminOssAuditLog({
+    @Default('') String id,
+    @Default('') String action,
+    @Default('') String operator,
+    @Default('') String detail,
+    @JsonKey(fromJson: _parseDateDefault0) required DateTime createdAt,
+  }) = _AdminOssAuditLog;
 
-  factory AdminOssAuditLog.fromJson(Map<String, dynamic> json) {
-    return AdminOssAuditLog(
-      id: json['id']?.toString() ?? '',
-      action: json['action']?.toString() ?? '',
-      operator: json['operator']?.toString() ?? '',
-      detail: json['detail']?.toString() ?? '',
-      createdAt:
-          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0),
-    );
-  }
+  factory AdminOssAuditLog.fromJson(Map<String, dynamic> json) =>
+      _$AdminOssAuditLogFromJson(json);
 
   String get timeLabel => DateFormat('MM-dd HH:mm').format(createdAt.toLocal());
 }

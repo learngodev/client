@@ -1,22 +1,21 @@
-class AuthTokens {
-  const AuthTokens({required this.accessToken, required this.refreshToken});
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String accessToken;
-  final String refreshToken;
+part 'auth_tokens.freezed.dart';
+part 'auth_tokens.g.dart';
+
+@freezed
+abstract class AuthTokens with _$AuthTokens {
+  const AuthTokens._();
+
+  @Assert("accessToken != ''", '访问令牌不能为空')
+  @Assert("refreshToken != ''", '刷新令牌不能为空')
+  const factory AuthTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) = _AuthTokens;
 
   bool get isNotEmpty => accessToken.isNotEmpty;
 
-  Map<String, String> toJson() => {
-    'access_token': accessToken,
-    'refresh_token': refreshToken,
-  };
-
-  factory AuthTokens.fromJson(Map<String, dynamic> json) {
-    final access = json['access_token'] as String? ?? '';
-    final refresh = json['refresh_token'] as String? ?? '';
-    if (access.isEmpty || refresh.isEmpty) {
-      throw const FormatException('缺少访问令牌或刷新令牌');
-    }
-    return AuthTokens(accessToken: access, refreshToken: refresh);
-  }
+  factory AuthTokens.fromJson(Map<String, dynamic> json) =>
+      _$AuthTokensFromJson(json);
 }

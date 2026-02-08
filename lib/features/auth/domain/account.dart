@@ -1,3 +1,8 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'account.freezed.dart';
+part 'account.g.dart';
+
 enum AccountRole { admin, teacher, student, ai }
 
 extension AccountRoleLabel on AccountRole {
@@ -30,40 +35,22 @@ extension AccountRoleLabel on AccountRole {
   }
 }
 
-class Account {
-  const Account({
-    required this.id,
-    required this.schoolId,
-    required this.identifier,
-    required this.displayName,
-    required this.role,
-  });
+Object? _readDisplayName(Map map, String key) {
+  return map['display_name'] ?? map['name'];
+}
 
-  final String id;
-  final String schoolId;
-  final String identifier;
-  final String displayName;
-  final AccountRole role;
+@freezed
+abstract class Account with _$Account {
+  const factory Account({
+    @Default('') String id,
+    @Default('') String schoolId,
+    @Default('') String identifier,
+    @JsonKey(readValue: _readDisplayName) @Default('') String displayName,
+    @JsonKey(fromJson: AccountRoleLabel.fromApiValue)
+    @Default(AccountRole.student)
+    AccountRole role,
+  }) = _Account;
 
-  factory Account.fromJson(Map<String, dynamic> json) {
-    final roleValue = json['role']?.toString() ?? 'student';
-    return Account(
-      id: json['id']?.toString() ?? '',
-      schoolId: json['school_id']?.toString() ?? '',
-      identifier: json['identifier']?.toString() ?? '',
-      displayName:
-          json['display_name']?.toString() ?? json['name']?.toString() ?? '',
-      role: AccountRoleLabel.fromApiValue(roleValue),
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'school_id': schoolId,
-      'identifier': identifier,
-      'display_name': displayName,
-      'role': role.apiValue,
-    };
-  }
+  factory Account.fromJson(Map<String, dynamic> json) =>
+      _$AccountFromJson(json);
 }

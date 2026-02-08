@@ -1,56 +1,31 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:intl/intl.dart';
 
-class TeacherScheduleItem {
-  const TeacherScheduleItem({
-    required this.sessionId,
-    required this.courseId,
-    required this.courseName,
-    required this.classId,
-    required this.className,
-    required this.startsAt,
-    required this.endsAt,
-    required this.day,
-    required this.slotId,
-    required this.slotName,
-    required this.location,
-    required this.source,
-  });
+part 'teacher_schedule_model.freezed.dart';
+part 'teacher_schedule_model.g.dart';
 
-  final String sessionId;
-  final String courseId;
-  final String courseName;
-  final String classId;
-  final String className;
-  final DateTime startsAt;
-  final DateTime endsAt;
-  final String day;
-  final String slotId;
-  final String slotName;
-  final String location;
-  final String source;
+@freezed
+abstract class TeacherScheduleItem with _$TeacherScheduleItem {
+  const TeacherScheduleItem._();
 
-  factory TeacherScheduleItem.fromJson(Map<String, dynamic> json) {
-    return TeacherScheduleItem(
-      sessionId: (json['session_id'] as String? ?? '').trim(),
-      courseId: (json['course_id'] as String? ?? '').trim(),
-      courseName: json['course_name'] as String? ?? '',
-      classId: (json['class_id'] as String? ?? '').trim(),
-      className: json['class_name'] as String? ?? '',
-      startsAt:
-          DateTime.tryParse(json['starts_at'] as String? ?? '')?.toLocal() ??
-          DateTime.now(),
-      endsAt:
-          DateTime.tryParse(json['ends_at'] as String? ?? '')?.toLocal() ??
-          DateTime.now(),
-      day: json['day'] as String? ?? '',
-      slotId: (json['slot_id'] as String? ?? '').trim(),
-      slotName: json['slot_name'] as String? ?? '',
-      location: json['location'] as String? ?? '',
-      source: json['source'] as String? ?? '',
-    );
-  }
+  const factory TeacherScheduleItem({
+    @Default('') String sessionId,
+    @Default('') String courseId,
+    @Default('') String courseName,
+    @Default('') String classId,
+    @Default('') String className,
+    required DateTime startsAt,
+    required DateTime endsAt,
+    @Default('') String day,
+    @Default('') String slotId,
+    @Default('') String slotName,
+    @Default('') String location,
+    @Default('') String source,
+  }) = _TeacherScheduleItem;
 
-  // Helpers for UI
+  factory TeacherScheduleItem.fromJson(Map<String, dynamic> json) =>
+      _$TeacherScheduleItemFromJson(json);
+
   int get weekDay => startsAt.weekday;
 
   String get timeRange {

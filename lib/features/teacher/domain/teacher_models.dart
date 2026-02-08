@@ -1,370 +1,202 @@
 import 'dart:convert';
 
+import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../student/domain/assignment_models.dart';
 
-class TeacherCourse {
-  const TeacherCourse({
-    required this.id,
-    required this.name,
-    required this.description,
-    this.imageUrl,
-    this.invitationCode,
-  });
+part 'teacher_models.freezed.dart';
+part 'teacher_models.g.dart';
 
-  final String id;
-  final String name;
-  final String description;
-  final String? imageUrl;
-  final String? invitationCode;
+@freezed
+abstract class TeacherCourse with _$TeacherCourse {
+  const factory TeacherCourse({
+    @Default('') String id,
+    @Default('') String name,
+    @Default('') String description,
+    String? imageUrl,
+    String? invitationCode,
+  }) = _TeacherCourse;
 
-  factory TeacherCourse.fromJson(Map<String, dynamic> json) {
-    return TeacherCourse(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      imageUrl: json['image_url'] as String?,
-      invitationCode: json['invitation_code'] as String?,
-    );
-  }
+  factory TeacherCourse.fromJson(Map<String, dynamic> json) =>
+      _$TeacherCourseFromJson(json);
 }
 
-class TeacherStudent {
-  const TeacherStudent({
-    required this.id,
-    required this.name, // This might need to be fetched from account or joined
-    required this.number,
-    required this.email,
-  });
+@freezed
+abstract class TeacherStudent with _$TeacherStudent {
+  const factory TeacherStudent({
+    @Default('') String id,
+    @Default('Unknown') String name,
+    @Default('') String number,
+    @Default('') String email,
+  }) = _TeacherStudent;
 
-  final String id;
-  final String name;
-  final String number;
-  final String email;
-
-  factory TeacherStudent.fromJson(Map<String, dynamic> json) {
-    return TeacherStudent(
-      id: json['id'] as String? ?? '',
-      name:
-          json['name'] as String? ??
-          'Unknown', // Backend might not return name directly in Student struct, need to check
-      number: json['number'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-    );
-  }
+  factory TeacherStudent.fromJson(Map<String, dynamic> json) =>
+      _$TeacherStudentFromJson(json);
 }
 
-class TeacherClass {
-  const TeacherClass({
-    required this.id,
-    required this.name,
-    this.courseId,
-    this.courseName,
-  });
-  final String id;
-  final String name;
-  final String? courseId;
-  final String? courseName;
+@freezed
+abstract class TeacherClass with _$TeacherClass {
+  const factory TeacherClass({
+    @Default('') String id,
+    @Default('') String name,
+    String? courseId,
+    String? courseName,
+  }) = _TeacherClass;
 
-  factory TeacherClass.fromJson(Map<String, dynamic> json) {
-    return TeacherClass(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
-      courseId: json['course_id'] as String?,
-      courseName: json['course_name'] as String?,
-    );
-  }
+  factory TeacherClass.fromJson(Map<String, dynamic> json) =>
+      _$TeacherClassFromJson(json);
 }
 
-class TeacherAssignment {
-  const TeacherAssignment({
-    required this.id,
-    required this.title,
-    required this.courseName,
-    required this.className,
-    required this.submissionCount,
-    required this.submittedCount,
-    required this.gradedCount,
-    required this.pendingGradeCount,
-    this.dueAt,
-    this.classStudentCount = 0,
-  });
+@freezed
+abstract class TeacherAssignment with _$TeacherAssignment {
+  const factory TeacherAssignment({
+    @Default('') String id,
+    @Default('') String title,
+    @Default('') String courseName,
+    @Default('') String className,
+    @Default(0) int submissionCount,
+    @Default(0) int submittedCount,
+    @Default(0) int gradedCount,
+    @Default(0) int pendingGradeCount,
+    DateTime? dueAt,
+    @Default(0) int classStudentCount,
+  }) = _TeacherAssignment;
 
-  final String id;
-  final String title;
-  final String courseName;
-  final String className;
-  final int submissionCount;
-  final int submittedCount;
-  final int gradedCount;
-  final int pendingGradeCount;
-  final DateTime? dueAt;
-  final int classStudentCount;
-
-  factory TeacherAssignment.fromJson(Map<String, dynamic> json) {
-    return TeacherAssignment(
-      id: json['id'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      courseName: json['course_name'] as String? ?? '',
-      className: json['class_name'] as String? ?? '',
-      submissionCount: json['submission_count'] as int? ?? 0,
-      submittedCount: json['submitted_count'] as int? ?? 0,
-      gradedCount: json['graded_count'] as int? ?? 0,
-      pendingGradeCount: json['pending_grade_count'] as int? ?? 0,
-      dueAt: DateTime.tryParse(json['due_at'] as String? ?? '')?.toLocal(),
-      classStudentCount: json['class_student_count'] as int? ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'course_name': courseName,
-      'class_name': className,
-      'submission_count': submissionCount,
-      'submitted_count': submittedCount,
-      'graded_count': gradedCount,
-      'pending_grade_count': pendingGradeCount,
-      'due_at': dueAt?.toIso8601String(),
-      'class_student_count': classStudentCount,
-    };
-  }
+  factory TeacherAssignment.fromJson(Map<String, dynamic> json) =>
+      _$TeacherAssignmentFromJson(json);
 }
 
-class SubmissionSummary {
-  const SubmissionSummary({
-    required this.id,
-    required this.studentId,
-    required this.studentName,
-    required this.submittedAt,
-    required this.status,
-    this.score,
-  });
+@freezed
+abstract class SubmissionSummary with _$SubmissionSummary {
+  const factory SubmissionSummary({
+    @Default('') String id,
+    @Default('') String studentId,
+    @Default('学生') String studentName,
+    DateTime? submittedAt,
+    @Default('pending') String status,
+    double? score,
+  }) = _SubmissionSummary;
 
-  final String id;
-  final String studentId;
-  final String studentName;
-  final DateTime? submittedAt;
-  final String status;
-  final double? score;
-
-  factory SubmissionSummary.fromJson(Map<String, dynamic> json) {
-    return SubmissionSummary(
-      id: json['id'] as String? ?? '',
-      studentId: json['student_id'] as String? ?? '',
-      studentName: json['student_name'] as String? ?? '学生',
-      submittedAt: DateTime.tryParse(
-        json['submitted_at'] as String? ?? '',
-      )?.toLocal(),
-      status: json['status'] as String? ?? 'pending',
-      score: (json['score'] as num?)?.toDouble(),
-    );
-  }
+  factory SubmissionSummary.fromJson(Map<String, dynamic> json) =>
+      _$SubmissionSummaryFromJson(json);
 }
 
-class TeacherSubmissionDetail {
-  const TeacherSubmissionDetail({
-    required this.submission,
-    required this.items,
-    required this.comments,
-  });
-
-  final SubmissionResult submission;
-  final List<SubmissionItem> items;
-  final List<SubmissionComment> comments;
-
-  factory TeacherSubmissionDetail.fromJson(Map<String, dynamic> json) {
-    final submissionJson = json['submission'] as Map<String, dynamic>? ?? {};
-    final itemsList = submissionJson['items'] as List?;
-
-    return TeacherSubmissionDetail(
-      submission: SubmissionResult.fromJson(submissionJson),
-      items:
-          itemsList
-              ?.map((e) => SubmissionItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
-      comments:
-          (json['comments'] as List?)
-              ?.map(
-                (e) => SubmissionComment.fromJson(e as Map<String, dynamic>),
-              )
-              .toList() ??
-          [],
-    );
-  }
-}
-
-class SubmissionComment {
-  const SubmissionComment({
-    required this.id,
-    required this.content,
-    required this.authorId,
-    required this.createdAt,
-  });
-
-  final String id;
-  final String content;
-  final String authorId;
-  final DateTime createdAt;
-
-  factory SubmissionComment.fromJson(Map<String, dynamic> json) {
-    return SubmissionComment(
-      id: json['id'] as String? ?? '',
-      content: json['content'] as String? ?? '',
-      authorId: json['author_id'] as String? ?? '',
-      createdAt:
-          DateTime.tryParse(json['created_at'] as String? ?? '')?.toLocal() ??
-          DateTime.now(),
-    );
-  }
-}
-
-class GradeSubmissionRequest {
-  const GradeSubmissionRequest({
-    this.score,
-    this.feedback,
-    this.itemScores,
-    this.comment,
-  });
-
-  final double? score;
-  final String? feedback;
-  final Map<String, double>? itemScores;
-  final String? comment;
-
-  Map<String, dynamic> toJson() {
-    return {
-      if (score != null) 'score': score,
-      if (feedback != null) 'feedback': feedback,
-      if (itemScores != null) 'item_scores': itemScores,
-      if (comment != null) 'comment': {'content': comment},
-    };
-  }
-}
-
-class CreateAssignmentRequest {
-  const CreateAssignmentRequest({
-    required this.courseId,
-    required this.teacherId,
-    required this.classId,
-    required this.type,
-    required this.title,
-    this.description,
-    this.startAt,
-    this.dueAt,
-    this.maxScore,
-    this.allowResubmit = false,
-    required this.questions,
-    this.attachments,
-  });
-
-  final String courseId;
-  final String teacherId;
-  final String classId;
-  final String type;
-  final String title;
-  final String? description;
-  final DateTime? startAt;
-  final DateTime? dueAt;
-  final double? maxScore;
-  final bool allowResubmit;
-  final List<CreateAssignmentQuestionInput> questions;
-  final List<String>? attachments;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'course_id': courseId,
-      'teacher_id': teacherId,
-      'class_id': classId,
-      'type': type,
-      'title': title,
-      if (description != null) 'description': description,
-      if (startAt != null) 'start_at': startAt!.toUtc().toIso8601String(),
-      if (dueAt != null) 'due_at': dueAt!.toUtc().toIso8601String(),
-      if (maxScore != null) 'max_score': maxScore,
-      'allow_resubmit': allowResubmit,
-      'questions': questions.map((e) => e.toJson()).toList(),
-      if (attachments != null) 'attachments': attachments,
-    };
-  }
-}
-
-class UpdateAssignmentRequest {
-  const UpdateAssignmentRequest({
-    required this.teacherId,
-    this.title,
-    this.description,
-    this.startAt,
-    this.dueAt,
-    this.maxScore,
-    this.allowResubmit,
-  });
-
-  final String teacherId;
-  final String? title;
-  final String? description;
-  final DateTime? startAt;
-  final DateTime? dueAt;
-  final double? maxScore;
-  final bool? allowResubmit;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'teacher_id': teacherId,
-      if (title != null) 'title': title,
-      if (description != null) 'description': description,
-      if (startAt != null) 'start_at': startAt!.toUtc().toIso8601String(),
-      if (dueAt != null) 'due_at': dueAt!.toUtc().toIso8601String(),
-      if (maxScore != null) 'max_score': maxScore,
-      if (allowResubmit != null) 'allow_resubmit': allowResubmit,
-    };
-  }
-}
-
-class CreateAssignmentQuestionInput {
-  const CreateAssignmentQuestionInput({
-    required this.type,
-    required this.prompt,
-    this.options,
-    this.answer,
-    this.score,
-    this.orderIndex,
-  });
-
-  final String type;
-  final String prompt;
-  final String? options;
-  final String? answer;
-  final double? score;
-  final int? orderIndex;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'type': type,
-      'prompt': prompt,
-      if (options != null) 'options': options,
-      if (answer != null) 'answer': answer,
-      if (score != null) 'score': score,
-      if (orderIndex != null) 'order_index': orderIndex,
-    };
-  }
-
-  factory CreateAssignmentQuestionInput.fromJson(Map<String, dynamic> json) {
-    String? optionsStr;
-    if (json['options'] is List) {
-      optionsStr = jsonEncode(json['options']);
-    } else if (json['options'] is String) {
-      optionsStr = json['options'] as String;
+List<SubmissionItem> _readSubmissionItems(Map map, String key) {
+  final submission = map['submission'];
+  if (submission is Map<String, dynamic>) {
+    final items = submission['items'];
+    if (items is List) {
+      return items.map((e) => SubmissionItem.fromJson(e)).toList();
     }
-
-    return CreateAssignmentQuestionInput(
-      type: json['type'] as String? ?? 'essay',
-      prompt: json['prompt'] as String? ?? '',
-      options: optionsStr,
-      answer: json['answer'] as String?,
-      score: (json['score'] as num?)?.toDouble(),
-      orderIndex: json['order_index'] as int?,
-    );
   }
+  return [];
+}
+
+@freezed
+abstract class TeacherSubmissionDetail with _$TeacherSubmissionDetail {
+  const factory TeacherSubmissionDetail({
+    required SubmissionResult submission,
+    @JsonKey(readValue: _readSubmissionItems)
+    @Default([])
+    List<SubmissionItem> items,
+    @Default([]) List<SubmissionComment> comments,
+  }) = _TeacherSubmissionDetail;
+
+  factory TeacherSubmissionDetail.fromJson(Map<String, dynamic> json) =>
+      _$TeacherSubmissionDetailFromJson(json);
+}
+
+@freezed
+abstract class SubmissionComment with _$SubmissionComment {
+  const factory SubmissionComment({
+    @Default('') String id,
+    @Default('') String content,
+    @Default('') String authorId,
+    required DateTime createdAt,
+  }) = _SubmissionComment;
+
+  factory SubmissionComment.fromJson(Map<String, dynamic> json) =>
+      _$SubmissionCommentFromJson(json);
+}
+
+Object? _commentToJson(String? comment) {
+  if (comment == null) return null;
+  return {'content': comment};
+}
+
+@freezed
+abstract class GradeSubmissionRequest with _$GradeSubmissionRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory GradeSubmissionRequest({
+    double? score,
+    String? feedback,
+    Map<String, double>? itemScores,
+    @JsonKey(toJson: _commentToJson) String? comment,
+  }) = _GradeSubmissionRequest;
+
+  factory GradeSubmissionRequest.fromJson(Map<String, dynamic> json) =>
+      _$GradeSubmissionRequestFromJson(json);
+}
+
+String? _dateToUtcIso(DateTime? date) => date?.toUtc().toIso8601String();
+
+@freezed
+abstract class CreateAssignmentRequest with _$CreateAssignmentRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory CreateAssignmentRequest({
+    required String courseId,
+    required String teacherId,
+    required String classId,
+    required String type,
+    required String title,
+    String? description,
+    @JsonKey(toJson: _dateToUtcIso) DateTime? startAt,
+    @JsonKey(toJson: _dateToUtcIso) DateTime? dueAt,
+    double? maxScore,
+    @Default(false) bool allowResubmit,
+    required List<CreateAssignmentQuestionInput> questions,
+    List<String>? attachments,
+  }) = _CreateAssignmentRequest;
+
+  factory CreateAssignmentRequest.fromJson(Map<String, dynamic> json) =>
+      _$CreateAssignmentRequestFromJson(json);
+}
+
+@freezed
+abstract class UpdateAssignmentRequest with _$UpdateAssignmentRequest {
+  @JsonSerializable(includeIfNull: false)
+  const factory UpdateAssignmentRequest({
+    required String teacherId,
+    String? title,
+    String? description,
+    @JsonKey(toJson: _dateToUtcIso) DateTime? startAt,
+    @JsonKey(toJson: _dateToUtcIso) DateTime? dueAt,
+    double? maxScore,
+    bool? allowResubmit,
+  }) = _UpdateAssignmentRequest;
+
+  factory UpdateAssignmentRequest.fromJson(Map<String, dynamic> json) =>
+      _$UpdateAssignmentRequestFromJson(json);
+}
+
+String? _parseOptions(dynamic value) {
+  if (value is List) return jsonEncode(value);
+  if (value is String) return value;
+  return null;
+}
+
+@freezed
+abstract class CreateAssignmentQuestionInput
+    with _$CreateAssignmentQuestionInput {
+  @JsonSerializable(includeIfNull: false)
+  const factory CreateAssignmentQuestionInput({
+    required String type,
+    required String prompt,
+    @JsonKey(fromJson: _parseOptions) String? options,
+    String? answer,
+    double? score,
+    int? orderIndex,
+  }) = _CreateAssignmentQuestionInput;
+
+  factory CreateAssignmentQuestionInput.fromJson(Map<String, dynamic> json) =>
+      _$CreateAssignmentQuestionInputFromJson(json);
 }

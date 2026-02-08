@@ -1,77 +1,87 @@
-class Course {
-  final String id;
-  final String schoolId;
-  final String name;
-  final String description;
-  final List<Teacher> teachers;
+import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  Course({
-    required this.id,
-    required this.schoolId,
-    required this.name,
-    required this.description,
-    this.teachers = const [],
-  });
+part 'course.freezed.dart';
+part 'course.g.dart';
 
-  factory Course.fromJson(Map<String, dynamic> json) {
-    return Course(
-      id: json['id'] ?? json['ID'] ?? json['course_id'] ?? '',
-      schoolId: json['school_id'] ?? json['SchoolID'] ?? '',
-      name: json['name'] ?? json['course_name'] ?? json['CourseName'] ?? '',
-      description: json['description'] ?? json['Description'] ?? '',
-      teachers:
-          (json['teachers'] as List?)
-              ?.map((e) => Teacher.fromJson(e))
-              .toList() ??
-          [],
-    );
-  }
+Object? _readId(Map map, String key) {
+  return map['id'] ?? map['ID'] ?? map['course_id'];
 }
 
-class Teacher {
-  final String id;
-  final String name;
-
-  Teacher({required this.id, required this.name});
-
-  factory Teacher.fromJson(Map<String, dynamic> json) {
-    return Teacher(
-      id: json['id'] ?? '',
-      name: json['display_name'] ?? json['name'] ?? '',
-    );
-  }
+Object? _readSchoolId(Map map, String key) {
+  return map['school_id'] ?? map['SchoolID'];
 }
 
-class CourseAssignment {
-  final String courseId;
-  final String courseName;
-  final String classId;
-  final String className;
-  final List<String> teacherNames;
-  final int studentCount;
+Object? _readName(Map map, String key) {
+  return map['name'] ?? map['course_name'] ?? map['CourseName'];
+}
 
-  CourseAssignment({
-    required this.courseId,
-    required this.courseName,
-    required this.classId,
-    required this.className,
-    required this.teacherNames,
-    required this.studentCount,
-  });
+Object? _readDescription(Map map, String key) {
+  return map['description'] ?? map['Description'];
+}
 
-  factory CourseAssignment.fromJson(Map<String, dynamic> json) {
-    return CourseAssignment(
-      courseId: json['course_id'] ?? '',
-      courseName: json['course_name'] ?? '',
-      classId: json['class_id'] ?? '',
-      className: json['class_name'] ?? '',
-      teacherNames: json['teacher_name'] != null
-          ? [json['teacher_name'].toString()]
-          : (json['teacher_names'] as List?)
-                    ?.map((e) => e.toString())
-                    .toList() ??
-                [],
-      studentCount: (json['student_count'] as num?)?.toInt() ?? 0,
-    );
+List<Teacher> _parseTeachers(dynamic value) {
+  if (value is List) {
+    return value
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Teacher.fromJson(e))
+        .toList();
   }
+  return [];
+}
+
+@freezed
+abstract class Course with _$Course {
+  const Course._();
+
+  const factory Course({
+    @JsonKey(readValue: _readId) @Default('') String id,
+    @JsonKey(readValue: _readSchoolId) @Default('') String schoolId,
+    @JsonKey(readValue: _readName) @Default('') String name,
+    @JsonKey(readValue: _readDescription) @Default('') String description,
+    @JsonKey(fromJson: _parseTeachers) @Default([]) List<Teacher> teachers,
+  }) = _Course;
+
+  factory Course.fromJson(Map<String, dynamic> json) => _$CourseFromJson(json);
+}
+
+@freezed
+abstract class Teacher with _$Teacher {
+  const factory Teacher({
+    @Default('') String id,
+    @JsonKey(readValue: _readTeacherName) @Default('') String name,
+  }) = _Teacher;
+
+  factory Teacher.fromJson(Map<String, dynamic> json) =>
+      _$TeacherFromJson(json);
+}
+
+Object? _readTeacherName(Map map, String key) {
+  return map['display_name'] ?? map['name'];
+}
+
+@freezed
+abstract class CourseAssignment with _$CourseAssignment {
+  const factory CourseAssignment({
+    @Default('') String courseId,
+    @Default('') String courseName,
+    @Default('') String classId,
+    @Default('') String className,
+    @JsonKey(readValue: _readTeacherNames)
+    @Default([])
+    List<String> teacherNames,
+    @Default(0) int studentCount,
+  }) = _CourseAssignment;
+
+  factory CourseAssignment.fromJson(Map<String, dynamic> json) =>
+      _$CourseAssignmentFromJson(json);
+}
+
+Object? _readTeacherNames(Map map, String key) {
+  if (map.containsKey('teacher_name') && map['teacher_name'] != null) {
+    return [map['teacher_name'].toString()];
+  }
+  final val = map['teacher_names'];
+  if (val is List) return val.map((e) => e.toString()).toList();
+  return [];
 }

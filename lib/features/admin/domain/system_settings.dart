@@ -1,4 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'system_settings.freezed.dart';
+part 'system_settings.g.dart';
 
 enum AdminSystemBroadcastStatus { scheduled, sent, draft }
 
@@ -32,209 +37,111 @@ extension AdminSystemBroadcastStatusX on AdminSystemBroadcastStatus {
   }
 }
 
-class AdminSystemSwitch {
-  const AdminSystemSwitch({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.enabled,
-    required this.lastUpdatedLabel,
-    required this.responsible,
-    required this.iconName,
-    this.tags = const <String>[],
-    this.environment = '生产环境',
-  });
+AdminSystemBroadcastStatus _parseBroadcastStatus(dynamic value) {
+  return AdminSystemBroadcastStatusX.fromApiValue((value ?? '').toString());
+}
 
-  final String id;
-  final String title;
-  final String description;
-  final bool enabled;
-  final String lastUpdatedLabel;
-  final String responsible;
-  final String iconName;
-  final List<String> tags;
-  final String environment;
-
-  IconData get icon => _iconFromName(iconName);
-
-  AdminSystemSwitch copyWith({
-    bool? enabled,
-    String? lastUpdatedLabel,
-    List<String>? tags,
-  }) {
-    return AdminSystemSwitch(
-      id: id,
-      title: title,
-      description: description,
-      enabled: enabled ?? this.enabled,
-      lastUpdatedLabel: lastUpdatedLabel ?? this.lastUpdatedLabel,
-      responsible: responsible,
-      iconName: iconName,
-      tags: tags ?? this.tags,
-      environment: environment,
-    );
+IconData _iconFromName(String name) {
+  switch (name.trim().toLowerCase()) {
+    case 'nightlight':
+      return Icons.nightlight_round;
+    case 'notifications_active':
+      return Icons.notifications_active_outlined;
+    case 'auto_awesome':
+      return Icons.auto_awesome_outlined;
+    case 'campaign':
+      return Icons.campaign_outlined;
+    case 'security':
+      return Icons.security_outlined;
+    default:
+      return Icons.settings_outlined;
   }
+}
 
-  factory AdminSystemSwitch.fromJson(Map<String, dynamic> json) {
-    final tags = <String>[];
-    final rawTags = json['tags'];
-    if (rawTags is List) {
-      for (final tag in rawTags) {
-        if (tag is String && tag.trim().isNotEmpty) {
-          tags.add(tag.trim());
-        }
+List<String> _parseTags(dynamic value) {
+  final tags = <String>[];
+  if (value is List) {
+    for (final tag in value) {
+      if (tag is String && tag.trim().isNotEmpty) {
+        tags.add(tag.trim());
       }
     }
-    return AdminSystemSwitch(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      enabled: json['enabled'] == true,
-      lastUpdatedLabel: json['last_updated_label']?.toString() ?? '',
-      responsible: json['responsible']?.toString() ?? '',
-      iconName: json['icon']?.toString() ?? 'settings',
-      tags: tags,
-      environment: json['environment']?.toString() ?? '生产环境',
-    );
   }
-
-  static IconData _iconFromName(String name) {
-    switch (name.trim().toLowerCase()) {
-      case 'nightlight':
-        return Icons.nightlight_round;
-      case 'notifications_active':
-        return Icons.notifications_active_outlined;
-      case 'auto_awesome':
-        return Icons.auto_awesome_outlined;
-      case 'campaign':
-        return Icons.campaign_outlined;
-      case 'security':
-        return Icons.security_outlined;
-      default:
-        return Icons.settings_outlined;
-    }
-  }
+  return tags;
 }
 
-class AdminSystemParameter {
-  const AdminSystemParameter({
-    required this.id,
-    required this.key,
-    required this.value,
-    required this.scope,
-    required this.description,
-    required this.lastUpdatedLabel,
-    this.locked = false,
-  });
+@freezed
+abstract class AdminSystemSwitch with _$AdminSystemSwitch {
+  const AdminSystemSwitch._();
 
-  final String id;
-  final String key;
-  final String value;
-  final String scope;
-  final String description;
-  final String lastUpdatedLabel;
-  final bool locked;
+  const factory AdminSystemSwitch({
+    @Default('') String id,
+    @Default('') String title,
+    @Default('') String description,
+    @Default(false) bool enabled,
+    @Default('') String lastUpdatedLabel,
+    @Default('') String responsible,
+    @JsonKey(name: 'icon') @Default('settings') String iconName,
+    @JsonKey(fromJson: _parseTags) @Default([]) List<String> tags,
+    @Default('生产环境') String environment,
+  }) = _AdminSystemSwitch;
 
-  AdminSystemParameter copyWith({String? value, String? lastUpdatedLabel}) {
-    return AdminSystemParameter(
-      id: id,
-      key: key,
-      value: value ?? this.value,
-      scope: scope,
-      description: description,
-      lastUpdatedLabel: lastUpdatedLabel ?? this.lastUpdatedLabel,
-      locked: locked,
-    );
-  }
+  factory AdminSystemSwitch.fromJson(Map<String, dynamic> json) =>
+      _$AdminSystemSwitchFromJson(json);
 
-  factory AdminSystemParameter.fromJson(Map<String, dynamic> json) {
-    return AdminSystemParameter(
-      id: json['id']?.toString() ?? '',
-      key: json['key']?.toString() ?? '',
-      value: json['value']?.toString() ?? '',
-      scope: json['scope']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      lastUpdatedLabel: json['last_updated_label']?.toString() ?? '',
-      locked: json['locked'] == true,
-    );
-  }
+  IconData get icon => _iconFromName(iconName);
 }
 
-class AdminSystemBroadcast {
-  const AdminSystemBroadcast({
-    required this.id,
-    required this.title,
-    required this.messagePreview,
-    required this.status,
-    required this.targetLabel,
-    required this.scheduleLabel,
-    required this.createdBy,
-    this.pinned = false,
-  });
+@freezed
+abstract class AdminSystemParameter with _$AdminSystemParameter {
+  const AdminSystemParameter._();
 
-  final String id;
-  final String title;
-  final String messagePreview;
-  final AdminSystemBroadcastStatus status;
-  final String targetLabel;
-  final String scheduleLabel;
-  final String createdBy;
-  final bool pinned;
+  const factory AdminSystemParameter({
+    @Default('') String id,
+    @Default('') String key,
+    @Default('') String value,
+    @Default('') String scope,
+    @Default('') String description,
+    @Default('') String lastUpdatedLabel,
+    @Default(false) bool locked,
+  }) = _AdminSystemParameter;
 
-  AdminSystemBroadcast copyWith({
-    AdminSystemBroadcastStatus? status,
-    bool? pinned,
-    String? scheduleLabel,
-  }) {
-    return AdminSystemBroadcast(
-      id: id,
-      title: title,
-      messagePreview: messagePreview,
-      status: status ?? this.status,
-      targetLabel: targetLabel,
-      scheduleLabel: scheduleLabel ?? this.scheduleLabel,
-      createdBy: createdBy,
-      pinned: pinned ?? this.pinned,
-    );
-  }
-
-  factory AdminSystemBroadcast.fromJson(Map<String, dynamic> json) {
-    final statusValue = json['status']?.toString() ?? '';
-    return AdminSystemBroadcast(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      messagePreview: json['message_preview']?.toString() ?? '',
-      status: AdminSystemBroadcastStatusX.fromApiValue(statusValue),
-      targetLabel: json['target_label']?.toString() ?? '',
-      scheduleLabel: json['schedule_label']?.toString() ?? '',
-      createdBy: json['created_by']?.toString() ?? '',
-      pinned: json['pinned'] == true,
-    );
-  }
+  factory AdminSystemParameter.fromJson(Map<String, dynamic> json) =>
+      _$AdminSystemParameterFromJson(json);
 }
 
-class AdminSystemAuditLog {
-  const AdminSystemAuditLog({
-    required this.category,
-    required this.action,
-    required this.operator,
-    required this.timeLabel,
-    required this.detail,
-  });
+@freezed
+abstract class AdminSystemBroadcast with _$AdminSystemBroadcast {
+  const AdminSystemBroadcast._();
 
-  final String category;
-  final String action;
-  final String operator;
-  final String timeLabel;
-  final String detail;
+  const factory AdminSystemBroadcast({
+    @Default('') String id,
+    @Default('') String title,
+    @Default('') String messagePreview,
+    @JsonKey(fromJson: _parseBroadcastStatus)
+    required AdminSystemBroadcastStatus status,
+    @Default('') String targetLabel,
+    @Default('') String scheduleLabel,
+    @Default('') String createdBy,
+    @Default(false) bool pinned,
+  }) = _AdminSystemBroadcast;
 
-  factory AdminSystemAuditLog.fromJson(Map<String, dynamic> json) {
-    return AdminSystemAuditLog(
-      category: json['category']?.toString() ?? '',
-      action: json['action']?.toString() ?? '',
-      operator: json['operator']?.toString() ?? '',
-      timeLabel: json['time_label']?.toString() ?? '',
-      detail: json['detail']?.toString() ?? '',
-    );
-  }
+  factory AdminSystemBroadcast.fromJson(Map<String, dynamic> json) =>
+      _$AdminSystemBroadcastFromJson(json);
+}
+
+@freezed
+abstract class AdminSystemAuditLog with _$AdminSystemAuditLog {
+  const AdminSystemAuditLog._();
+
+  const factory AdminSystemAuditLog({
+    @Default('') String category,
+    @Default('') String action,
+    @Default('') String operator,
+    @Default('') String timeLabel,
+    @Default('') String detail,
+  }) = _AdminSystemAuditLog;
+
+  factory AdminSystemAuditLog.fromJson(Map<String, dynamic> json) =>
+      _$AdminSystemAuditLogFromJson(json);
 }

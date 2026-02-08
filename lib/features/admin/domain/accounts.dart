@@ -1,5 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:intl/intl.dart';
+
+part 'accounts.freezed.dart';
+part 'accounts.g.dart';
 
 enum AdminAccountRole { teacher, student }
 
@@ -90,115 +95,29 @@ extension AdminAccountStatusX on AdminAccountStatus {
   }
 }
 
-class AdminAccount {
-  const AdminAccount({
-    required this.id,
-    this.profileId,
-    required this.role,
-    required this.name,
-    required this.identifier,
-    required this.email,
-    required this.status,
-    required this.createdAt,
-    this.phone,
-    this.departmentId,
-    this.department,
-    this.classId,
-    this.className,
-    this.lastActiveAt,
-  });
+@freezed
+abstract class AdminAccount with _$AdminAccount {
+  const AdminAccount._();
 
-  final String id;
-  final String? profileId;
-  final AdminAccountRole role;
-  final String name;
-  final String identifier;
-  final String email;
-  final String? phone;
-  final String? departmentId;
-  final String? department;
-  final String? classId;
-  final String? className;
-  final AdminAccountStatus status;
-  final DateTime? lastActiveAt;
-  final DateTime createdAt;
-
-  AdminAccount copyWith({
-    String? id,
+  const factory AdminAccount({
+    @Default('') String id,
     String? profileId,
-    AdminAccountRole? role,
-    String? name,
-    String? identifier,
-    String? email,
+    @JsonKey(fromJson: _parseRole) required AdminAccountRole role,
+    @Default('') String name,
+    @Default('') String identifier,
+    @Default('') String email,
     String? phone,
     String? departmentId,
     String? department,
     String? classId,
     String? className,
-    AdminAccountStatus? status,
-    DateTime? lastActiveAt,
-    DateTime? createdAt,
-  }) {
-    return AdminAccount(
-      id: id ?? this.id,
-      profileId: profileId ?? this.profileId,
-      role: role ?? this.role,
-      name: name ?? this.name,
-      identifier: identifier ?? this.identifier,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      departmentId: departmentId ?? this.departmentId,
-      department: department ?? this.department,
-      classId: classId ?? this.classId,
-      className: className ?? this.className,
-      status: status ?? this.status,
-      lastActiveAt: lastActiveAt ?? this.lastActiveAt,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
+    @JsonKey(fromJson: _parseStatus) required AdminAccountStatus status,
+    @JsonKey(fromJson: _parseNullableDate) DateTime? lastActiveAt,
+    @JsonKey(fromJson: _parseDate) required DateTime createdAt,
+  }) = _AdminAccount;
 
-  factory AdminAccount.fromJson(Map<String, dynamic> json) {
-    final roleValue = (json['role'] ?? '').toString().toLowerCase();
-    final statusValue = (json['status'] ?? '').toString().toLowerCase();
-    final emailValue = (json['email'] ?? '').toString();
-    final phoneValue = json['phone']?.toString();
-    final departmentIdValue = json['department_id']?.toString();
-    final departmentValue = json['department']?.toString();
-    final classIdValue = json['class_id']?.toString();
-    final classNameValue = json['class_name']?.toString();
-    final profileIdValue = json['profile_id']?.toString();
-
-    DateTime? lastActive;
-    final lastActiveRaw = json['last_active_at'];
-    if (lastActiveRaw is String && lastActiveRaw.isNotEmpty) {
-      lastActive = DateTime.tryParse(lastActiveRaw);
-    }
-
-    DateTime createdAt = DateTime.now();
-    final createdRaw = json['created_at'];
-    if (createdRaw is String && createdRaw.isNotEmpty) {
-      createdAt = DateTime.tryParse(createdRaw) ?? createdAt;
-    }
-
-    return AdminAccount(
-      id: (json['id'] ?? '').toString(),
-      profileId: profileIdValue?.isEmpty ?? true ? null : profileIdValue,
-      role: AdminAccountRoleX.fromApiValue(roleValue),
-      name: (json['name'] ?? '').toString(),
-      identifier: (json['identifier'] ?? '').toString(),
-      email: emailValue,
-      phone: phoneValue?.isEmpty ?? true ? null : phoneValue,
-      departmentId: departmentIdValue?.isEmpty ?? true
-          ? null
-          : departmentIdValue,
-      department: departmentValue?.isEmpty ?? true ? null : departmentValue,
-      classId: classIdValue?.isEmpty ?? true ? null : classIdValue,
-      className: classNameValue?.isEmpty ?? true ? null : classNameValue,
-      status: AdminAccountStatusX.fromApiValue(statusValue),
-      lastActiveAt: lastActive,
-      createdAt: createdAt,
-    );
-  }
+  factory AdminAccount.fromJson(Map<String, dynamic> json) =>
+      _$AdminAccountFromJson(json);
 
   String get structureLabel {
     final trimmedDepartment = department?.trim() ?? '';
@@ -240,104 +159,45 @@ class AdminAccount {
     }
     return DateFormat('yyyy-MM-dd HH:mm').format(reference);
   }
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'profile_id': profileId,
-      'role': role.apiValue,
-      'name': name,
-      'identifier': identifier,
-      'email': email,
-      'phone': phone,
-      'department_id': departmentId,
-      'department': department,
-      'class_id': classId,
-      'class_name': className,
-      'status': status.apiValue,
-      'last_active_at': lastActiveAt?.toIso8601String(),
-      'created_at': createdAt.toIso8601String(),
-    };
-  }
+AdminAccountRole _parseRole(dynamic value) {
+  return AdminAccountRoleX.fromApiValue((value ?? '').toString().toLowerCase());
+}
 
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is AdminAccount &&
-        other.id == id &&
-        other.profileId == profileId &&
-        other.role == role &&
-        other.name == name &&
-        other.identifier == identifier &&
-        other.email == email &&
-        other.phone == phone &&
-        other.departmentId == departmentId &&
-        other.department == department &&
-        other.classId == classId &&
-        other.className == className &&
-        other.status == status &&
-        other.lastActiveAt == lastActiveAt &&
-        other.createdAt == createdAt;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    profileId,
-    role,
-    name,
-    identifier,
-    email,
-    phone,
-    departmentId,
-    department,
-    classId,
-    className,
-    status,
-    lastActiveAt,
-    createdAt,
+AdminAccountStatus _parseStatus(dynamic value) {
+  return AdminAccountStatusX.fromApiValue(
+    (value ?? '').toString().toLowerCase(),
   );
 }
 
-class AdminAccountPage {
-  const AdminAccountPage({
-    required this.accounts,
-    required this.page,
-    required this.pageSize,
-    required this.total,
-  });
-
-  const AdminAccountPage.empty()
-    : accounts = const <AdminAccount>[],
-      page = 1,
-      pageSize = 0,
-      total = 0;
-
-  final List<AdminAccount> accounts;
-  final int page;
-  final int pageSize;
-  final int total;
-
-  factory AdminAccountPage.fromJson(Map<String, dynamic> json) {
-    final rawAccounts = json['accounts'];
-    final accounts = <AdminAccount>[];
-    if (rawAccounts is List) {
-      for (final entry in rawAccounts) {
-        if (entry is Map<String, dynamic>) {
-          accounts.add(AdminAccount.fromJson(entry));
-        }
-      }
-    }
-
-    final total = (json['total'] as num?)?.toInt() ?? accounts.length;
-    final page = (json['page'] as num?)?.toInt() ?? 1;
-    final pageSize = (json['page_size'] as num?)?.toInt() ?? accounts.length;
-
-    return AdminAccountPage(
-      accounts: accounts,
-      page: page,
-      pageSize: pageSize,
-      total: total,
-    );
+DateTime? _parseNullableDate(dynamic value) {
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value);
   }
+  return null;
+}
+
+DateTime _parseDate(dynamic value) {
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value) ?? DateTime.now();
+  }
+  return DateTime.now();
+}
+
+@freezed
+abstract class AdminAccountPage with _$AdminAccountPage {
+  const AdminAccountPage._();
+
+  const factory AdminAccountPage({
+    @Default([]) List<AdminAccount> accounts,
+    @Default(1) int page,
+    @Default(0) int pageSize,
+    @Default(0) int total,
+  }) = _AdminAccountPage;
+
+  factory AdminAccountPage.empty() => const AdminAccountPage();
+
+  factory AdminAccountPage.fromJson(Map<String, dynamic> json) =>
+      _$AdminAccountPageFromJson(json);
 }

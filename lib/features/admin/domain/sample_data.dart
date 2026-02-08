@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'oss.dart' as oss;
+
+part 'sample_data.freezed.dart';
 
 enum AdminAccountRole { teacher, student }
 
@@ -267,74 +271,36 @@ final List<oss.AdminOssAuditLog> adminOssAuditLogs = List.unmodifiable([
   ),
 ]);
 
-class AdminSystemSwitch {
-  const AdminSystemSwitch({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.enabled,
-    required this.lastUpdatedLabel,
-    required this.responsible,
-    required this.icon,
-    this.tags = const [],
-    this.environment = '生产环境',
-  });
+@freezed
+abstract class AdminSystemSwitch with _$AdminSystemSwitch {
+  const AdminSystemSwitch._();
 
-  final String id;
-  final String title;
-  final String description;
-  final bool enabled;
-  final String lastUpdatedLabel;
-  final String responsible;
-  final IconData icon;
-  final List<String> tags;
-  final String environment;
-
-  AdminSystemSwitch copyWith({bool? enabled, String? lastUpdatedLabel}) {
-    return AdminSystemSwitch(
-      id: id,
-      title: title,
-      description: description,
-      enabled: enabled ?? this.enabled,
-      lastUpdatedLabel: lastUpdatedLabel ?? this.lastUpdatedLabel,
-      responsible: responsible,
-      icon: icon,
-      tags: tags,
-      environment: environment,
-    );
-  }
+  const factory AdminSystemSwitch({
+    required String id,
+    required String title,
+    required String description,
+    required bool enabled,
+    required String lastUpdatedLabel,
+    required String responsible,
+    required IconData icon,
+    @Default([]) List<String> tags,
+    @Default('生产环境') String environment,
+  }) = _AdminSystemSwitch;
 }
 
-class AdminSystemParameter {
-  const AdminSystemParameter({
-    required this.id,
-    required this.key,
-    required this.value,
-    required this.scope,
-    required this.description,
-    required this.lastUpdatedLabel,
-    this.locked = false,
-  });
+@freezed
+abstract class AdminSystemParameter with _$AdminSystemParameter {
+  const AdminSystemParameter._();
 
-  final String id;
-  final String key;
-  final String value;
-  final String scope;
-  final String description;
-  final String lastUpdatedLabel;
-  final bool locked;
-
-  AdminSystemParameter copyWith({String? value, String? lastUpdatedLabel}) {
-    return AdminSystemParameter(
-      id: id,
-      key: key,
-      value: value ?? this.value,
-      scope: scope,
-      description: description,
-      lastUpdatedLabel: lastUpdatedLabel ?? this.lastUpdatedLabel,
-      locked: locked,
-    );
-  }
+  const factory AdminSystemParameter({
+    required String id,
+    required String key,
+    required String value,
+    required String scope,
+    required String description,
+    required String lastUpdatedLabel,
+    @Default(false) bool locked,
+  }) = _AdminSystemParameter;
 }
 
 enum AdminSystemBroadcastStatus { scheduled, sent, draft }
@@ -357,43 +323,20 @@ extension AdminSystemBroadcastStatusX on AdminSystemBroadcastStatus {
   }
 }
 
-class AdminSystemBroadcast {
-  const AdminSystemBroadcast({
-    required this.id,
-    required this.title,
-    required this.messagePreview,
-    required this.status,
-    required this.targetLabel,
-    required this.scheduleLabel,
-    required this.createdBy,
-    this.pinned = false,
-  });
+@freezed
+abstract class AdminSystemBroadcast with _$AdminSystemBroadcast {
+  const AdminSystemBroadcast._();
 
-  final String id;
-  final String title;
-  final String messagePreview;
-  final AdminSystemBroadcastStatus status;
-  final String targetLabel;
-  final String scheduleLabel;
-  final String createdBy;
-  final bool pinned;
-
-  AdminSystemBroadcast copyWith({
-    AdminSystemBroadcastStatus? status,
-    bool? pinned,
-    String? scheduleLabel,
-  }) {
-    return AdminSystemBroadcast(
-      id: id,
-      title: title,
-      messagePreview: messagePreview,
-      status: status ?? this.status,
-      targetLabel: targetLabel,
-      scheduleLabel: scheduleLabel ?? this.scheduleLabel,
-      createdBy: createdBy,
-      pinned: pinned ?? this.pinned,
-    );
-  }
+  const factory AdminSystemBroadcast({
+    required String id,
+    required String title,
+    required String messagePreview,
+    required AdminSystemBroadcastStatus status,
+    required String targetLabel,
+    required String scheduleLabel,
+    required String createdBy,
+    @Default(false) bool pinned,
+  }) = _AdminSystemBroadcast;
 }
 
 class AdminSystemAuditLog {

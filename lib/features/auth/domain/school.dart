@@ -1,10 +1,11 @@
-class School {
-  const School({required this.id, required this.name});
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  final String id;
-  final String name;
+part 'school.freezed.dart';
+part 'school.g.dart';
 
-  factory School.fromJson(Map<String, dynamic> json) {
-    return School(id: json['id'] as String, name: json['name'] as String);
-  }
+@freezed
+abstract class School with _$School {
+  const factory School({required String id, required String name}) = _School;
+
+  factory School.fromJson(Map<String, dynamic> json) => _$SchoolFromJson(json);
 }
