@@ -495,7 +495,7 @@ class _QuestionGradingItemState extends State<QuestionGradingItem> {
               children: [
                 Expanded(
                   child: Text(
-                    'Q${widget.question.prompt.startsWith('在') ? "5" : widget.question.orderIndex + 4}. ${widget.question.prompt}',
+                    'Q${widget.question.orderIndex}. ${widget.question.prompt}',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

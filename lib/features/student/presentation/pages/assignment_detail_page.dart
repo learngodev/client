@@ -632,7 +632,7 @@ class _QuestionCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${question.orderIndex + 1}. ${question.prompt} (${question.score}分)',
+                    '${question.orderIndex}. ${question.prompt} (${question.score}分)',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
