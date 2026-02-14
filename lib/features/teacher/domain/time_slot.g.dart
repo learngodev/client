@@ -7,7 +7,7 @@ part of 'time_slot.dart';
 // **************************************************************************
 
 _TimeSlot _$TimeSlotFromJson(Map<String, dynamic> json) => _TimeSlot(
-  id: json['id'] as String,
+  id: _trimString(json['id']),
   name: json['name'] as String,
   startTime: json['start_time'] as String,
   endTime: json['end_time'] as String,

@@ -14,8 +14,8 @@ abstract class TeacherScheduleItem with _$TeacherScheduleItem {
     @Default('') String courseName,
     @Default('') String classId,
     @Default('') String className,
-    required DateTime startsAt,
-    required DateTime endsAt,
+    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime startsAt,
+    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime endsAt,
     @Default('') String day,
     @Default('') String slotId,
     @Default('') String slotName,
@@ -40,4 +40,12 @@ abstract class TeacherScheduleItem with _$TeacherScheduleItem {
       location.contains('线上') ||
       location.toLowerCase().contains('online') ||
       location.contains('腾讯会议');
+}
+
+DateTime _parseDateTimeOrNow(dynamic value) {
+  if (value is DateTime) return value.toLocal();
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value)?.toLocal() ?? DateTime.now();
+  }
+  return DateTime.now();
 }

@@ -10,7 +10,7 @@ _AssignmentQuestion _$AssignmentQuestionFromJson(Map<String, dynamic> json) =>
     _AssignmentQuestion(
       id: json['id'] as String? ?? '',
       prompt: json['prompt'] as String? ?? '',
-      type: QuestionTypeX.fromString(json['type'] as String),
+      type: _parseQuestionType(json['type']),
       score: (json['score'] as num?)?.toDouble() ?? 0.0,
       options: json['options'] == null
           ? const []

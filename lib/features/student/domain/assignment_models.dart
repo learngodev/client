@@ -63,7 +63,7 @@ abstract class AssignmentQuestion with _$AssignmentQuestion {
   const factory AssignmentQuestion({
     @Default('') String id,
     @Default('') String prompt,
-    @JsonKey(fromJson: QuestionTypeX.fromString) required QuestionType type,
+    @JsonKey(fromJson: _parseQuestionType) required QuestionType type,
     @Default(0.0) double score,
     @JsonKey(fromJson: _parseOptions) @Default([]) List<String> options,
     @Default(0) int orderIndex,
@@ -74,14 +74,19 @@ abstract class AssignmentQuestion with _$AssignmentQuestion {
       _$AssignmentQuestionFromJson(json);
 }
 
+QuestionType _parseQuestionType(dynamic value) {
+  return QuestionTypeX.fromString((value ?? '').toString());
+}
+
 List<String> _parseOptions(dynamic optionsJson) {
   if (optionsJson is List) {
     return optionsJson.map((e) => e.toString()).toList();
   } else if (optionsJson is String) {
     try {
       final decoded = jsonDecode(optionsJson);
-      if (decoded is List) {
-        return decoded.map((e) => e.toString()).toList();
+      final options = decoded['options'];
+      if (options is List) {
+        return options.map((e) => e.toString()).toList();
       }
     } catch (_) {}
   }

@@ -29,7 +29,7 @@ abstract class AIAgentSetting with _$AIAgentSetting {
   const factory AIAgentSetting({
     @Default('') String id,
     @Default('') String schoolId,
-    @JsonKey(fromJson: AIProvider.fromString) required AIProvider provider,
+    @JsonKey(fromJson: _parseProvider) required AIProvider provider,
     @Default('') String model,
     @Default('') String apiKey,
     @Default('') String baseUrl,
@@ -43,10 +43,22 @@ abstract class AIAgentSetting with _$AIAgentSetting {
     @Default(false) bool visionEnabled,
     @Default('') String updatedBy,
     @Default('') String updatedByName,
-    required DateTime updatedAt,
+    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime updatedAt,
     @Default(false) bool apiKeyPresent,
   }) = _AIAgentSetting;
 
   factory AIAgentSetting.fromJson(Map<String, dynamic> json) =>
       _$AIAgentSettingFromJson(json);
+}
+
+AIProvider _parseProvider(dynamic value) {
+  return AIProvider.fromString((value ?? '').toString());
+}
+
+DateTime _parseDateTimeOrNow(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value) ?? DateTime.now();
+  }
+  return DateTime.now();
 }

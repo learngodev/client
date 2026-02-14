@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TeacherScheduleItem {
 
- String get sessionId; String get courseId; String get courseName; String get classId; String get className; DateTime get startsAt; DateTime get endsAt; String get day; String get slotId; String get slotName; String get location; String get source;
+ String get sessionId; String get courseId; String get courseName; String get classId; String get className;@JsonKey(fromJson: _parseDateTimeOrNow) DateTime get startsAt;@JsonKey(fromJson: _parseDateTimeOrNow) DateTime get endsAt; String get day; String get slotId; String get slotName; String get location; String get source;
 /// Create a copy of TeacherScheduleItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $TeacherScheduleItemCopyWith<$Res>  {
   factory $TeacherScheduleItemCopyWith(TeacherScheduleItem value, $Res Function(TeacherScheduleItem) _then) = _$TeacherScheduleItemCopyWithImpl;
 @useResult
 $Res call({
- String sessionId, String courseId, String courseName, String classId, String className, DateTime startsAt, DateTime endsAt, String day, String slotId, String slotName, String location, String source
+ String sessionId, String courseId, String courseName, String classId, String className,@JsonKey(fromJson: _parseDateTimeOrNow) DateTime startsAt,@JsonKey(fromJson: _parseDateTimeOrNow) DateTime endsAt, String day, String slotId, String slotName, String location, String source
 });
 
 
@@ -164,7 +164,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String courseId,  String courseName,  String classId,  String className,  DateTime startsAt,  DateTime endsAt,  String day,  String slotId,  String slotName,  String location,  String source)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sessionId,  String courseId,  String courseName,  String classId,  String className, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime startsAt, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime endsAt,  String day,  String slotId,  String slotName,  String location,  String source)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeacherScheduleItem() when $default != null:
 return $default(_that.sessionId,_that.courseId,_that.courseName,_that.classId,_that.className,_that.startsAt,_that.endsAt,_that.day,_that.slotId,_that.slotName,_that.location,_that.source);case _:
@@ -185,7 +185,7 @@ return $default(_that.sessionId,_that.courseId,_that.courseName,_that.classId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String courseId,  String courseName,  String classId,  String className,  DateTime startsAt,  DateTime endsAt,  String day,  String slotId,  String slotName,  String location,  String source)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sessionId,  String courseId,  String courseName,  String classId,  String className, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime startsAt, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime endsAt,  String day,  String slotId,  String slotName,  String location,  String source)  $default,) {final _that = this;
 switch (_that) {
 case _TeacherScheduleItem():
 return $default(_that.sessionId,_that.courseId,_that.courseName,_that.classId,_that.className,_that.startsAt,_that.endsAt,_that.day,_that.slotId,_that.slotName,_that.location,_that.source);case _:
@@ -205,7 +205,7 @@ return $default(_that.sessionId,_that.courseId,_that.courseName,_that.classId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String courseId,  String courseName,  String classId,  String className,  DateTime startsAt,  DateTime endsAt,  String day,  String slotId,  String slotName,  String location,  String source)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sessionId,  String courseId,  String courseName,  String classId,  String className, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime startsAt, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime endsAt,  String day,  String slotId,  String slotName,  String location,  String source)?  $default,) {final _that = this;
 switch (_that) {
 case _TeacherScheduleItem() when $default != null:
 return $default(_that.sessionId,_that.courseId,_that.courseName,_that.classId,_that.className,_that.startsAt,_that.endsAt,_that.day,_that.slotId,_that.slotName,_that.location,_that.source);case _:
@@ -220,7 +220,7 @@ return $default(_that.sessionId,_that.courseId,_that.courseName,_that.classId,_t
 @JsonSerializable()
 
 class _TeacherScheduleItem extends TeacherScheduleItem {
-  const _TeacherScheduleItem({this.sessionId = '', this.courseId = '', this.courseName = '', this.classId = '', this.className = '', required this.startsAt, required this.endsAt, this.day = '', this.slotId = '', this.slotName = '', this.location = '', this.source = ''}): super._();
+  const _TeacherScheduleItem({this.sessionId = '', this.courseId = '', this.courseName = '', this.classId = '', this.className = '', @JsonKey(fromJson: _parseDateTimeOrNow) required this.startsAt, @JsonKey(fromJson: _parseDateTimeOrNow) required this.endsAt, this.day = '', this.slotId = '', this.slotName = '', this.location = '', this.source = ''}): super._();
   factory _TeacherScheduleItem.fromJson(Map<String, dynamic> json) => _$TeacherScheduleItemFromJson(json);
 
 @override@JsonKey() final  String sessionId;
@@ -228,8 +228,8 @@ class _TeacherScheduleItem extends TeacherScheduleItem {
 @override@JsonKey() final  String courseName;
 @override@JsonKey() final  String classId;
 @override@JsonKey() final  String className;
-@override final  DateTime startsAt;
-@override final  DateTime endsAt;
+@override@JsonKey(fromJson: _parseDateTimeOrNow) final  DateTime startsAt;
+@override@JsonKey(fromJson: _parseDateTimeOrNow) final  DateTime endsAt;
 @override@JsonKey() final  String day;
 @override@JsonKey() final  String slotId;
 @override@JsonKey() final  String slotName;
@@ -269,7 +269,7 @@ abstract mixin class _$TeacherScheduleItemCopyWith<$Res> implements $TeacherSche
   factory _$TeacherScheduleItemCopyWith(_TeacherScheduleItem value, $Res Function(_TeacherScheduleItem) _then) = __$TeacherScheduleItemCopyWithImpl;
 @override @useResult
 $Res call({
- String sessionId, String courseId, String courseName, String classId, String className, DateTime startsAt, DateTime endsAt, String day, String slotId, String slotName, String location, String source
+ String sessionId, String courseId, String courseName, String classId, String className,@JsonKey(fromJson: _parseDateTimeOrNow) DateTime startsAt,@JsonKey(fromJson: _parseDateTimeOrNow) DateTime endsAt, String day, String slotId, String slotName, String location, String source
 });
 
 

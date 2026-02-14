@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TimeSlot {
 
- String get id; String get name; String get startTime; String get endTime; int get sortOrder;
+@JsonKey(fromJson: _trimString) String get id; String get name; String get startTime; String get endTime; int get sortOrder;
 /// Create a copy of TimeSlot
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $TimeSlotCopyWith<$Res>  {
   factory $TimeSlotCopyWith(TimeSlot value, $Res Function(TimeSlot) _then) = _$TimeSlotCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String startTime, String endTime, int sortOrder
+@JsonKey(fromJson: _trimString) String id, String name, String startTime, String endTime, int sortOrder
 });
 
 
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String startTime,  String endTime,  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _trimString)  String id,  String name,  String startTime,  String endTime,  int sortOrder)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TimeSlot() when $default != null:
 return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrder);case _:
@@ -178,7 +178,7 @@ return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrde
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String startTime,  String endTime,  int sortOrder)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _trimString)  String id,  String name,  String startTime,  String endTime,  int sortOrder)  $default,) {final _that = this;
 switch (_that) {
 case _TimeSlot():
 return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrder);case _:
@@ -198,7 +198,7 @@ return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrde
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String startTime,  String endTime,  int sortOrder)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _trimString)  String id,  String name,  String startTime,  String endTime,  int sortOrder)?  $default,) {final _that = this;
 switch (_that) {
 case _TimeSlot() when $default != null:
 return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrder);case _:
@@ -213,10 +213,10 @@ return $default(_that.id,_that.name,_that.startTime,_that.endTime,_that.sortOrde
 @JsonSerializable()
 
 class _TimeSlot extends TimeSlot {
-  const _TimeSlot({required this.id, required this.name, required this.startTime, required this.endTime, this.sortOrder = 0}): super._();
+  const _TimeSlot({@JsonKey(fromJson: _trimString) required this.id, required this.name, required this.startTime, required this.endTime, this.sortOrder = 0}): super._();
   factory _TimeSlot.fromJson(Map<String, dynamic> json) => _$TimeSlotFromJson(json);
 
-@override final  String id;
+@override@JsonKey(fromJson: _trimString) final  String id;
 @override final  String name;
 @override final  String startTime;
 @override final  String endTime;
@@ -255,7 +255,7 @@ abstract mixin class _$TimeSlotCopyWith<$Res> implements $TimeSlotCopyWith<$Res>
   factory _$TimeSlotCopyWith(_TimeSlot value, $Res Function(_TimeSlot) _then) = __$TimeSlotCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String startTime, String endTime, int sortOrder
+@JsonKey(fromJson: _trimString) String id, String name, String startTime, String endTime, int sortOrder
 });
 
 

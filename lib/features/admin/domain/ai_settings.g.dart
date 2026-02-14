@@ -10,7 +10,7 @@ _AIAgentSetting _$AIAgentSettingFromJson(Map<String, dynamic> json) =>
     _AIAgentSetting(
       id: json['id'] as String? ?? '',
       schoolId: json['school_id'] as String? ?? '',
-      provider: AIProvider.fromString(json['provider'] as String),
+      provider: _parseProvider(json['provider']),
       model: json['model'] as String? ?? '',
       apiKey: json['api_key'] as String? ?? '',
       baseUrl: json['base_url'] as String? ?? '',
@@ -26,7 +26,7 @@ _AIAgentSetting _$AIAgentSettingFromJson(Map<String, dynamic> json) =>
       visionEnabled: json['vision_enabled'] as bool? ?? false,
       updatedBy: json['updated_by'] as String? ?? '',
       updatedByName: json['updated_by_name'] as String? ?? '',
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      updatedAt: _parseDateTimeOrNow(json['updated_at']),
       apiKeyPresent: json['api_key_present'] as bool? ?? false,
     );
 

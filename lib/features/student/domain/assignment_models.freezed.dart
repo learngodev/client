@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AssignmentQuestion implements DiagnosticableTreeMixin {
 
- String get id; String get prompt;@JsonKey(fromJson: QuestionTypeX.fromString) QuestionType get type; double get score;@JsonKey(fromJson: _parseOptions) List<String> get options; int get orderIndex; String? get answer;
+ String get id; String get prompt;@JsonKey(fromJson: _parseQuestionType) QuestionType get type; double get score;@JsonKey(fromJson: _parseOptions) List<String> get options; int get orderIndex; String? get answer;
 /// Create a copy of AssignmentQuestion
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +54,7 @@ abstract mixin class $AssignmentQuestionCopyWith<$Res>  {
   factory $AssignmentQuestionCopyWith(AssignmentQuestion value, $Res Function(AssignmentQuestion) _then) = _$AssignmentQuestionCopyWithImpl;
 @useResult
 $Res call({
- String id, String prompt,@JsonKey(fromJson: QuestionTypeX.fromString) QuestionType type, double score,@JsonKey(fromJson: _parseOptions) List<String> options, int orderIndex, String? answer
+ String id, String prompt,@JsonKey(fromJson: _parseQuestionType) QuestionType type, double score,@JsonKey(fromJson: _parseOptions) List<String> options, int orderIndex, String? answer
 });
 
 
@@ -165,7 +165,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String prompt, @JsonKey(fromJson: QuestionTypeX.fromString)  QuestionType type,  double score, @JsonKey(fromJson: _parseOptions)  List<String> options,  int orderIndex,  String? answer)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String prompt, @JsonKey(fromJson: _parseQuestionType)  QuestionType type,  double score, @JsonKey(fromJson: _parseOptions)  List<String> options,  int orderIndex,  String? answer)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AssignmentQuestion() when $default != null:
 return $default(_that.id,_that.prompt,_that.type,_that.score,_that.options,_that.orderIndex,_that.answer);case _:
@@ -186,7 +186,7 @@ return $default(_that.id,_that.prompt,_that.type,_that.score,_that.options,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String prompt, @JsonKey(fromJson: QuestionTypeX.fromString)  QuestionType type,  double score, @JsonKey(fromJson: _parseOptions)  List<String> options,  int orderIndex,  String? answer)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String prompt, @JsonKey(fromJson: _parseQuestionType)  QuestionType type,  double score, @JsonKey(fromJson: _parseOptions)  List<String> options,  int orderIndex,  String? answer)  $default,) {final _that = this;
 switch (_that) {
 case _AssignmentQuestion():
 return $default(_that.id,_that.prompt,_that.type,_that.score,_that.options,_that.orderIndex,_that.answer);case _:
@@ -206,7 +206,7 @@ return $default(_that.id,_that.prompt,_that.type,_that.score,_that.options,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String prompt, @JsonKey(fromJson: QuestionTypeX.fromString)  QuestionType type,  double score, @JsonKey(fromJson: _parseOptions)  List<String> options,  int orderIndex,  String? answer)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String prompt, @JsonKey(fromJson: _parseQuestionType)  QuestionType type,  double score, @JsonKey(fromJson: _parseOptions)  List<String> options,  int orderIndex,  String? answer)?  $default,) {final _that = this;
 switch (_that) {
 case _AssignmentQuestion() when $default != null:
 return $default(_that.id,_that.prompt,_that.type,_that.score,_that.options,_that.orderIndex,_that.answer);case _:
@@ -221,12 +221,12 @@ return $default(_that.id,_that.prompt,_that.type,_that.score,_that.options,_that
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _AssignmentQuestion with DiagnosticableTreeMixin implements AssignmentQuestion {
-  const _AssignmentQuestion({this.id = '', this.prompt = '', @JsonKey(fromJson: QuestionTypeX.fromString) required this.type, this.score = 0.0, @JsonKey(fromJson: _parseOptions) final  List<String> options = const [], this.orderIndex = 0, this.answer}): _options = options;
+  const _AssignmentQuestion({this.id = '', this.prompt = '', @JsonKey(fromJson: _parseQuestionType) required this.type, this.score = 0.0, @JsonKey(fromJson: _parseOptions) final  List<String> options = const [], this.orderIndex = 0, this.answer}): _options = options;
   factory _AssignmentQuestion.fromJson(Map<String, dynamic> json) => _$AssignmentQuestionFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String prompt;
-@override@JsonKey(fromJson: QuestionTypeX.fromString) final  QuestionType type;
+@override@JsonKey(fromJson: _parseQuestionType) final  QuestionType type;
 @override@JsonKey() final  double score;
  final  List<String> _options;
 @override@JsonKey(fromJson: _parseOptions) List<String> get options {
@@ -277,7 +277,7 @@ abstract mixin class _$AssignmentQuestionCopyWith<$Res> implements $AssignmentQu
   factory _$AssignmentQuestionCopyWith(_AssignmentQuestion value, $Res Function(_AssignmentQuestion) _then) = __$AssignmentQuestionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String prompt,@JsonKey(fromJson: QuestionTypeX.fromString) QuestionType type, double score,@JsonKey(fromJson: _parseOptions) List<String> options, int orderIndex, String? answer
+ String id, String prompt,@JsonKey(fromJson: _parseQuestionType) QuestionType type, double score,@JsonKey(fromJson: _parseOptions) List<String> options, int orderIndex, String? answer
 });
 
 

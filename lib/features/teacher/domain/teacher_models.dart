@@ -57,7 +57,7 @@ abstract class TeacherAssignment with _$TeacherAssignment {
     @Default(0) int submittedCount,
     @Default(0) int gradedCount,
     @Default(0) int pendingGradeCount,
-    DateTime? dueAt,
+    @JsonKey(fromJson: _parseDateTimeNullable) DateTime? dueAt,
     @Default(0) int classStudentCount,
   }) = _TeacherAssignment;
 
@@ -71,7 +71,7 @@ abstract class SubmissionSummary with _$SubmissionSummary {
     @Default('') String id,
     @Default('') String studentId,
     @Default('学生') String studentName,
-    DateTime? submittedAt,
+    @JsonKey(fromJson: _parseDateTimeNullable) DateTime? submittedAt,
     @Default('pending') String status,
     double? score,
   }) = _SubmissionSummary;
@@ -94,6 +94,7 @@ List<dynamic> _readSubmissionItems(Map map, String key) {
 @freezed
 abstract class TeacherSubmissionDetail with _$TeacherSubmissionDetail {
   const factory TeacherSubmissionDetail({
+    @JsonKey(fromJson: _parseSubmissionResult)
     required SubmissionResult submission,
     @JsonKey(readValue: _readSubmissionItems)
     @Default([])
@@ -111,11 +112,34 @@ abstract class SubmissionComment with _$SubmissionComment {
     @Default('') String id,
     @Default('') String content,
     @Default('') String authorId,
-    required DateTime createdAt,
+    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime createdAt,
   }) = _SubmissionComment;
 
   factory SubmissionComment.fromJson(Map<String, dynamic> json) =>
       _$SubmissionCommentFromJson(json);
+}
+
+DateTime? _parseDateTimeNullable(dynamic value) {
+  if (value == null) return null;
+  if (value is DateTime) return value.toLocal();
+  if (value is String && value.isNotEmpty) {
+    return DateTime.tryParse(value)?.toLocal();
+  }
+  return null;
+}
+
+DateTime _parseDateTimeOrNow(dynamic value) {
+  return _parseDateTimeNullable(value) ?? DateTime.now();
+}
+
+SubmissionResult _parseSubmissionResult(dynamic value) {
+  if (value is Map<String, dynamic>) {
+    return SubmissionResult.fromJson(value);
+  }
+  if (value is Map) {
+    return SubmissionResult.fromJson(value.cast<String, dynamic>());
+  }
+  return SubmissionResult.fromJson(const <String, dynamic>{});
 }
 
 Object? _commentToJson(String? comment) {
@@ -149,8 +173,10 @@ abstract class CreateAssignmentRequest with _$CreateAssignmentRequest {
     required String type,
     required String title,
     String? description,
-    @JsonKey(toJson: _dateToUtcIso) DateTime? startAt,
-    @JsonKey(toJson: _dateToUtcIso) DateTime? dueAt,
+    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
+    DateTime? startAt,
+    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
+    DateTime? dueAt,
     double? maxScore,
     @Default(false) bool allowResubmit,
     required List<CreateAssignmentQuestionInput> questions,
@@ -168,8 +194,10 @@ abstract class UpdateAssignmentRequest with _$UpdateAssignmentRequest {
     required String teacherId,
     String? title,
     String? description,
-    @JsonKey(toJson: _dateToUtcIso) DateTime? startAt,
-    @JsonKey(toJson: _dateToUtcIso) DateTime? dueAt,
+    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
+    DateTime? startAt,
+    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
+    DateTime? dueAt,
     double? maxScore,
     bool? allowResubmit,
   }) = _UpdateAssignmentRequest;

@@ -66,9 +66,7 @@ _TeacherAssignment _$TeacherAssignmentFromJson(Map<String, dynamic> json) =>
       submittedCount: (json['submitted_count'] as num?)?.toInt() ?? 0,
       gradedCount: (json['graded_count'] as num?)?.toInt() ?? 0,
       pendingGradeCount: (json['pending_grade_count'] as num?)?.toInt() ?? 0,
-      dueAt: json['due_at'] == null
-          ? null
-          : DateTime.parse(json['due_at'] as String),
+      dueAt: _parseDateTimeNullable(json['due_at']),
       classStudentCount: (json['class_student_count'] as num?)?.toInt() ?? 0,
     );
 
@@ -91,9 +89,7 @@ _SubmissionSummary _$SubmissionSummaryFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       studentId: json['student_id'] as String? ?? '',
       studentName: json['student_name'] as String? ?? '学生',
-      submittedAt: json['submitted_at'] == null
-          ? null
-          : DateTime.parse(json['submitted_at'] as String),
+      submittedAt: _parseDateTimeNullable(json['submitted_at']),
       status: json['status'] as String? ?? 'pending',
       score: (json['score'] as num?)?.toDouble(),
     );
@@ -111,9 +107,7 @@ Map<String, dynamic> _$SubmissionSummaryToJson(_SubmissionSummary instance) =>
 _TeacherSubmissionDetail _$TeacherSubmissionDetailFromJson(
   Map<String, dynamic> json,
 ) => _TeacherSubmissionDetail(
-  submission: SubmissionResult.fromJson(
-    json['submission'] as Map<String, dynamic>,
-  ),
+  submission: _parseSubmissionResult(json['submission']),
   items:
       (_readSubmissionItems(json, 'items') as List<dynamic>?)
           ?.map((e) => SubmissionItem.fromJson(e as Map<String, dynamic>))
@@ -139,7 +133,7 @@ _SubmissionComment _$SubmissionCommentFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       content: json['content'] as String? ?? '',
       authorId: json['author_id'] as String? ?? '',
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: _parseDateTimeOrNow(json['created_at']),
     );
 
 Map<String, dynamic> _$SubmissionCommentToJson(_SubmissionComment instance) =>
@@ -179,12 +173,8 @@ _CreateAssignmentRequest _$CreateAssignmentRequestFromJson(
   type: json['type'] as String,
   title: json['title'] as String,
   description: json['description'] as String?,
-  startAt: json['start_at'] == null
-      ? null
-      : DateTime.parse(json['start_at'] as String),
-  dueAt: json['due_at'] == null
-      ? null
-      : DateTime.parse(json['due_at'] as String),
+  startAt: _parseDateTimeNullable(json['start_at']),
+  dueAt: _parseDateTimeNullable(json['due_at']),
   maxScore: (json['max_score'] as num?)?.toDouble(),
   allowResubmit: json['allow_resubmit'] as bool? ?? false,
   questions: (json['questions'] as List<dynamic>)
@@ -221,12 +211,8 @@ _UpdateAssignmentRequest _$UpdateAssignmentRequestFromJson(
   teacherId: json['teacher_id'] as String,
   title: json['title'] as String?,
   description: json['description'] as String?,
-  startAt: json['start_at'] == null
-      ? null
-      : DateTime.parse(json['start_at'] as String),
-  dueAt: json['due_at'] == null
-      ? null
-      : DateTime.parse(json['due_at'] as String),
+  startAt: _parseDateTimeNullable(json['start_at']),
+  dueAt: _parseDateTimeNullable(json['due_at']),
   maxScore: (json['max_score'] as num?)?.toDouble(),
   allowResubmit: json['allow_resubmit'] as bool?,
 );

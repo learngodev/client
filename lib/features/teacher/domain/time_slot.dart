@@ -8,7 +8,7 @@ abstract class TimeSlot with _$TimeSlot {
   const TimeSlot._();
 
   const factory TimeSlot({
-    required String id,
+    @JsonKey(fromJson: _trimString) required String id,
     required String name,
     required String startTime,
     required String endTime,
@@ -19,4 +19,8 @@ abstract class TimeSlot with _$TimeSlot {
       _$TimeSlotFromJson(json);
 
   String get timeRange => '$startTime - $endTime';
+}
+
+String _trimString(dynamic value) {
+  return value.toString().trim();
 }
