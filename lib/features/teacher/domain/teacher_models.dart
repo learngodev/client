@@ -80,12 +80,12 @@ abstract class SubmissionSummary with _$SubmissionSummary {
       _$SubmissionSummaryFromJson(json);
 }
 
-List<SubmissionItem> _readSubmissionItems(Map map, String key) {
+List<dynamic> _readSubmissionItems(Map map, String key) {
   final submission = map['submission'];
   if (submission is Map<String, dynamic>) {
     final items = submission['items'];
     if (items is List) {
-      return items.map((e) => SubmissionItem.fromJson(e)).toList();
+      return items;
     }
   }
   return [];
