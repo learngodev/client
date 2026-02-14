@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Department implements DiagnosticableTreeMixin {
 
- String get id;@JsonKey(name: 'school_id') String get schoolId; String get name;@JsonKey(name: 'teacher_count') int get teacherCount;@JsonKey(name: 'student_count') int get studentCount;
+ String get id; String get schoolId; String get name; int get teacherCount; int get studentCount;
 /// Create a copy of Department
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +54,7 @@ abstract mixin class $DepartmentCopyWith<$Res>  {
   factory $DepartmentCopyWith(Department value, $Res Function(Department) _then) = _$DepartmentCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'school_id') String schoolId, String name,@JsonKey(name: 'teacher_count') int teacherCount,@JsonKey(name: 'student_count') int studentCount
+ String id, String schoolId, String name, int teacherCount, int studentCount
 });
 
 
@@ -163,7 +163,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId,  String name, @JsonKey(name: 'teacher_count')  int teacherCount, @JsonKey(name: 'student_count')  int studentCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId,  String name,  int teacherCount,  int studentCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Department() when $default != null:
 return $default(_that.id,_that.schoolId,_that.name,_that.teacherCount,_that.studentCount);case _:
@@ -184,7 +184,7 @@ return $default(_that.id,_that.schoolId,_that.name,_that.teacherCount,_that.stud
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'school_id')  String schoolId,  String name, @JsonKey(name: 'teacher_count')  int teacherCount, @JsonKey(name: 'student_count')  int studentCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId,  String name,  int teacherCount,  int studentCount)  $default,) {final _that = this;
 switch (_that) {
 case _Department():
 return $default(_that.id,_that.schoolId,_that.name,_that.teacherCount,_that.studentCount);case _:
@@ -204,7 +204,7 @@ return $default(_that.id,_that.schoolId,_that.name,_that.teacherCount,_that.stud
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'school_id')  String schoolId,  String name, @JsonKey(name: 'teacher_count')  int teacherCount, @JsonKey(name: 'student_count')  int studentCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId,  String name,  int teacherCount,  int studentCount)?  $default,) {final _that = this;
 switch (_that) {
 case _Department() when $default != null:
 return $default(_that.id,_that.schoolId,_that.name,_that.teacherCount,_that.studentCount);case _:
@@ -219,14 +219,14 @@ return $default(_that.id,_that.schoolId,_that.name,_that.teacherCount,_that.stud
 @JsonSerializable()
 
 class _Department extends Department with DiagnosticableTreeMixin {
-  const _Department({this.id = '', @JsonKey(name: 'school_id') this.schoolId = '', this.name = '', @JsonKey(name: 'teacher_count') this.teacherCount = 0, @JsonKey(name: 'student_count') this.studentCount = 0}): super._();
+  const _Department({this.id = '', this.schoolId = '', this.name = '', this.teacherCount = 0, this.studentCount = 0}): super._();
   factory _Department.fromJson(Map<String, dynamic> json) => _$DepartmentFromJson(json);
 
 @override@JsonKey() final  String id;
-@override@JsonKey(name: 'school_id') final  String schoolId;
+@override@JsonKey() final  String schoolId;
 @override@JsonKey() final  String name;
-@override@JsonKey(name: 'teacher_count') final  int teacherCount;
-@override@JsonKey(name: 'student_count') final  int studentCount;
+@override@JsonKey() final  int teacherCount;
+@override@JsonKey() final  int studentCount;
 
 /// Create a copy of Department
 /// with the given fields replaced by the non-null parameter values.
@@ -267,7 +267,7 @@ abstract mixin class _$DepartmentCopyWith<$Res> implements $DepartmentCopyWith<$
   factory _$DepartmentCopyWith(_Department value, $Res Function(_Department) _then) = __$DepartmentCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'school_id') String schoolId, String name,@JsonKey(name: 'teacher_count') int teacherCount,@JsonKey(name: 'student_count') int studentCount
+ String id, String schoolId, String name, int teacherCount, int studentCount
 });
 
 
@@ -302,7 +302,7 @@ as int,
 /// @nodoc
 mixin _$ClassInfo implements DiagnosticableTreeMixin {
 
- String get id;@JsonKey(name: 'department_id') String get departmentId; String get name; String? get grade; String? get description;@JsonKey(name: 'student_count') int get studentCount;@JsonKey(name: 'teacher_count') int get teacherCount;
+ String get id; String get departmentId; String get name; String? get grade; String? get description; int get studentCount; int get teacherCount;
 /// Create a copy of ClassInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -341,7 +341,7 @@ abstract mixin class $ClassInfoCopyWith<$Res>  {
   factory $ClassInfoCopyWith(ClassInfo value, $Res Function(ClassInfo) _then) = _$ClassInfoCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'department_id') String departmentId, String name, String? grade, String? description,@JsonKey(name: 'student_count') int studentCount,@JsonKey(name: 'teacher_count') int teacherCount
+ String id, String departmentId, String name, String? grade, String? description, int studentCount, int teacherCount
 });
 
 
@@ -452,7 +452,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'department_id')  String departmentId,  String name,  String? grade,  String? description, @JsonKey(name: 'student_count')  int studentCount, @JsonKey(name: 'teacher_count')  int teacherCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String departmentId,  String name,  String? grade,  String? description,  int studentCount,  int teacherCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ClassInfo() when $default != null:
 return $default(_that.id,_that.departmentId,_that.name,_that.grade,_that.description,_that.studentCount,_that.teacherCount);case _:
@@ -473,7 +473,7 @@ return $default(_that.id,_that.departmentId,_that.name,_that.grade,_that.descrip
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'department_id')  String departmentId,  String name,  String? grade,  String? description, @JsonKey(name: 'student_count')  int studentCount, @JsonKey(name: 'teacher_count')  int teacherCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String departmentId,  String name,  String? grade,  String? description,  int studentCount,  int teacherCount)  $default,) {final _that = this;
 switch (_that) {
 case _ClassInfo():
 return $default(_that.id,_that.departmentId,_that.name,_that.grade,_that.description,_that.studentCount,_that.teacherCount);case _:
@@ -493,7 +493,7 @@ return $default(_that.id,_that.departmentId,_that.name,_that.grade,_that.descrip
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'department_id')  String departmentId,  String name,  String? grade,  String? description, @JsonKey(name: 'student_count')  int studentCount, @JsonKey(name: 'teacher_count')  int teacherCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String departmentId,  String name,  String? grade,  String? description,  int studentCount,  int teacherCount)?  $default,) {final _that = this;
 switch (_that) {
 case _ClassInfo() when $default != null:
 return $default(_that.id,_that.departmentId,_that.name,_that.grade,_that.description,_that.studentCount,_that.teacherCount);case _:
@@ -508,16 +508,16 @@ return $default(_that.id,_that.departmentId,_that.name,_that.grade,_that.descrip
 @JsonSerializable()
 
 class _ClassInfo extends ClassInfo with DiagnosticableTreeMixin {
-  const _ClassInfo({this.id = '', @JsonKey(name: 'department_id') this.departmentId = '', this.name = '', this.grade, this.description, @JsonKey(name: 'student_count') this.studentCount = 0, @JsonKey(name: 'teacher_count') this.teacherCount = 0}): super._();
+  const _ClassInfo({this.id = '', this.departmentId = '', this.name = '', this.grade, this.description, this.studentCount = 0, this.teacherCount = 0}): super._();
   factory _ClassInfo.fromJson(Map<String, dynamic> json) => _$ClassInfoFromJson(json);
 
 @override@JsonKey() final  String id;
-@override@JsonKey(name: 'department_id') final  String departmentId;
+@override@JsonKey() final  String departmentId;
 @override@JsonKey() final  String name;
 @override final  String? grade;
 @override final  String? description;
-@override@JsonKey(name: 'student_count') final  int studentCount;
-@override@JsonKey(name: 'teacher_count') final  int teacherCount;
+@override@JsonKey() final  int studentCount;
+@override@JsonKey() final  int teacherCount;
 
 /// Create a copy of ClassInfo
 /// with the given fields replaced by the non-null parameter values.
@@ -558,7 +558,7 @@ abstract mixin class _$ClassInfoCopyWith<$Res> implements $ClassInfoCopyWith<$Re
   factory _$ClassInfoCopyWith(_ClassInfo value, $Res Function(_ClassInfo) _then) = __$ClassInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'department_id') String departmentId, String name, String? grade, String? description,@JsonKey(name: 'student_count') int studentCount,@JsonKey(name: 'teacher_count') int teacherCount
+ String id, String departmentId, String name, String? grade, String? description, int studentCount, int teacherCount
 });
 
 
@@ -891,7 +891,7 @@ $DepartmentCopyWith<$Res> get department {
 /// @nodoc
 mixin _$AdminDepartmentMetrics implements DiagnosticableTreeMixin {
 
-@JsonKey(name: 'department_count') int get departmentCount;@JsonKey(name: 'class_count') int get classCount;@JsonKey(name: 'empty_department_count') int get emptyDepartmentCount;
+ int get departmentCount; int get classCount; int get emptyDepartmentCount;
 /// Create a copy of AdminDepartmentMetrics
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -930,7 +930,7 @@ abstract mixin class $AdminDepartmentMetricsCopyWith<$Res>  {
   factory $AdminDepartmentMetricsCopyWith(AdminDepartmentMetrics value, $Res Function(AdminDepartmentMetrics) _then) = _$AdminDepartmentMetricsCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'department_count') int departmentCount,@JsonKey(name: 'class_count') int classCount,@JsonKey(name: 'empty_department_count') int emptyDepartmentCount
+ int departmentCount, int classCount, int emptyDepartmentCount
 });
 
 
@@ -1037,7 +1037,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'department_count')  int departmentCount, @JsonKey(name: 'class_count')  int classCount, @JsonKey(name: 'empty_department_count')  int emptyDepartmentCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int departmentCount,  int classCount,  int emptyDepartmentCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminDepartmentMetrics() when $default != null:
 return $default(_that.departmentCount,_that.classCount,_that.emptyDepartmentCount);case _:
@@ -1058,7 +1058,7 @@ return $default(_that.departmentCount,_that.classCount,_that.emptyDepartmentCoun
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'department_count')  int departmentCount, @JsonKey(name: 'class_count')  int classCount, @JsonKey(name: 'empty_department_count')  int emptyDepartmentCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int departmentCount,  int classCount,  int emptyDepartmentCount)  $default,) {final _that = this;
 switch (_that) {
 case _AdminDepartmentMetrics():
 return $default(_that.departmentCount,_that.classCount,_that.emptyDepartmentCount);case _:
@@ -1078,7 +1078,7 @@ return $default(_that.departmentCount,_that.classCount,_that.emptyDepartmentCoun
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'department_count')  int departmentCount, @JsonKey(name: 'class_count')  int classCount, @JsonKey(name: 'empty_department_count')  int emptyDepartmentCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int departmentCount,  int classCount,  int emptyDepartmentCount)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminDepartmentMetrics() when $default != null:
 return $default(_that.departmentCount,_that.classCount,_that.emptyDepartmentCount);case _:
@@ -1093,12 +1093,12 @@ return $default(_that.departmentCount,_that.classCount,_that.emptyDepartmentCoun
 @JsonSerializable()
 
 class _AdminDepartmentMetrics extends AdminDepartmentMetrics with DiagnosticableTreeMixin {
-  const _AdminDepartmentMetrics({@JsonKey(name: 'department_count') required this.departmentCount, @JsonKey(name: 'class_count') required this.classCount, @JsonKey(name: 'empty_department_count') required this.emptyDepartmentCount}): super._();
+  const _AdminDepartmentMetrics({required this.departmentCount, required this.classCount, required this.emptyDepartmentCount}): super._();
   factory _AdminDepartmentMetrics.fromJson(Map<String, dynamic> json) => _$AdminDepartmentMetricsFromJson(json);
 
-@override@JsonKey(name: 'department_count') final  int departmentCount;
-@override@JsonKey(name: 'class_count') final  int classCount;
-@override@JsonKey(name: 'empty_department_count') final  int emptyDepartmentCount;
+@override final  int departmentCount;
+@override final  int classCount;
+@override final  int emptyDepartmentCount;
 
 /// Create a copy of AdminDepartmentMetrics
 /// with the given fields replaced by the non-null parameter values.
@@ -1139,7 +1139,7 @@ abstract mixin class _$AdminDepartmentMetricsCopyWith<$Res> implements $AdminDep
   factory _$AdminDepartmentMetricsCopyWith(_AdminDepartmentMetrics value, $Res Function(_AdminDepartmentMetrics) _then) = __$AdminDepartmentMetricsCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'department_count') int departmentCount,@JsonKey(name: 'class_count') int classCount,@JsonKey(name: 'empty_department_count') int emptyDepartmentCount
+ int departmentCount, int classCount, int emptyDepartmentCount
 });
 
 

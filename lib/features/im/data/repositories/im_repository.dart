@@ -12,9 +12,8 @@ import 'package:learn_go/features/auth/domain/account.dart';
 import 'package:learn_go/core/config/app_environment.dart';
 import 'package:learn_go/core/grpc/grpc_channel.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
-import 'package:learn_go/features/im/data/generated/conversation.pbgrpc.dart'
-    as grpc;
-import 'package:learn_go/features/im/data/generated/conversation.pb.dart' as pb;
+import 'package:learn_go/generated/proto/conversation.pbgrpc.dart' as grpc;
+import 'package:learn_go/generated/proto/conversation.pb.dart' as pb;
 import 'package:grpc/service_api.dart' as grpc_api;
 import 'package:web_socket_channel/web_socket_channel.dart';
 

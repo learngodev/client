@@ -6,9 +6,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:grpc/grpc.dart';
-import 'package:learn_go/features/im/data/generated/conversation.pb.dart' as pb;
-import 'package:learn_go/features/im/data/generated/conversation.pbgrpc.dart'
-    as grpcpb;
+import 'package:learn_go/generated/proto/conversation.pb.dart' as pb;
+import 'package:learn_go/generated/proto/conversation.pbgrpc.dart' as grpcpb;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 class LoginInfo {

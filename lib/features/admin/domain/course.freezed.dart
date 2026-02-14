@@ -308,7 +308,7 @@ as List<Teacher>,
 /// @nodoc
 mixin _$Teacher implements DiagnosticableTreeMixin {
 
- String get id;@JsonKey(name: 'name', readValue: _readTeacherName) String get name;
+ String get id;@JsonKey(readValue: _readTeacherName) String get name;
 /// Create a copy of Teacher
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -347,7 +347,7 @@ abstract mixin class $TeacherCopyWith<$Res>  {
   factory $TeacherCopyWith(Teacher value, $Res Function(Teacher) _then) = _$TeacherCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'name', readValue: _readTeacherName) String name
+ String id,@JsonKey(readValue: _readTeacherName) String name
 });
 
 
@@ -453,7 +453,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'name', readValue: _readTeacherName)  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(readValue: _readTeacherName)  String name)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Teacher() when $default != null:
 return $default(_that.id,_that.name);case _:
@@ -474,7 +474,7 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'name', readValue: _readTeacherName)  String name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(readValue: _readTeacherName)  String name)  $default,) {final _that = this;
 switch (_that) {
 case _Teacher():
 return $default(_that.id,_that.name);case _:
@@ -494,7 +494,7 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'name', readValue: _readTeacherName)  String name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(readValue: _readTeacherName)  String name)?  $default,) {final _that = this;
 switch (_that) {
 case _Teacher() when $default != null:
 return $default(_that.id,_that.name);case _:
@@ -509,11 +509,11 @@ return $default(_that.id,_that.name);case _:
 @JsonSerializable()
 
 class _Teacher with DiagnosticableTreeMixin implements Teacher {
-  const _Teacher({this.id = '', @JsonKey(name: 'name', readValue: _readTeacherName) this.name = ''});
+  const _Teacher({this.id = '', @JsonKey(readValue: _readTeacherName) this.name = ''});
   factory _Teacher.fromJson(Map<String, dynamic> json) => _$TeacherFromJson(json);
 
 @override@JsonKey() final  String id;
-@override@JsonKey(name: 'name', readValue: _readTeacherName) final  String name;
+@override@JsonKey(readValue: _readTeacherName) final  String name;
 
 /// Create a copy of Teacher
 /// with the given fields replaced by the non-null parameter values.
@@ -554,7 +554,7 @@ abstract mixin class _$TeacherCopyWith<$Res> implements $TeacherCopyWith<$Res> {
   factory _$TeacherCopyWith(_Teacher value, $Res Function(_Teacher) _then) = __$TeacherCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'name', readValue: _readTeacherName) String name
+ String id,@JsonKey(readValue: _readTeacherName) String name
 });
 
 

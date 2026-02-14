@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AdminAccount implements DiagnosticableTreeMixin {
 
- String get id; String? get profileId;@JsonKey(fromJson: _parseRole) AdminAccountRole get role; String get name; String get identifier; String get email; String? get phone;@JsonKey(name: 'department_id') String? get departmentId; String? get department;@JsonKey(name: 'class_id') String? get classId;@JsonKey(name: 'class_name') String? get className;@JsonKey(fromJson: _parseStatus) AdminAccountStatus get status;@JsonKey(name: 'last_active_at', fromJson: _parseNullableDate) DateTime? get lastActiveAt;@JsonKey(name: 'created_at', fromJson: _parseDate) DateTime get createdAt;
+ String get id; String? get profileId;@JsonKey(fromJson: _parseRole) AdminAccountRole get role; String get name; String get identifier; String get email; String? get phone; String? get departmentId; String? get department; String? get classId; String? get className;@JsonKey(fromJson: _parseStatus) AdminAccountStatus get status;@JsonKey(fromJson: _parseNullableDate) DateTime? get lastActiveAt;@JsonKey(fromJson: _parseDate) DateTime get createdAt;
 /// Create a copy of AdminAccount
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +54,7 @@ abstract mixin class $AdminAccountCopyWith<$Res>  {
   factory $AdminAccountCopyWith(AdminAccount value, $Res Function(AdminAccount) _then) = _$AdminAccountCopyWithImpl;
 @useResult
 $Res call({
- String id, String? profileId,@JsonKey(fromJson: _parseRole) AdminAccountRole role, String name, String identifier, String email, String? phone,@JsonKey(name: 'department_id') String? departmentId, String? department,@JsonKey(name: 'class_id') String? classId,@JsonKey(name: 'class_name') String? className,@JsonKey(fromJson: _parseStatus) AdminAccountStatus status,@JsonKey(name: 'last_active_at', fromJson: _parseNullableDate) DateTime? lastActiveAt,@JsonKey(name: 'created_at', fromJson: _parseDate) DateTime createdAt
+ String id, String? profileId,@JsonKey(fromJson: _parseRole) AdminAccountRole role, String name, String identifier, String email, String? phone, String? departmentId, String? department, String? classId, String? className,@JsonKey(fromJson: _parseStatus) AdminAccountStatus status,@JsonKey(fromJson: _parseNullableDate) DateTime? lastActiveAt,@JsonKey(fromJson: _parseDate) DateTime createdAt
 });
 
 
@@ -172,7 +172,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? profileId, @JsonKey(fromJson: _parseRole)  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone, @JsonKey(name: 'department_id')  String? departmentId,  String? department, @JsonKey(name: 'class_id')  String? classId, @JsonKey(name: 'class_name')  String? className, @JsonKey(fromJson: _parseStatus)  AdminAccountStatus status, @JsonKey(name: 'last_active_at', fromJson: _parseNullableDate)  DateTime? lastActiveAt, @JsonKey(name: 'created_at', fromJson: _parseDate)  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? profileId, @JsonKey(fromJson: _parseRole)  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  String? departmentId,  String? department,  String? classId,  String? className, @JsonKey(fromJson: _parseStatus)  AdminAccountStatus status, @JsonKey(fromJson: _parseNullableDate)  DateTime? lastActiveAt, @JsonKey(fromJson: _parseDate)  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminAccount() when $default != null:
 return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,_that.email,_that.phone,_that.departmentId,_that.department,_that.classId,_that.className,_that.status,_that.lastActiveAt,_that.createdAt);case _:
@@ -193,7 +193,7 @@ return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? profileId, @JsonKey(fromJson: _parseRole)  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone, @JsonKey(name: 'department_id')  String? departmentId,  String? department, @JsonKey(name: 'class_id')  String? classId, @JsonKey(name: 'class_name')  String? className, @JsonKey(fromJson: _parseStatus)  AdminAccountStatus status, @JsonKey(name: 'last_active_at', fromJson: _parseNullableDate)  DateTime? lastActiveAt, @JsonKey(name: 'created_at', fromJson: _parseDate)  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? profileId, @JsonKey(fromJson: _parseRole)  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  String? departmentId,  String? department,  String? classId,  String? className, @JsonKey(fromJson: _parseStatus)  AdminAccountStatus status, @JsonKey(fromJson: _parseNullableDate)  DateTime? lastActiveAt, @JsonKey(fromJson: _parseDate)  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _AdminAccount():
 return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,_that.email,_that.phone,_that.departmentId,_that.department,_that.classId,_that.className,_that.status,_that.lastActiveAt,_that.createdAt);case _:
@@ -213,7 +213,7 @@ return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? profileId, @JsonKey(fromJson: _parseRole)  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone, @JsonKey(name: 'department_id')  String? departmentId,  String? department, @JsonKey(name: 'class_id')  String? classId, @JsonKey(name: 'class_name')  String? className, @JsonKey(fromJson: _parseStatus)  AdminAccountStatus status, @JsonKey(name: 'last_active_at', fromJson: _parseNullableDate)  DateTime? lastActiveAt, @JsonKey(name: 'created_at', fromJson: _parseDate)  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? profileId, @JsonKey(fromJson: _parseRole)  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  String? departmentId,  String? department,  String? classId,  String? className, @JsonKey(fromJson: _parseStatus)  AdminAccountStatus status, @JsonKey(fromJson: _parseNullableDate)  DateTime? lastActiveAt, @JsonKey(fromJson: _parseDate)  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminAccount() when $default != null:
 return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,_that.email,_that.phone,_that.departmentId,_that.department,_that.classId,_that.className,_that.status,_that.lastActiveAt,_that.createdAt);case _:
@@ -228,7 +228,7 @@ return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,
 @JsonSerializable()
 
 class _AdminAccount extends AdminAccount with DiagnosticableTreeMixin {
-  const _AdminAccount({this.id = '', this.profileId, @JsonKey(fromJson: _parseRole) required this.role, this.name = '', this.identifier = '', this.email = '', this.phone, @JsonKey(name: 'department_id') this.departmentId, this.department, @JsonKey(name: 'class_id') this.classId, @JsonKey(name: 'class_name') this.className, @JsonKey(fromJson: _parseStatus) required this.status, @JsonKey(name: 'last_active_at', fromJson: _parseNullableDate) this.lastActiveAt, @JsonKey(name: 'created_at', fromJson: _parseDate) required this.createdAt}): super._();
+  const _AdminAccount({this.id = '', this.profileId, @JsonKey(fromJson: _parseRole) required this.role, this.name = '', this.identifier = '', this.email = '', this.phone, this.departmentId, this.department, this.classId, this.className, @JsonKey(fromJson: _parseStatus) required this.status, @JsonKey(fromJson: _parseNullableDate) this.lastActiveAt, @JsonKey(fromJson: _parseDate) required this.createdAt}): super._();
   factory _AdminAccount.fromJson(Map<String, dynamic> json) => _$AdminAccountFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -238,13 +238,13 @@ class _AdminAccount extends AdminAccount with DiagnosticableTreeMixin {
 @override@JsonKey() final  String identifier;
 @override@JsonKey() final  String email;
 @override final  String? phone;
-@override@JsonKey(name: 'department_id') final  String? departmentId;
+@override final  String? departmentId;
 @override final  String? department;
-@override@JsonKey(name: 'class_id') final  String? classId;
-@override@JsonKey(name: 'class_name') final  String? className;
+@override final  String? classId;
+@override final  String? className;
 @override@JsonKey(fromJson: _parseStatus) final  AdminAccountStatus status;
-@override@JsonKey(name: 'last_active_at', fromJson: _parseNullableDate) final  DateTime? lastActiveAt;
-@override@JsonKey(name: 'created_at', fromJson: _parseDate) final  DateTime createdAt;
+@override@JsonKey(fromJson: _parseNullableDate) final  DateTime? lastActiveAt;
+@override@JsonKey(fromJson: _parseDate) final  DateTime createdAt;
 
 /// Create a copy of AdminAccount
 /// with the given fields replaced by the non-null parameter values.
@@ -285,7 +285,7 @@ abstract mixin class _$AdminAccountCopyWith<$Res> implements $AdminAccountCopyWi
   factory _$AdminAccountCopyWith(_AdminAccount value, $Res Function(_AdminAccount) _then) = __$AdminAccountCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? profileId,@JsonKey(fromJson: _parseRole) AdminAccountRole role, String name, String identifier, String email, String? phone,@JsonKey(name: 'department_id') String? departmentId, String? department,@JsonKey(name: 'class_id') String? classId,@JsonKey(name: 'class_name') String? className,@JsonKey(fromJson: _parseStatus) AdminAccountStatus status,@JsonKey(name: 'last_active_at', fromJson: _parseNullableDate) DateTime? lastActiveAt,@JsonKey(name: 'created_at', fromJson: _parseDate) DateTime createdAt
+ String id, String? profileId,@JsonKey(fromJson: _parseRole) AdminAccountRole role, String name, String identifier, String email, String? phone, String? departmentId, String? department, String? classId, String? className,@JsonKey(fromJson: _parseStatus) AdminAccountStatus status,@JsonKey(fromJson: _parseNullableDate) DateTime? lastActiveAt,@JsonKey(fromJson: _parseDate) DateTime createdAt
 });
 
 
@@ -329,7 +329,7 @@ as DateTime,
 /// @nodoc
 mixin _$AdminAccountPage implements DiagnosticableTreeMixin {
 
- List<AdminAccount> get accounts; int get page;@JsonKey(name: 'page_size') int get pageSize; int get total;
+ List<AdminAccount> get accounts; int get page; int get pageSize; int get total;
 /// Create a copy of AdminAccountPage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -368,7 +368,7 @@ abstract mixin class $AdminAccountPageCopyWith<$Res>  {
   factory $AdminAccountPageCopyWith(AdminAccountPage value, $Res Function(AdminAccountPage) _then) = _$AdminAccountPageCopyWithImpl;
 @useResult
 $Res call({
- List<AdminAccount> accounts, int page,@JsonKey(name: 'page_size') int pageSize, int total
+ List<AdminAccount> accounts, int page, int pageSize, int total
 });
 
 
@@ -476,7 +476,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AdminAccount> accounts,  int page, @JsonKey(name: 'page_size')  int pageSize,  int total)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AdminAccount> accounts,  int page,  int pageSize,  int total)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminAccountPage() when $default != null:
 return $default(_that.accounts,_that.page,_that.pageSize,_that.total);case _:
@@ -497,7 +497,7 @@ return $default(_that.accounts,_that.page,_that.pageSize,_that.total);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AdminAccount> accounts,  int page, @JsonKey(name: 'page_size')  int pageSize,  int total)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AdminAccount> accounts,  int page,  int pageSize,  int total)  $default,) {final _that = this;
 switch (_that) {
 case _AdminAccountPage():
 return $default(_that.accounts,_that.page,_that.pageSize,_that.total);case _:
@@ -517,7 +517,7 @@ return $default(_that.accounts,_that.page,_that.pageSize,_that.total);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AdminAccount> accounts,  int page, @JsonKey(name: 'page_size')  int pageSize,  int total)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AdminAccount> accounts,  int page,  int pageSize,  int total)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminAccountPage() when $default != null:
 return $default(_that.accounts,_that.page,_that.pageSize,_that.total);case _:
@@ -532,7 +532,7 @@ return $default(_that.accounts,_that.page,_that.pageSize,_that.total);case _:
 @JsonSerializable()
 
 class _AdminAccountPage extends AdminAccountPage with DiagnosticableTreeMixin {
-  const _AdminAccountPage({final  List<AdminAccount> accounts = const [], this.page = 1, @JsonKey(name: 'page_size') this.pageSize = 0, this.total = 0}): _accounts = accounts,super._();
+  const _AdminAccountPage({final  List<AdminAccount> accounts = const [], this.page = 1, this.pageSize = 0, this.total = 0}): _accounts = accounts,super._();
   factory _AdminAccountPage.fromJson(Map<String, dynamic> json) => _$AdminAccountPageFromJson(json);
 
  final  List<AdminAccount> _accounts;
@@ -543,7 +543,7 @@ class _AdminAccountPage extends AdminAccountPage with DiagnosticableTreeMixin {
 }
 
 @override@JsonKey() final  int page;
-@override@JsonKey(name: 'page_size') final  int pageSize;
+@override@JsonKey() final  int pageSize;
 @override@JsonKey() final  int total;
 
 /// Create a copy of AdminAccountPage
@@ -585,7 +585,7 @@ abstract mixin class _$AdminAccountPageCopyWith<$Res> implements $AdminAccountPa
   factory _$AdminAccountPageCopyWith(_AdminAccountPage value, $Res Function(_AdminAccountPage) _then) = __$AdminAccountPageCopyWithImpl;
 @override @useResult
 $Res call({
- List<AdminAccount> accounts, int page,@JsonKey(name: 'page_size') int pageSize, int total
+ List<AdminAccount> accounts, int page, int pageSize, int total
 });
 
 

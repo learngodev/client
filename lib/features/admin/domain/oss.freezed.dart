@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AdminOssCredential {
 
- String get id; String get name; String get endpoint;@JsonKey(name: 'internal_endpoint') String get internalEndpoint; String get region; String get bucket;@JsonKey(name: 'directory_prefix') String get directoryPrefix;@JsonKey(name: 'access_key_masked') String get accessKeyMasked;@JsonKey(name: 'allow_public_read') bool get allowPublicRead;@JsonKey(name: 'allow_multipart_upload') bool get allowMultipartUpload;@JsonKey(name: 'use_relay_upload') bool get useRelayUpload;@JsonKey(name: 'is_primary') bool get isPrimary; bool get active;@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) DateTime get createdAt;@JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate) DateTime? get lastRotatedAt;
+ String get id; String get name; String get endpoint; String get internalEndpoint; String get region; String get bucket; String get directoryPrefix; String get accessKeyMasked; bool get allowPublicRead; bool get allowMultipartUpload; bool get useRelayUpload; bool get isPrimary; bool get active;@JsonKey(fromJson: _parseDateDefault0) DateTime get createdAt;@JsonKey(fromJson: _parseNullableDate) DateTime? get lastRotatedAt;
 /// Create a copy of AdminOssCredential
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AdminOssCredentialCopyWith<$Res>  {
   factory $AdminOssCredentialCopyWith(AdminOssCredential value, $Res Function(AdminOssCredential) _then) = _$AdminOssCredentialCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String endpoint,@JsonKey(name: 'internal_endpoint') String internalEndpoint, String region, String bucket,@JsonKey(name: 'directory_prefix') String directoryPrefix,@JsonKey(name: 'access_key_masked') String accessKeyMasked,@JsonKey(name: 'allow_public_read') bool allowPublicRead,@JsonKey(name: 'allow_multipart_upload') bool allowMultipartUpload,@JsonKey(name: 'use_relay_upload') bool useRelayUpload,@JsonKey(name: 'is_primary') bool isPrimary, bool active,@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) DateTime createdAt,@JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate) DateTime? lastRotatedAt
+ String id, String name, String endpoint, String internalEndpoint, String region, String bucket, String directoryPrefix, String accessKeyMasked, bool allowPublicRead, bool allowMultipartUpload, bool useRelayUpload, bool isPrimary, bool active,@JsonKey(fromJson: _parseDateDefault0) DateTime createdAt,@JsonKey(fromJson: _parseNullableDate) DateTime? lastRotatedAt
 });
 
 
@@ -167,7 +167,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String endpoint, @JsonKey(name: 'internal_endpoint')  String internalEndpoint,  String region,  String bucket, @JsonKey(name: 'directory_prefix')  String directoryPrefix, @JsonKey(name: 'access_key_masked')  String accessKeyMasked, @JsonKey(name: 'allow_public_read')  bool allowPublicRead, @JsonKey(name: 'allow_multipart_upload')  bool allowMultipartUpload, @JsonKey(name: 'use_relay_upload')  bool useRelayUpload, @JsonKey(name: 'is_primary')  bool isPrimary,  bool active, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0)  DateTime createdAt, @JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate)  DateTime? lastRotatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String endpoint,  String internalEndpoint,  String region,  String bucket,  String directoryPrefix,  String accessKeyMasked,  bool allowPublicRead,  bool allowMultipartUpload,  bool useRelayUpload,  bool isPrimary,  bool active, @JsonKey(fromJson: _parseDateDefault0)  DateTime createdAt, @JsonKey(fromJson: _parseNullableDate)  DateTime? lastRotatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminOssCredential() when $default != null:
 return $default(_that.id,_that.name,_that.endpoint,_that.internalEndpoint,_that.region,_that.bucket,_that.directoryPrefix,_that.accessKeyMasked,_that.allowPublicRead,_that.allowMultipartUpload,_that.useRelayUpload,_that.isPrimary,_that.active,_that.createdAt,_that.lastRotatedAt);case _:
@@ -188,7 +188,7 @@ return $default(_that.id,_that.name,_that.endpoint,_that.internalEndpoint,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String endpoint, @JsonKey(name: 'internal_endpoint')  String internalEndpoint,  String region,  String bucket, @JsonKey(name: 'directory_prefix')  String directoryPrefix, @JsonKey(name: 'access_key_masked')  String accessKeyMasked, @JsonKey(name: 'allow_public_read')  bool allowPublicRead, @JsonKey(name: 'allow_multipart_upload')  bool allowMultipartUpload, @JsonKey(name: 'use_relay_upload')  bool useRelayUpload, @JsonKey(name: 'is_primary')  bool isPrimary,  bool active, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0)  DateTime createdAt, @JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate)  DateTime? lastRotatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String endpoint,  String internalEndpoint,  String region,  String bucket,  String directoryPrefix,  String accessKeyMasked,  bool allowPublicRead,  bool allowMultipartUpload,  bool useRelayUpload,  bool isPrimary,  bool active, @JsonKey(fromJson: _parseDateDefault0)  DateTime createdAt, @JsonKey(fromJson: _parseNullableDate)  DateTime? lastRotatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssCredential():
 return $default(_that.id,_that.name,_that.endpoint,_that.internalEndpoint,_that.region,_that.bucket,_that.directoryPrefix,_that.accessKeyMasked,_that.allowPublicRead,_that.allowMultipartUpload,_that.useRelayUpload,_that.isPrimary,_that.active,_that.createdAt,_that.lastRotatedAt);case _:
@@ -208,7 +208,7 @@ return $default(_that.id,_that.name,_that.endpoint,_that.internalEndpoint,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String endpoint, @JsonKey(name: 'internal_endpoint')  String internalEndpoint,  String region,  String bucket, @JsonKey(name: 'directory_prefix')  String directoryPrefix, @JsonKey(name: 'access_key_masked')  String accessKeyMasked, @JsonKey(name: 'allow_public_read')  bool allowPublicRead, @JsonKey(name: 'allow_multipart_upload')  bool allowMultipartUpload, @JsonKey(name: 'use_relay_upload')  bool useRelayUpload, @JsonKey(name: 'is_primary')  bool isPrimary,  bool active, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0)  DateTime createdAt, @JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate)  DateTime? lastRotatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String endpoint,  String internalEndpoint,  String region,  String bucket,  String directoryPrefix,  String accessKeyMasked,  bool allowPublicRead,  bool allowMultipartUpload,  bool useRelayUpload,  bool isPrimary,  bool active, @JsonKey(fromJson: _parseDateDefault0)  DateTime createdAt, @JsonKey(fromJson: _parseNullableDate)  DateTime? lastRotatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssCredential() when $default != null:
 return $default(_that.id,_that.name,_that.endpoint,_that.internalEndpoint,_that.region,_that.bucket,_that.directoryPrefix,_that.accessKeyMasked,_that.allowPublicRead,_that.allowMultipartUpload,_that.useRelayUpload,_that.isPrimary,_that.active,_that.createdAt,_that.lastRotatedAt);case _:
@@ -223,24 +223,24 @@ return $default(_that.id,_that.name,_that.endpoint,_that.internalEndpoint,_that.
 @JsonSerializable()
 
 class _AdminOssCredential extends AdminOssCredential {
-  const _AdminOssCredential({this.id = '', this.name = '', this.endpoint = '', @JsonKey(name: 'internal_endpoint') this.internalEndpoint = '', this.region = '', this.bucket = '', @JsonKey(name: 'directory_prefix') this.directoryPrefix = '', @JsonKey(name: 'access_key_masked') this.accessKeyMasked = '', @JsonKey(name: 'allow_public_read') this.allowPublicRead = false, @JsonKey(name: 'allow_multipart_upload') this.allowMultipartUpload = false, @JsonKey(name: 'use_relay_upload') this.useRelayUpload = false, @JsonKey(name: 'is_primary') this.isPrimary = false, this.active = false, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0) required this.createdAt, @JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate) this.lastRotatedAt}): super._();
+  const _AdminOssCredential({this.id = '', this.name = '', this.endpoint = '', this.internalEndpoint = '', this.region = '', this.bucket = '', this.directoryPrefix = '', this.accessKeyMasked = '', this.allowPublicRead = false, this.allowMultipartUpload = false, this.useRelayUpload = false, this.isPrimary = false, this.active = false, @JsonKey(fromJson: _parseDateDefault0) required this.createdAt, @JsonKey(fromJson: _parseNullableDate) this.lastRotatedAt}): super._();
   factory _AdminOssCredential.fromJson(Map<String, dynamic> json) => _$AdminOssCredentialFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String endpoint;
-@override@JsonKey(name: 'internal_endpoint') final  String internalEndpoint;
+@override@JsonKey() final  String internalEndpoint;
 @override@JsonKey() final  String region;
 @override@JsonKey() final  String bucket;
-@override@JsonKey(name: 'directory_prefix') final  String directoryPrefix;
-@override@JsonKey(name: 'access_key_masked') final  String accessKeyMasked;
-@override@JsonKey(name: 'allow_public_read') final  bool allowPublicRead;
-@override@JsonKey(name: 'allow_multipart_upload') final  bool allowMultipartUpload;
-@override@JsonKey(name: 'use_relay_upload') final  bool useRelayUpload;
-@override@JsonKey(name: 'is_primary') final  bool isPrimary;
+@override@JsonKey() final  String directoryPrefix;
+@override@JsonKey() final  String accessKeyMasked;
+@override@JsonKey() final  bool allowPublicRead;
+@override@JsonKey() final  bool allowMultipartUpload;
+@override@JsonKey() final  bool useRelayUpload;
+@override@JsonKey() final  bool isPrimary;
 @override@JsonKey() final  bool active;
-@override@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) final  DateTime createdAt;
-@override@JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate) final  DateTime? lastRotatedAt;
+@override@JsonKey(fromJson: _parseDateDefault0) final  DateTime createdAt;
+@override@JsonKey(fromJson: _parseNullableDate) final  DateTime? lastRotatedAt;
 
 /// Create a copy of AdminOssCredential
 /// with the given fields replaced by the non-null parameter values.
@@ -275,7 +275,7 @@ abstract mixin class _$AdminOssCredentialCopyWith<$Res> implements $AdminOssCred
   factory _$AdminOssCredentialCopyWith(_AdminOssCredential value, $Res Function(_AdminOssCredential) _then) = __$AdminOssCredentialCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String endpoint,@JsonKey(name: 'internal_endpoint') String internalEndpoint, String region, String bucket,@JsonKey(name: 'directory_prefix') String directoryPrefix,@JsonKey(name: 'access_key_masked') String accessKeyMasked,@JsonKey(name: 'allow_public_read') bool allowPublicRead,@JsonKey(name: 'allow_multipart_upload') bool allowMultipartUpload,@JsonKey(name: 'use_relay_upload') bool useRelayUpload,@JsonKey(name: 'is_primary') bool isPrimary, bool active,@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) DateTime createdAt,@JsonKey(name: 'last_rotated_at', fromJson: _parseNullableDate) DateTime? lastRotatedAt
+ String id, String name, String endpoint, String internalEndpoint, String region, String bucket, String directoryPrefix, String accessKeyMasked, bool allowPublicRead, bool allowMultipartUpload, bool useRelayUpload, bool isPrimary, bool active,@JsonKey(fromJson: _parseDateDefault0) DateTime createdAt,@JsonKey(fromJson: _parseNullableDate) DateTime? lastRotatedAt
 });
 
 
@@ -320,7 +320,7 @@ as DateTime?,
 /// @nodoc
 mixin _$AdminOssPolicy {
 
- String get id; String get name; String get description;@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus get status;@JsonKey(name: 'applies_to') String get appliesTo;@JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0) DateTime get lastUpdatedAt;
+ String get id; String get name; String get description;@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus get status; String get appliesTo;@JsonKey(fromJson: _parseDateDefault0) DateTime get lastUpdatedAt;
 /// Create a copy of AdminOssPolicy
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -353,7 +353,7 @@ abstract mixin class $AdminOssPolicyCopyWith<$Res>  {
   factory $AdminOssPolicyCopyWith(AdminOssPolicy value, $Res Function(AdminOssPolicy) _then) = _$AdminOssPolicyCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description,@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus status,@JsonKey(name: 'applies_to') String appliesTo,@JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0) DateTime lastUpdatedAt
+ String id, String name, String description,@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus status, String appliesTo,@JsonKey(fromJson: _parseDateDefault0) DateTime lastUpdatedAt
 });
 
 
@@ -463,7 +463,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status, @JsonKey(name: 'applies_to')  String appliesTo, @JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0)  DateTime lastUpdatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status,  String appliesTo, @JsonKey(fromJson: _parseDateDefault0)  DateTime lastUpdatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminOssPolicy() when $default != null:
 return $default(_that.id,_that.name,_that.description,_that.status,_that.appliesTo,_that.lastUpdatedAt);case _:
@@ -484,7 +484,7 @@ return $default(_that.id,_that.name,_that.description,_that.status,_that.applies
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status, @JsonKey(name: 'applies_to')  String appliesTo, @JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0)  DateTime lastUpdatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status,  String appliesTo, @JsonKey(fromJson: _parseDateDefault0)  DateTime lastUpdatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssPolicy():
 return $default(_that.id,_that.name,_that.description,_that.status,_that.appliesTo,_that.lastUpdatedAt);case _:
@@ -504,7 +504,7 @@ return $default(_that.id,_that.name,_that.description,_that.status,_that.applies
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status, @JsonKey(name: 'applies_to')  String appliesTo, @JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0)  DateTime lastUpdatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status,  String appliesTo, @JsonKey(fromJson: _parseDateDefault0)  DateTime lastUpdatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssPolicy() when $default != null:
 return $default(_that.id,_that.name,_that.description,_that.status,_that.appliesTo,_that.lastUpdatedAt);case _:
@@ -519,15 +519,15 @@ return $default(_that.id,_that.name,_that.description,_that.status,_that.applies
 @JsonSerializable()
 
 class _AdminOssPolicy extends AdminOssPolicy {
-  const _AdminOssPolicy({this.id = '', this.name = '', this.description = '', @JsonKey(fromJson: _parsePolicyStatus) required this.status, @JsonKey(name: 'applies_to') this.appliesTo = '', @JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0) required this.lastUpdatedAt}): super._();
+  const _AdminOssPolicy({this.id = '', this.name = '', this.description = '', @JsonKey(fromJson: _parsePolicyStatus) required this.status, this.appliesTo = '', @JsonKey(fromJson: _parseDateDefault0) required this.lastUpdatedAt}): super._();
   factory _AdminOssPolicy.fromJson(Map<String, dynamic> json) => _$AdminOssPolicyFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String description;
 @override@JsonKey(fromJson: _parsePolicyStatus) final  AdminOssPolicyStatus status;
-@override@JsonKey(name: 'applies_to') final  String appliesTo;
-@override@JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0) final  DateTime lastUpdatedAt;
+@override@JsonKey() final  String appliesTo;
+@override@JsonKey(fromJson: _parseDateDefault0) final  DateTime lastUpdatedAt;
 
 /// Create a copy of AdminOssPolicy
 /// with the given fields replaced by the non-null parameter values.
@@ -562,7 +562,7 @@ abstract mixin class _$AdminOssPolicyCopyWith<$Res> implements $AdminOssPolicyCo
   factory _$AdminOssPolicyCopyWith(_AdminOssPolicy value, $Res Function(_AdminOssPolicy) _then) = __$AdminOssPolicyCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description,@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus status,@JsonKey(name: 'applies_to') String appliesTo,@JsonKey(name: 'last_updated_at', fromJson: _parseDateDefault0) DateTime lastUpdatedAt
+ String id, String name, String description,@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus status, String appliesTo,@JsonKey(fromJson: _parseDateDefault0) DateTime lastUpdatedAt
 });
 
 
@@ -598,7 +598,7 @@ as DateTime,
 /// @nodoc
 mixin _$AdminOssAuditLog {
 
- String get id; String get action; String get operator; String get detail;@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) DateTime get createdAt;
+ String get id; String get action; String get operator; String get detail;@JsonKey(fromJson: _parseDateDefault0) DateTime get createdAt;
 /// Create a copy of AdminOssAuditLog
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -631,7 +631,7 @@ abstract mixin class $AdminOssAuditLogCopyWith<$Res>  {
   factory $AdminOssAuditLogCopyWith(AdminOssAuditLog value, $Res Function(AdminOssAuditLog) _then) = _$AdminOssAuditLogCopyWithImpl;
 @useResult
 $Res call({
- String id, String action, String operator, String detail,@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) DateTime createdAt
+ String id, String action, String operator, String detail,@JsonKey(fromJson: _parseDateDefault0) DateTime createdAt
 });
 
 
@@ -740,7 +740,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String action,  String operator,  String detail, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0)  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String action,  String operator,  String detail, @JsonKey(fromJson: _parseDateDefault0)  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminOssAuditLog() when $default != null:
 return $default(_that.id,_that.action,_that.operator,_that.detail,_that.createdAt);case _:
@@ -761,7 +761,7 @@ return $default(_that.id,_that.action,_that.operator,_that.detail,_that.createdA
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String action,  String operator,  String detail, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0)  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String action,  String operator,  String detail, @JsonKey(fromJson: _parseDateDefault0)  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssAuditLog():
 return $default(_that.id,_that.action,_that.operator,_that.detail,_that.createdAt);case _:
@@ -781,7 +781,7 @@ return $default(_that.id,_that.action,_that.operator,_that.detail,_that.createdA
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String action,  String operator,  String detail, @JsonKey(name: 'created_at', fromJson: _parseDateDefault0)  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String action,  String operator,  String detail, @JsonKey(fromJson: _parseDateDefault0)  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssAuditLog() when $default != null:
 return $default(_that.id,_that.action,_that.operator,_that.detail,_that.createdAt);case _:
@@ -796,14 +796,14 @@ return $default(_that.id,_that.action,_that.operator,_that.detail,_that.createdA
 @JsonSerializable()
 
 class _AdminOssAuditLog extends AdminOssAuditLog {
-  const _AdminOssAuditLog({this.id = '', this.action = '', this.operator = '', this.detail = '', @JsonKey(name: 'created_at', fromJson: _parseDateDefault0) required this.createdAt}): super._();
+  const _AdminOssAuditLog({this.id = '', this.action = '', this.operator = '', this.detail = '', @JsonKey(fromJson: _parseDateDefault0) required this.createdAt}): super._();
   factory _AdminOssAuditLog.fromJson(Map<String, dynamic> json) => _$AdminOssAuditLogFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String action;
 @override@JsonKey() final  String operator;
 @override@JsonKey() final  String detail;
-@override@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) final  DateTime createdAt;
+@override@JsonKey(fromJson: _parseDateDefault0) final  DateTime createdAt;
 
 /// Create a copy of AdminOssAuditLog
 /// with the given fields replaced by the non-null parameter values.
@@ -838,7 +838,7 @@ abstract mixin class _$AdminOssAuditLogCopyWith<$Res> implements $AdminOssAuditL
   factory _$AdminOssAuditLogCopyWith(_AdminOssAuditLog value, $Res Function(_AdminOssAuditLog) _then) = __$AdminOssAuditLogCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String action, String operator, String detail,@JsonKey(name: 'created_at', fromJson: _parseDateDefault0) DateTime createdAt
+ String id, String action, String operator, String detail,@JsonKey(fromJson: _parseDateDefault0) DateTime createdAt
 });
 
 

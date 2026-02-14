@@ -6,10 +6,9 @@ import 'package:learn_go/features/auth/application/auth_controller.dart';
 import 'package:learn_go/features/im/data/repositories/im_repository.dart';
 import 'package:learn_go/features/im/domain/entities/conversation.dart';
 import 'package:learn_go/features/im/domain/entities/message.dart';
-import 'package:learn_go/features/im/data/generated/conversation.pb.dart' as pb;
-import 'package:learn_go/features/im/data/generated/google/protobuf/timestamp.pb.dart'
-    as $google_pb;
+import 'package:learn_go/generated/proto/conversation.pb.dart' as pb;
 import 'package:learn_go/features/auth/domain/account.dart';
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart';
 
 /// Keep IM gRPC subscriptions alive after login so conversation list/unread
 /// badges can update even when user is not inside a specific chat screen.
@@ -224,7 +223,7 @@ class IMService {
       ..senderRole = message.senderRole.apiValue
       ..kind = message.kind.name
       ..text = message.text
-      ..createdAt = $google_pb.Timestamp.fromDateTime(message.createdAt);
+      ..createdAt = Timestamp.fromDateTime(message.createdAt);
 
     if (message.mediaUri != null) pbMessage.mediaUri = message.mediaUri!;
     if (message.metadata != null) pbMessage.metadata = message.metadata!;
