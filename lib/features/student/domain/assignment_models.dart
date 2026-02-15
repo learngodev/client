@@ -108,8 +108,8 @@ abstract class AssignmentDetail with _$AssignmentDetail {
     @JsonKey(fromJson: AssignmentTypeX.fromString)
     AssignmentType type,
     @Default(false) bool allowResubmit,
-    @JsonKey(fromJson: _parseDateTime) DateTime? dueAt,
-    @JsonKey(fromJson: _parseDateTime) DateTime? startAt,
+    DateTime? dueAt,
+    DateTime? startAt,
     @Default([]) List<AssignmentAttachment> attachments,
   }) = _AssignmentDetail;
 
@@ -124,14 +124,6 @@ List<AssignmentQuestion> _parseAndSortQuestions(dynamic list) {
       .toList();
   questions.sort((a, b) => a.orderIndex.compareTo(b.orderIndex));
   return questions;
-}
-
-DateTime? _parseDateTime(dynamic value) {
-  if (value == null) return null;
-  if (value is String) {
-    return DateTime.tryParse(value)?.toLocal();
-  }
-  return null;
 }
 
 @freezed
@@ -155,16 +147,12 @@ abstract class SubmissionResult with _$SubmissionResult {
     @Default('') String id,
     double? score,
     @Default('') String status,
-    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime submittedAt,
+    required DateTime submittedAt,
     String? feedback,
   }) = _SubmissionResult;
 
   factory SubmissionResult.fromJson(Map<String, dynamic> json) =>
       _$SubmissionResultFromJson(json);
-}
-
-DateTime _parseDateTimeOrNow(dynamic value) {
-  return _parseDateTime(value) ?? DateTime.now();
 }
 
 @freezed

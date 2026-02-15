@@ -14,8 +14,12 @@ _CourseChapterSummary _$CourseChapterSummaryFromJson(
   teacherId: json['teacher_id'] as String? ?? '',
   title: json['title'] as String? ?? '',
   orderIndex: (json['order_index'] as num?)?.toInt() ?? 0,
-  createdAt: _parseDateTime(json['created_at']),
-  updatedAt: _parseDateTime(json['updated_at']),
+  createdAt: json['created_at'] == null
+      ? null
+      : DateTime.parse(json['created_at'] as String),
+  updatedAt: json['updated_at'] == null
+      ? null
+      : DateTime.parse(json['updated_at'] as String),
 );
 
 Map<String, dynamic> _$CourseChapterSummaryToJson(
@@ -48,4 +52,42 @@ Map<String, dynamic> _$CourseChapterAttachmentToJson(
   'type': instance.type,
   'size': instance.size,
   'relay_url': instance.relayUrl,
+};
+
+_CourseChapterDetail _$CourseChapterDetailFromJson(Map<String, dynamic> json) =>
+    _CourseChapterDetail(
+      id: json['id'] as String? ?? '',
+      courseId: json['course_id'] as String? ?? '',
+      teacherId: json['teacher_id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      content: json['content'] as String? ?? '',
+      orderIndex: (json['order_index'] as num?)?.toInt() ?? 0,
+      attachments:
+          (json['attachments'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    CourseChapterAttachment.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
+      createdAt: json['created_at'] == null
+          ? null
+          : DateTime.parse(json['created_at'] as String),
+      updatedAt: json['updated_at'] == null
+          ? null
+          : DateTime.parse(json['updated_at'] as String),
+    );
+
+Map<String, dynamic> _$CourseChapterDetailToJson(
+  _CourseChapterDetail instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'course_id': instance.courseId,
+  'teacher_id': instance.teacherId,
+  'title': instance.title,
+  'content': instance.content,
+  'order_index': instance.orderIndex,
+  'attachments': instance.attachments,
+  'created_at': instance.createdAt?.toIso8601String(),
+  'updated_at': instance.updatedAt?.toIso8601String(),
 };

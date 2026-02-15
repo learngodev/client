@@ -57,7 +57,7 @@ abstract class TeacherAssignment with _$TeacherAssignment {
     @Default(0) int submittedCount,
     @Default(0) int gradedCount,
     @Default(0) int pendingGradeCount,
-    @JsonKey(fromJson: _parseDateTimeNullable) DateTime? dueAt,
+    DateTime? dueAt,
     @Default(0) int classStudentCount,
   }) = _TeacherAssignment;
 
@@ -71,7 +71,7 @@ abstract class SubmissionSummary with _$SubmissionSummary {
     @Default('') String id,
     @Default('') String studentId,
     @Default('学生') String studentName,
-    @JsonKey(fromJson: _parseDateTimeNullable) DateTime? submittedAt,
+    DateTime? submittedAt,
     @Default('pending') String status,
     double? score,
   }) = _SubmissionSummary;
@@ -80,25 +80,12 @@ abstract class SubmissionSummary with _$SubmissionSummary {
       _$SubmissionSummaryFromJson(json);
 }
 
-List<dynamic> _readSubmissionItems(Map map, String key) {
-  final submission = map['submission'];
-  if (submission is Map<String, dynamic>) {
-    final items = submission['items'];
-    if (items is List) {
-      return items;
-    }
-  }
-  return [];
-}
-
 @freezed
 abstract class TeacherSubmissionDetail with _$TeacherSubmissionDetail {
   const factory TeacherSubmissionDetail({
     @JsonKey(fromJson: _parseSubmissionResult)
     required SubmissionResult submission,
-    @JsonKey(readValue: _readSubmissionItems)
-    @Default([])
-    List<SubmissionItem> items,
+    @Default([]) List<SubmissionItem> items,
     @Default([]) List<SubmissionComment> comments,
   }) = _TeacherSubmissionDetail;
 
@@ -112,24 +99,11 @@ abstract class SubmissionComment with _$SubmissionComment {
     @Default('') String id,
     @Default('') String content,
     @Default('') String authorId,
-    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime createdAt,
+    required DateTime createdAt,
   }) = _SubmissionComment;
 
   factory SubmissionComment.fromJson(Map<String, dynamic> json) =>
       _$SubmissionCommentFromJson(json);
-}
-
-DateTime? _parseDateTimeNullable(dynamic value) {
-  if (value == null) return null;
-  if (value is DateTime) return value.toLocal();
-  if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value)?.toLocal();
-  }
-  return null;
-}
-
-DateTime _parseDateTimeOrNow(dynamic value) {
-  return _parseDateTimeNullable(value) ?? DateTime.now();
 }
 
 SubmissionResult _parseSubmissionResult(dynamic value) {
@@ -161,8 +135,6 @@ abstract class GradeSubmissionRequest with _$GradeSubmissionRequest {
       _$GradeSubmissionRequestFromJson(json);
 }
 
-String? _dateToUtcIso(DateTime? date) => date?.toUtc().toIso8601String();
-
 @freezed
 abstract class CreateAssignmentRequest with _$CreateAssignmentRequest {
   @JsonSerializable(includeIfNull: false)
@@ -173,9 +145,7 @@ abstract class CreateAssignmentRequest with _$CreateAssignmentRequest {
     required String type,
     required String title,
     String? description,
-    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
     DateTime? startAt,
-    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
     DateTime? dueAt,
     double? maxScore,
     @Default(false) bool allowResubmit,
@@ -194,9 +164,7 @@ abstract class UpdateAssignmentRequest with _$UpdateAssignmentRequest {
     required String teacherId,
     String? title,
     String? description,
-    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
     DateTime? startAt,
-    @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)
     DateTime? dueAt,
     double? maxScore,
     bool? allowResubmit,

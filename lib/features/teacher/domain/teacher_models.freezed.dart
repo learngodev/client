@@ -834,7 +834,7 @@ as String?,
 /// @nodoc
 mixin _$TeacherAssignment {
 
- String get id; String get title; String get courseName; String get className; int get submissionCount; int get submittedCount; int get gradedCount; int get pendingGradeCount;@JsonKey(fromJson: _parseDateTimeNullable) DateTime? get dueAt; int get classStudentCount;
+ String get id; String get title; String get courseName; String get className; int get submissionCount; int get submittedCount; int get gradedCount; int get pendingGradeCount; DateTime? get dueAt; int get classStudentCount;
 /// Create a copy of TeacherAssignment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -867,7 +867,7 @@ abstract mixin class $TeacherAssignmentCopyWith<$Res>  {
   factory $TeacherAssignmentCopyWith(TeacherAssignment value, $Res Function(TeacherAssignment) _then) = _$TeacherAssignmentCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, String courseName, String className, int submissionCount, int submittedCount, int gradedCount, int pendingGradeCount,@JsonKey(fromJson: _parseDateTimeNullable) DateTime? dueAt, int classStudentCount
+ String id, String title, String courseName, String className, int submissionCount, int submittedCount, int gradedCount, int pendingGradeCount, DateTime? dueAt, int classStudentCount
 });
 
 
@@ -981,7 +981,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String courseName,  String className,  int submissionCount,  int submittedCount,  int gradedCount,  int pendingGradeCount, @JsonKey(fromJson: _parseDateTimeNullable)  DateTime? dueAt,  int classStudentCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String courseName,  String className,  int submissionCount,  int submittedCount,  int gradedCount,  int pendingGradeCount,  DateTime? dueAt,  int classStudentCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeacherAssignment() when $default != null:
 return $default(_that.id,_that.title,_that.courseName,_that.className,_that.submissionCount,_that.submittedCount,_that.gradedCount,_that.pendingGradeCount,_that.dueAt,_that.classStudentCount);case _:
@@ -1002,7 +1002,7 @@ return $default(_that.id,_that.title,_that.courseName,_that.className,_that.subm
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String courseName,  String className,  int submissionCount,  int submittedCount,  int gradedCount,  int pendingGradeCount, @JsonKey(fromJson: _parseDateTimeNullable)  DateTime? dueAt,  int classStudentCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String courseName,  String className,  int submissionCount,  int submittedCount,  int gradedCount,  int pendingGradeCount,  DateTime? dueAt,  int classStudentCount)  $default,) {final _that = this;
 switch (_that) {
 case _TeacherAssignment():
 return $default(_that.id,_that.title,_that.courseName,_that.className,_that.submissionCount,_that.submittedCount,_that.gradedCount,_that.pendingGradeCount,_that.dueAt,_that.classStudentCount);case _:
@@ -1022,7 +1022,7 @@ return $default(_that.id,_that.title,_that.courseName,_that.className,_that.subm
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String courseName,  String className,  int submissionCount,  int submittedCount,  int gradedCount,  int pendingGradeCount, @JsonKey(fromJson: _parseDateTimeNullable)  DateTime? dueAt,  int classStudentCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String courseName,  String className,  int submissionCount,  int submittedCount,  int gradedCount,  int pendingGradeCount,  DateTime? dueAt,  int classStudentCount)?  $default,) {final _that = this;
 switch (_that) {
 case _TeacherAssignment() when $default != null:
 return $default(_that.id,_that.title,_that.courseName,_that.className,_that.submissionCount,_that.submittedCount,_that.gradedCount,_that.pendingGradeCount,_that.dueAt,_that.classStudentCount);case _:
@@ -1037,7 +1037,7 @@ return $default(_that.id,_that.title,_that.courseName,_that.className,_that.subm
 @JsonSerializable()
 
 class _TeacherAssignment implements TeacherAssignment {
-  const _TeacherAssignment({this.id = '', this.title = '', this.courseName = '', this.className = '', this.submissionCount = 0, this.submittedCount = 0, this.gradedCount = 0, this.pendingGradeCount = 0, @JsonKey(fromJson: _parseDateTimeNullable) this.dueAt, this.classStudentCount = 0});
+  const _TeacherAssignment({this.id = '', this.title = '', this.courseName = '', this.className = '', this.submissionCount = 0, this.submittedCount = 0, this.gradedCount = 0, this.pendingGradeCount = 0, this.dueAt, this.classStudentCount = 0});
   factory _TeacherAssignment.fromJson(Map<String, dynamic> json) => _$TeacherAssignmentFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -1048,7 +1048,7 @@ class _TeacherAssignment implements TeacherAssignment {
 @override@JsonKey() final  int submittedCount;
 @override@JsonKey() final  int gradedCount;
 @override@JsonKey() final  int pendingGradeCount;
-@override@JsonKey(fromJson: _parseDateTimeNullable) final  DateTime? dueAt;
+@override final  DateTime? dueAt;
 @override@JsonKey() final  int classStudentCount;
 
 /// Create a copy of TeacherAssignment
@@ -1084,7 +1084,7 @@ abstract mixin class _$TeacherAssignmentCopyWith<$Res> implements $TeacherAssign
   factory _$TeacherAssignmentCopyWith(_TeacherAssignment value, $Res Function(_TeacherAssignment) _then) = __$TeacherAssignmentCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, String courseName, String className, int submissionCount, int submittedCount, int gradedCount, int pendingGradeCount,@JsonKey(fromJson: _parseDateTimeNullable) DateTime? dueAt, int classStudentCount
+ String id, String title, String courseName, String className, int submissionCount, int submittedCount, int gradedCount, int pendingGradeCount, DateTime? dueAt, int classStudentCount
 });
 
 
@@ -1124,7 +1124,7 @@ as int,
 /// @nodoc
 mixin _$SubmissionSummary {
 
- String get id; String get studentId; String get studentName;@JsonKey(fromJson: _parseDateTimeNullable) DateTime? get submittedAt; String get status; double? get score;
+ String get id; String get studentId; String get studentName; DateTime? get submittedAt; String get status; double? get score;
 /// Create a copy of SubmissionSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1157,7 +1157,7 @@ abstract mixin class $SubmissionSummaryCopyWith<$Res>  {
   factory $SubmissionSummaryCopyWith(SubmissionSummary value, $Res Function(SubmissionSummary) _then) = _$SubmissionSummaryCopyWithImpl;
 @useResult
 $Res call({
- String id, String studentId, String studentName,@JsonKey(fromJson: _parseDateTimeNullable) DateTime? submittedAt, String status, double? score
+ String id, String studentId, String studentName, DateTime? submittedAt, String status, double? score
 });
 
 
@@ -1267,7 +1267,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String studentId,  String studentName, @JsonKey(fromJson: _parseDateTimeNullable)  DateTime? submittedAt,  String status,  double? score)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String studentId,  String studentName,  DateTime? submittedAt,  String status,  double? score)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SubmissionSummary() when $default != null:
 return $default(_that.id,_that.studentId,_that.studentName,_that.submittedAt,_that.status,_that.score);case _:
@@ -1288,7 +1288,7 @@ return $default(_that.id,_that.studentId,_that.studentName,_that.submittedAt,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String studentId,  String studentName, @JsonKey(fromJson: _parseDateTimeNullable)  DateTime? submittedAt,  String status,  double? score)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String studentId,  String studentName,  DateTime? submittedAt,  String status,  double? score)  $default,) {final _that = this;
 switch (_that) {
 case _SubmissionSummary():
 return $default(_that.id,_that.studentId,_that.studentName,_that.submittedAt,_that.status,_that.score);case _:
@@ -1308,7 +1308,7 @@ return $default(_that.id,_that.studentId,_that.studentName,_that.submittedAt,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String studentId,  String studentName, @JsonKey(fromJson: _parseDateTimeNullable)  DateTime? submittedAt,  String status,  double? score)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String studentId,  String studentName,  DateTime? submittedAt,  String status,  double? score)?  $default,) {final _that = this;
 switch (_that) {
 case _SubmissionSummary() when $default != null:
 return $default(_that.id,_that.studentId,_that.studentName,_that.submittedAt,_that.status,_that.score);case _:
@@ -1323,13 +1323,13 @@ return $default(_that.id,_that.studentId,_that.studentName,_that.submittedAt,_th
 @JsonSerializable()
 
 class _SubmissionSummary implements SubmissionSummary {
-  const _SubmissionSummary({this.id = '', this.studentId = '', this.studentName = '学生', @JsonKey(fromJson: _parseDateTimeNullable) this.submittedAt, this.status = 'pending', this.score});
+  const _SubmissionSummary({this.id = '', this.studentId = '', this.studentName = '学生', this.submittedAt, this.status = 'pending', this.score});
   factory _SubmissionSummary.fromJson(Map<String, dynamic> json) => _$SubmissionSummaryFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String studentId;
 @override@JsonKey() final  String studentName;
-@override@JsonKey(fromJson: _parseDateTimeNullable) final  DateTime? submittedAt;
+@override final  DateTime? submittedAt;
 @override@JsonKey() final  String status;
 @override final  double? score;
 
@@ -1366,7 +1366,7 @@ abstract mixin class _$SubmissionSummaryCopyWith<$Res> implements $SubmissionSum
   factory _$SubmissionSummaryCopyWith(_SubmissionSummary value, $Res Function(_SubmissionSummary) _then) = __$SubmissionSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String studentId, String studentName,@JsonKey(fromJson: _parseDateTimeNullable) DateTime? submittedAt, String status, double? score
+ String id, String studentId, String studentName, DateTime? submittedAt, String status, double? score
 });
 
 
@@ -1402,7 +1402,7 @@ as double?,
 /// @nodoc
 mixin _$TeacherSubmissionDetail {
 
-@JsonKey(fromJson: _parseSubmissionResult) SubmissionResult get submission;@JsonKey(readValue: _readSubmissionItems) List<SubmissionItem> get items; List<SubmissionComment> get comments;
+@JsonKey(fromJson: _parseSubmissionResult) SubmissionResult get submission; List<SubmissionItem> get items; List<SubmissionComment> get comments;
 /// Create a copy of TeacherSubmissionDetail
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1435,7 +1435,7 @@ abstract mixin class $TeacherSubmissionDetailCopyWith<$Res>  {
   factory $TeacherSubmissionDetailCopyWith(TeacherSubmissionDetail value, $Res Function(TeacherSubmissionDetail) _then) = _$TeacherSubmissionDetailCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(fromJson: _parseSubmissionResult) SubmissionResult submission,@JsonKey(readValue: _readSubmissionItems) List<SubmissionItem> items, List<SubmissionComment> comments
+@JsonKey(fromJson: _parseSubmissionResult) SubmissionResult submission, List<SubmissionItem> items, List<SubmissionComment> comments
 });
 
 
@@ -1551,7 +1551,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _parseSubmissionResult)  SubmissionResult submission, @JsonKey(readValue: _readSubmissionItems)  List<SubmissionItem> items,  List<SubmissionComment> comments)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _parseSubmissionResult)  SubmissionResult submission,  List<SubmissionItem> items,  List<SubmissionComment> comments)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeacherSubmissionDetail() when $default != null:
 return $default(_that.submission,_that.items,_that.comments);case _:
@@ -1572,7 +1572,7 @@ return $default(_that.submission,_that.items,_that.comments);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _parseSubmissionResult)  SubmissionResult submission, @JsonKey(readValue: _readSubmissionItems)  List<SubmissionItem> items,  List<SubmissionComment> comments)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _parseSubmissionResult)  SubmissionResult submission,  List<SubmissionItem> items,  List<SubmissionComment> comments)  $default,) {final _that = this;
 switch (_that) {
 case _TeacherSubmissionDetail():
 return $default(_that.submission,_that.items,_that.comments);case _:
@@ -1592,7 +1592,7 @@ return $default(_that.submission,_that.items,_that.comments);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _parseSubmissionResult)  SubmissionResult submission, @JsonKey(readValue: _readSubmissionItems)  List<SubmissionItem> items,  List<SubmissionComment> comments)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _parseSubmissionResult)  SubmissionResult submission,  List<SubmissionItem> items,  List<SubmissionComment> comments)?  $default,) {final _that = this;
 switch (_that) {
 case _TeacherSubmissionDetail() when $default != null:
 return $default(_that.submission,_that.items,_that.comments);case _:
@@ -1607,12 +1607,12 @@ return $default(_that.submission,_that.items,_that.comments);case _:
 @JsonSerializable()
 
 class _TeacherSubmissionDetail implements TeacherSubmissionDetail {
-  const _TeacherSubmissionDetail({@JsonKey(fromJson: _parseSubmissionResult) required this.submission, @JsonKey(readValue: _readSubmissionItems) final  List<SubmissionItem> items = const [], final  List<SubmissionComment> comments = const []}): _items = items,_comments = comments;
+  const _TeacherSubmissionDetail({@JsonKey(fromJson: _parseSubmissionResult) required this.submission, final  List<SubmissionItem> items = const [], final  List<SubmissionComment> comments = const []}): _items = items,_comments = comments;
   factory _TeacherSubmissionDetail.fromJson(Map<String, dynamic> json) => _$TeacherSubmissionDetailFromJson(json);
 
 @override@JsonKey(fromJson: _parseSubmissionResult) final  SubmissionResult submission;
  final  List<SubmissionItem> _items;
-@override@JsonKey(readValue: _readSubmissionItems) List<SubmissionItem> get items {
+@override@JsonKey() List<SubmissionItem> get items {
   if (_items is EqualUnmodifiableListView) return _items;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_items);
@@ -1659,7 +1659,7 @@ abstract mixin class _$TeacherSubmissionDetailCopyWith<$Res> implements $Teacher
   factory _$TeacherSubmissionDetailCopyWith(_TeacherSubmissionDetail value, $Res Function(_TeacherSubmissionDetail) _then) = __$TeacherSubmissionDetailCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(fromJson: _parseSubmissionResult) SubmissionResult submission,@JsonKey(readValue: _readSubmissionItems) List<SubmissionItem> items, List<SubmissionComment> comments
+@JsonKey(fromJson: _parseSubmissionResult) SubmissionResult submission, List<SubmissionItem> items, List<SubmissionComment> comments
 });
 
 
@@ -1701,7 +1701,7 @@ $SubmissionResultCopyWith<$Res> get submission {
 /// @nodoc
 mixin _$SubmissionComment {
 
- String get id; String get content; String get authorId;@JsonKey(fromJson: _parseDateTimeOrNow) DateTime get createdAt;
+ String get id; String get content; String get authorId; DateTime get createdAt;
 /// Create a copy of SubmissionComment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1734,7 +1734,7 @@ abstract mixin class $SubmissionCommentCopyWith<$Res>  {
   factory $SubmissionCommentCopyWith(SubmissionComment value, $Res Function(SubmissionComment) _then) = _$SubmissionCommentCopyWithImpl;
 @useResult
 $Res call({
- String id, String content, String authorId,@JsonKey(fromJson: _parseDateTimeOrNow) DateTime createdAt
+ String id, String content, String authorId, DateTime createdAt
 });
 
 
@@ -1842,7 +1842,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String content,  String authorId, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String content,  String authorId,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SubmissionComment() when $default != null:
 return $default(_that.id,_that.content,_that.authorId,_that.createdAt);case _:
@@ -1863,7 +1863,7 @@ return $default(_that.id,_that.content,_that.authorId,_that.createdAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String content,  String authorId, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String content,  String authorId,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _SubmissionComment():
 return $default(_that.id,_that.content,_that.authorId,_that.createdAt);case _:
@@ -1883,7 +1883,7 @@ return $default(_that.id,_that.content,_that.authorId,_that.createdAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String content,  String authorId, @JsonKey(fromJson: _parseDateTimeOrNow)  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String content,  String authorId,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _SubmissionComment() when $default != null:
 return $default(_that.id,_that.content,_that.authorId,_that.createdAt);case _:
@@ -1898,13 +1898,13 @@ return $default(_that.id,_that.content,_that.authorId,_that.createdAt);case _:
 @JsonSerializable()
 
 class _SubmissionComment implements SubmissionComment {
-  const _SubmissionComment({this.id = '', this.content = '', this.authorId = '', @JsonKey(fromJson: _parseDateTimeOrNow) required this.createdAt});
+  const _SubmissionComment({this.id = '', this.content = '', this.authorId = '', required this.createdAt});
   factory _SubmissionComment.fromJson(Map<String, dynamic> json) => _$SubmissionCommentFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String content;
 @override@JsonKey() final  String authorId;
-@override@JsonKey(fromJson: _parseDateTimeOrNow) final  DateTime createdAt;
+@override final  DateTime createdAt;
 
 /// Create a copy of SubmissionComment
 /// with the given fields replaced by the non-null parameter values.
@@ -1939,7 +1939,7 @@ abstract mixin class _$SubmissionCommentCopyWith<$Res> implements $SubmissionCom
   factory _$SubmissionCommentCopyWith(_SubmissionComment value, $Res Function(_SubmissionComment) _then) = __$SubmissionCommentCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String content, String authorId,@JsonKey(fromJson: _parseDateTimeOrNow) DateTime createdAt
+ String id, String content, String authorId, DateTime createdAt
 });
 
 
@@ -2253,7 +2253,7 @@ as String?,
 /// @nodoc
 mixin _$CreateAssignmentRequest {
 
- String get courseId; String get teacherId; String get classId; String get type; String get title; String? get description;@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? get startAt;@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? get dueAt; double? get maxScore; bool get allowResubmit; List<CreateAssignmentQuestionInput> get questions; List<String>? get attachments;
+ String get courseId; String get teacherId; String get classId; String get type; String get title; String? get description; DateTime? get startAt; DateTime? get dueAt; double? get maxScore; bool get allowResubmit; List<CreateAssignmentQuestionInput> get questions; List<String>? get attachments;
 /// Create a copy of CreateAssignmentRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2286,7 +2286,7 @@ abstract mixin class $CreateAssignmentRequestCopyWith<$Res>  {
   factory $CreateAssignmentRequestCopyWith(CreateAssignmentRequest value, $Res Function(CreateAssignmentRequest) _then) = _$CreateAssignmentRequestCopyWithImpl;
 @useResult
 $Res call({
- String courseId, String teacherId, String classId, String type, String title, String? description,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? startAt,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? dueAt, double? maxScore, bool allowResubmit, List<CreateAssignmentQuestionInput> questions, List<String>? attachments
+ String courseId, String teacherId, String classId, String type, String title, String? description, DateTime? startAt, DateTime? dueAt, double? maxScore, bool allowResubmit, List<CreateAssignmentQuestionInput> questions, List<String>? attachments
 });
 
 
@@ -2402,7 +2402,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String courseId,  String teacherId,  String classId,  String type,  String title,  String? description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? dueAt,  double? maxScore,  bool allowResubmit,  List<CreateAssignmentQuestionInput> questions,  List<String>? attachments)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String courseId,  String teacherId,  String classId,  String type,  String title,  String? description,  DateTime? startAt,  DateTime? dueAt,  double? maxScore,  bool allowResubmit,  List<CreateAssignmentQuestionInput> questions,  List<String>? attachments)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CreateAssignmentRequest() when $default != null:
 return $default(_that.courseId,_that.teacherId,_that.classId,_that.type,_that.title,_that.description,_that.startAt,_that.dueAt,_that.maxScore,_that.allowResubmit,_that.questions,_that.attachments);case _:
@@ -2423,7 +2423,7 @@ return $default(_that.courseId,_that.teacherId,_that.classId,_that.type,_that.ti
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String courseId,  String teacherId,  String classId,  String type,  String title,  String? description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? dueAt,  double? maxScore,  bool allowResubmit,  List<CreateAssignmentQuestionInput> questions,  List<String>? attachments)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String courseId,  String teacherId,  String classId,  String type,  String title,  String? description,  DateTime? startAt,  DateTime? dueAt,  double? maxScore,  bool allowResubmit,  List<CreateAssignmentQuestionInput> questions,  List<String>? attachments)  $default,) {final _that = this;
 switch (_that) {
 case _CreateAssignmentRequest():
 return $default(_that.courseId,_that.teacherId,_that.classId,_that.type,_that.title,_that.description,_that.startAt,_that.dueAt,_that.maxScore,_that.allowResubmit,_that.questions,_that.attachments);case _:
@@ -2443,7 +2443,7 @@ return $default(_that.courseId,_that.teacherId,_that.classId,_that.type,_that.ti
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String courseId,  String teacherId,  String classId,  String type,  String title,  String? description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? dueAt,  double? maxScore,  bool allowResubmit,  List<CreateAssignmentQuestionInput> questions,  List<String>? attachments)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String courseId,  String teacherId,  String classId,  String type,  String title,  String? description,  DateTime? startAt,  DateTime? dueAt,  double? maxScore,  bool allowResubmit,  List<CreateAssignmentQuestionInput> questions,  List<String>? attachments)?  $default,) {final _that = this;
 switch (_that) {
 case _CreateAssignmentRequest() when $default != null:
 return $default(_that.courseId,_that.teacherId,_that.classId,_that.type,_that.title,_that.description,_that.startAt,_that.dueAt,_that.maxScore,_that.allowResubmit,_that.questions,_that.attachments);case _:
@@ -2458,7 +2458,7 @@ return $default(_that.courseId,_that.teacherId,_that.classId,_that.type,_that.ti
 
 @JsonSerializable(includeIfNull: false)
 class _CreateAssignmentRequest implements CreateAssignmentRequest {
-  const _CreateAssignmentRequest({required this.courseId, required this.teacherId, required this.classId, required this.type, required this.title, this.description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) this.startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) this.dueAt, this.maxScore, this.allowResubmit = false, required final  List<CreateAssignmentQuestionInput> questions, final  List<String>? attachments}): _questions = questions,_attachments = attachments;
+  const _CreateAssignmentRequest({required this.courseId, required this.teacherId, required this.classId, required this.type, required this.title, this.description, this.startAt, this.dueAt, this.maxScore, this.allowResubmit = false, required final  List<CreateAssignmentQuestionInput> questions, final  List<String>? attachments}): _questions = questions,_attachments = attachments;
   factory _CreateAssignmentRequest.fromJson(Map<String, dynamic> json) => _$CreateAssignmentRequestFromJson(json);
 
 @override final  String courseId;
@@ -2467,8 +2467,8 @@ class _CreateAssignmentRequest implements CreateAssignmentRequest {
 @override final  String type;
 @override final  String title;
 @override final  String? description;
-@override@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) final  DateTime? startAt;
-@override@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) final  DateTime? dueAt;
+@override final  DateTime? startAt;
+@override final  DateTime? dueAt;
 @override final  double? maxScore;
 @override@JsonKey() final  bool allowResubmit;
  final  List<CreateAssignmentQuestionInput> _questions;
@@ -2521,7 +2521,7 @@ abstract mixin class _$CreateAssignmentRequestCopyWith<$Res> implements $CreateA
   factory _$CreateAssignmentRequestCopyWith(_CreateAssignmentRequest value, $Res Function(_CreateAssignmentRequest) _then) = __$CreateAssignmentRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String courseId, String teacherId, String classId, String type, String title, String? description,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? startAt,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? dueAt, double? maxScore, bool allowResubmit, List<CreateAssignmentQuestionInput> questions, List<String>? attachments
+ String courseId, String teacherId, String classId, String type, String title, String? description, DateTime? startAt, DateTime? dueAt, double? maxScore, bool allowResubmit, List<CreateAssignmentQuestionInput> questions, List<String>? attachments
 });
 
 
@@ -2563,7 +2563,7 @@ as List<String>?,
 /// @nodoc
 mixin _$UpdateAssignmentRequest {
 
- String get teacherId; String? get title; String? get description;@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? get startAt;@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? get dueAt; double? get maxScore; bool? get allowResubmit;
+ String get teacherId; String? get title; String? get description; DateTime? get startAt; DateTime? get dueAt; double? get maxScore; bool? get allowResubmit;
 /// Create a copy of UpdateAssignmentRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2596,7 +2596,7 @@ abstract mixin class $UpdateAssignmentRequestCopyWith<$Res>  {
   factory $UpdateAssignmentRequestCopyWith(UpdateAssignmentRequest value, $Res Function(UpdateAssignmentRequest) _then) = _$UpdateAssignmentRequestCopyWithImpl;
 @useResult
 $Res call({
- String teacherId, String? title, String? description,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? startAt,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? dueAt, double? maxScore, bool? allowResubmit
+ String teacherId, String? title, String? description, DateTime? startAt, DateTime? dueAt, double? maxScore, bool? allowResubmit
 });
 
 
@@ -2707,7 +2707,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String teacherId,  String? title,  String? description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? dueAt,  double? maxScore,  bool? allowResubmit)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String teacherId,  String? title,  String? description,  DateTime? startAt,  DateTime? dueAt,  double? maxScore,  bool? allowResubmit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UpdateAssignmentRequest() when $default != null:
 return $default(_that.teacherId,_that.title,_that.description,_that.startAt,_that.dueAt,_that.maxScore,_that.allowResubmit);case _:
@@ -2728,7 +2728,7 @@ return $default(_that.teacherId,_that.title,_that.description,_that.startAt,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String teacherId,  String? title,  String? description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? dueAt,  double? maxScore,  bool? allowResubmit)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String teacherId,  String? title,  String? description,  DateTime? startAt,  DateTime? dueAt,  double? maxScore,  bool? allowResubmit)  $default,) {final _that = this;
 switch (_that) {
 case _UpdateAssignmentRequest():
 return $default(_that.teacherId,_that.title,_that.description,_that.startAt,_that.dueAt,_that.maxScore,_that.allowResubmit);case _:
@@ -2748,7 +2748,7 @@ return $default(_that.teacherId,_that.title,_that.description,_that.startAt,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String teacherId,  String? title,  String? description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso)  DateTime? dueAt,  double? maxScore,  bool? allowResubmit)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String teacherId,  String? title,  String? description,  DateTime? startAt,  DateTime? dueAt,  double? maxScore,  bool? allowResubmit)?  $default,) {final _that = this;
 switch (_that) {
 case _UpdateAssignmentRequest() when $default != null:
 return $default(_that.teacherId,_that.title,_that.description,_that.startAt,_that.dueAt,_that.maxScore,_that.allowResubmit);case _:
@@ -2763,14 +2763,14 @@ return $default(_that.teacherId,_that.title,_that.description,_that.startAt,_tha
 
 @JsonSerializable(includeIfNull: false)
 class _UpdateAssignmentRequest implements UpdateAssignmentRequest {
-  const _UpdateAssignmentRequest({required this.teacherId, this.title, this.description, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) this.startAt, @JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) this.dueAt, this.maxScore, this.allowResubmit});
+  const _UpdateAssignmentRequest({required this.teacherId, this.title, this.description, this.startAt, this.dueAt, this.maxScore, this.allowResubmit});
   factory _UpdateAssignmentRequest.fromJson(Map<String, dynamic> json) => _$UpdateAssignmentRequestFromJson(json);
 
 @override final  String teacherId;
 @override final  String? title;
 @override final  String? description;
-@override@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) final  DateTime? startAt;
-@override@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) final  DateTime? dueAt;
+@override final  DateTime? startAt;
+@override final  DateTime? dueAt;
 @override final  double? maxScore;
 @override final  bool? allowResubmit;
 
@@ -2807,7 +2807,7 @@ abstract mixin class _$UpdateAssignmentRequestCopyWith<$Res> implements $UpdateA
   factory _$UpdateAssignmentRequestCopyWith(_UpdateAssignmentRequest value, $Res Function(_UpdateAssignmentRequest) _then) = __$UpdateAssignmentRequestCopyWithImpl;
 @override @useResult
 $Res call({
- String teacherId, String? title, String? description,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? startAt,@JsonKey(fromJson: _parseDateTimeNullable, toJson: _dateToUtcIso) DateTime? dueAt, double? maxScore, bool? allowResubmit
+ String teacherId, String? title, String? description, DateTime? startAt, DateTime? dueAt, double? maxScore, bool? allowResubmit
 });
 
 

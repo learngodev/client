@@ -51,8 +51,12 @@ _AssignmentDetail _$AssignmentDetailFromJson(Map<String, dynamic> json) =>
           ? AssignmentType.homework
           : AssignmentTypeX.fromString(json['type'] as String),
       allowResubmit: json['allow_resubmit'] as bool? ?? false,
-      dueAt: _parseDateTime(json['due_at']),
-      startAt: _parseDateTime(json['start_at']),
+      dueAt: json['due_at'] == null
+          ? null
+          : DateTime.parse(json['due_at'] as String),
+      startAt: json['start_at'] == null
+          ? null
+          : DateTime.parse(json['start_at'] as String),
       attachments:
           (json['attachments'] as List<dynamic>?)
               ?.map(
@@ -104,7 +108,7 @@ _SubmissionResult _$SubmissionResultFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       score: (json['score'] as num?)?.toDouble(),
       status: json['status'] as String? ?? '',
-      submittedAt: _parseDateTimeOrNow(json['submitted_at']),
+      submittedAt: DateTime.parse(json['submitted_at'] as String),
       feedback: json['feedback'] as String?,
     );
 

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Account {
 
- String get id; String get schoolId; String get identifier;@JsonKey(readValue: _readDisplayName) String get displayName;@JsonKey(fromJson: AccountRoleLabel.fromApiValue) AccountRole get role;
+ String get id; String get schoolId; String get identifier; String get displayName;@JsonKey(fromJson: AccountRoleLabel.fromApiValue) AccountRole get role;
 /// Create a copy of Account
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AccountCopyWith<$Res>  {
   factory $AccountCopyWith(Account value, $Res Function(Account) _then) = _$AccountCopyWithImpl;
 @useResult
 $Res call({
- String id, String schoolId, String identifier,@JsonKey(readValue: _readDisplayName) String displayName,@JsonKey(fromJson: AccountRoleLabel.fromApiValue) AccountRole role
+ String id, String schoolId, String identifier, String displayName,@JsonKey(fromJson: AccountRoleLabel.fromApiValue) AccountRole role
 });
 
 
@@ -157,7 +157,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId,  String identifier, @JsonKey(readValue: _readDisplayName)  String displayName, @JsonKey(fromJson: AccountRoleLabel.fromApiValue)  AccountRole role)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId,  String identifier,  String displayName, @JsonKey(fromJson: AccountRoleLabel.fromApiValue)  AccountRole role)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Account() when $default != null:
 return $default(_that.id,_that.schoolId,_that.identifier,_that.displayName,_that.role);case _:
@@ -178,7 +178,7 @@ return $default(_that.id,_that.schoolId,_that.identifier,_that.displayName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId,  String identifier, @JsonKey(readValue: _readDisplayName)  String displayName, @JsonKey(fromJson: AccountRoleLabel.fromApiValue)  AccountRole role)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId,  String identifier,  String displayName, @JsonKey(fromJson: AccountRoleLabel.fromApiValue)  AccountRole role)  $default,) {final _that = this;
 switch (_that) {
 case _Account():
 return $default(_that.id,_that.schoolId,_that.identifier,_that.displayName,_that.role);case _:
@@ -198,7 +198,7 @@ return $default(_that.id,_that.schoolId,_that.identifier,_that.displayName,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId,  String identifier, @JsonKey(readValue: _readDisplayName)  String displayName, @JsonKey(fromJson: AccountRoleLabel.fromApiValue)  AccountRole role)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId,  String identifier,  String displayName, @JsonKey(fromJson: AccountRoleLabel.fromApiValue)  AccountRole role)?  $default,) {final _that = this;
 switch (_that) {
 case _Account() when $default != null:
 return $default(_that.id,_that.schoolId,_that.identifier,_that.displayName,_that.role);case _:
@@ -213,13 +213,13 @@ return $default(_that.id,_that.schoolId,_that.identifier,_that.displayName,_that
 @JsonSerializable()
 
 class _Account implements Account {
-  const _Account({this.id = '', this.schoolId = '', this.identifier = '', @JsonKey(readValue: _readDisplayName) this.displayName = '', @JsonKey(fromJson: AccountRoleLabel.fromApiValue) this.role = AccountRole.student});
+  const _Account({this.id = '', this.schoolId = '', this.identifier = '', this.displayName = '', @JsonKey(fromJson: AccountRoleLabel.fromApiValue) this.role = AccountRole.student});
   factory _Account.fromJson(Map<String, dynamic> json) => _$AccountFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String schoolId;
 @override@JsonKey() final  String identifier;
-@override@JsonKey(readValue: _readDisplayName) final  String displayName;
+@override@JsonKey() final  String displayName;
 @override@JsonKey(fromJson: AccountRoleLabel.fromApiValue) final  AccountRole role;
 
 /// Create a copy of Account
@@ -255,7 +255,7 @@ abstract mixin class _$AccountCopyWith<$Res> implements $AccountCopyWith<$Res> {
   factory _$AccountCopyWith(_Account value, $Res Function(_Account) _then) = __$AccountCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String schoolId, String identifier,@JsonKey(readValue: _readDisplayName) String displayName,@JsonKey(fromJson: AccountRoleLabel.fromApiValue) AccountRole role
+ String id, String schoolId, String identifier, String displayName,@JsonKey(fromJson: AccountRoleLabel.fromApiValue) AccountRole role
 });
 
 

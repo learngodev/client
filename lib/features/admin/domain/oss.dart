@@ -44,20 +44,6 @@ AdminOssPolicyStatus _parsePolicyStatus(dynamic value) {
   return AdminOssPolicyStatusX.fromApi((value ?? '').toString());
 }
 
-DateTime? _parseNullableDate(dynamic value) {
-  if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value);
-  }
-  return null;
-}
-
-DateTime _parseDateDefault0(dynamic value) {
-  if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
-  }
-  return DateTime.fromMillisecondsSinceEpoch(0);
-}
-
 @freezed
 abstract class AdminOssCredential with _$AdminOssCredential {
   const AdminOssCredential._();
@@ -77,8 +63,8 @@ abstract class AdminOssCredential with _$AdminOssCredential {
     @Default(false) bool useRelayUpload,
     @Default(false) bool isPrimary,
     @Default(false) bool active,
-    @JsonKey(fromJson: _parseDateDefault0) required DateTime createdAt,
-    @JsonKey(fromJson: _parseNullableDate) DateTime? lastRotatedAt,
+    required DateTime createdAt,
+    DateTime? lastRotatedAt,
   }) = _AdminOssCredential;
 
   factory AdminOssCredential.fromJson(Map<String, dynamic> json) =>
@@ -113,7 +99,7 @@ abstract class AdminOssPolicy with _$AdminOssPolicy {
     @Default('') String description,
     @JsonKey(fromJson: _parsePolicyStatus) required AdminOssPolicyStatus status,
     @Default('') String appliesTo,
-    @JsonKey(fromJson: _parseDateDefault0) required DateTime lastUpdatedAt,
+    required DateTime lastUpdatedAt,
   }) = _AdminOssPolicy;
 
   factory AdminOssPolicy.fromJson(Map<String, dynamic> json) =>
@@ -134,7 +120,7 @@ abstract class AdminOssAuditLog with _$AdminOssAuditLog {
     @Default('') String action,
     @Default('') String operator,
     @Default('') String detail,
-    @JsonKey(fromJson: _parseDateDefault0) required DateTime createdAt,
+    required DateTime createdAt,
   }) = _AdminOssAuditLog;
 
   factory AdminOssAuditLog.fromJson(Map<String, dynamic> json) =>

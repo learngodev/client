@@ -112,8 +112,8 @@ abstract class AdminAccount with _$AdminAccount {
     String? classId,
     String? className,
     @JsonKey(fromJson: _parseStatus) required AdminAccountStatus status,
-    @JsonKey(fromJson: _parseNullableDate) DateTime? lastActiveAt,
-    @JsonKey(fromJson: _parseDate) required DateTime createdAt,
+    DateTime? lastActiveAt,
+    required DateTime createdAt,
   }) = _AdminAccount;
 
   factory AdminAccount.fromJson(Map<String, dynamic> json) =>
@@ -169,20 +169,6 @@ AdminAccountStatus _parseStatus(dynamic value) {
   return AdminAccountStatusX.fromApiValue(
     (value ?? '').toString().toLowerCase(),
   );
-}
-
-DateTime? _parseNullableDate(dynamic value) {
-  if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value);
-  }
-  return null;
-}
-
-DateTime _parseDate(dynamic value) {
-  if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value) ?? DateTime.now();
-  }
-  return DateTime.now();
 }
 
 @freezed

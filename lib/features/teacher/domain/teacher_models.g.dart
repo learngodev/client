@@ -66,7 +66,9 @@ _TeacherAssignment _$TeacherAssignmentFromJson(Map<String, dynamic> json) =>
       submittedCount: (json['submitted_count'] as num?)?.toInt() ?? 0,
       gradedCount: (json['graded_count'] as num?)?.toInt() ?? 0,
       pendingGradeCount: (json['pending_grade_count'] as num?)?.toInt() ?? 0,
-      dueAt: _parseDateTimeNullable(json['due_at']),
+      dueAt: json['due_at'] == null
+          ? null
+          : DateTime.parse(json['due_at'] as String),
       classStudentCount: (json['class_student_count'] as num?)?.toInt() ?? 0,
     );
 
@@ -89,7 +91,9 @@ _SubmissionSummary _$SubmissionSummaryFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       studentId: json['student_id'] as String? ?? '',
       studentName: json['student_name'] as String? ?? '学生',
-      submittedAt: _parseDateTimeNullable(json['submitted_at']),
+      submittedAt: json['submitted_at'] == null
+          ? null
+          : DateTime.parse(json['submitted_at'] as String),
       status: json['status'] as String? ?? 'pending',
       score: (json['score'] as num?)?.toDouble(),
     );
@@ -109,7 +113,7 @@ _TeacherSubmissionDetail _$TeacherSubmissionDetailFromJson(
 ) => _TeacherSubmissionDetail(
   submission: _parseSubmissionResult(json['submission']),
   items:
-      (_readSubmissionItems(json, 'items') as List<dynamic>?)
+      (json['items'] as List<dynamic>?)
           ?.map((e) => SubmissionItem.fromJson(e as Map<String, dynamic>))
           .toList() ??
       const [],
@@ -133,7 +137,7 @@ _SubmissionComment _$SubmissionCommentFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       content: json['content'] as String? ?? '',
       authorId: json['author_id'] as String? ?? '',
-      createdAt: _parseDateTimeOrNow(json['created_at']),
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
 
 Map<String, dynamic> _$SubmissionCommentToJson(_SubmissionComment instance) =>
@@ -173,8 +177,12 @@ _CreateAssignmentRequest _$CreateAssignmentRequestFromJson(
   type: json['type'] as String,
   title: json['title'] as String,
   description: json['description'] as String?,
-  startAt: _parseDateTimeNullable(json['start_at']),
-  dueAt: _parseDateTimeNullable(json['due_at']),
+  startAt: json['start_at'] == null
+      ? null
+      : DateTime.parse(json['start_at'] as String),
+  dueAt: json['due_at'] == null
+      ? null
+      : DateTime.parse(json['due_at'] as String),
   maxScore: (json['max_score'] as num?)?.toDouble(),
   allowResubmit: json['allow_resubmit'] as bool? ?? false,
   questions: (json['questions'] as List<dynamic>)
@@ -197,8 +205,8 @@ Map<String, dynamic> _$CreateAssignmentRequestToJson(
   'type': instance.type,
   'title': instance.title,
   'description': ?instance.description,
-  'start_at': ?_dateToUtcIso(instance.startAt),
-  'due_at': ?_dateToUtcIso(instance.dueAt),
+  'start_at': ?instance.startAt?.toIso8601String(),
+  'due_at': ?instance.dueAt?.toIso8601String(),
   'max_score': ?instance.maxScore,
   'allow_resubmit': instance.allowResubmit,
   'questions': instance.questions,
@@ -211,8 +219,12 @@ _UpdateAssignmentRequest _$UpdateAssignmentRequestFromJson(
   teacherId: json['teacher_id'] as String,
   title: json['title'] as String?,
   description: json['description'] as String?,
-  startAt: _parseDateTimeNullable(json['start_at']),
-  dueAt: _parseDateTimeNullable(json['due_at']),
+  startAt: json['start_at'] == null
+      ? null
+      : DateTime.parse(json['start_at'] as String),
+  dueAt: json['due_at'] == null
+      ? null
+      : DateTime.parse(json['due_at'] as String),
   maxScore: (json['max_score'] as num?)?.toDouble(),
   allowResubmit: json['allow_resubmit'] as bool?,
 );
@@ -223,8 +235,8 @@ Map<String, dynamic> _$UpdateAssignmentRequestToJson(
   'teacher_id': instance.teacherId,
   'title': ?instance.title,
   'description': ?instance.description,
-  'start_at': ?_dateToUtcIso(instance.startAt),
-  'due_at': ?_dateToUtcIso(instance.dueAt),
+  'start_at': ?instance.startAt?.toIso8601String(),
+  'due_at': ?instance.dueAt?.toIso8601String(),
   'max_score': ?instance.maxScore,
   'allow_resubmit': ?instance.allowResubmit,
 };

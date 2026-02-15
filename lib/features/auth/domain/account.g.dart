@@ -10,7 +10,7 @@ _Account _$AccountFromJson(Map<String, dynamic> json) => _Account(
   id: json['id'] as String? ?? '',
   schoolId: json['school_id'] as String? ?? '',
   identifier: json['identifier'] as String? ?? '',
-  displayName: _readDisplayName(json, 'display_name') as String? ?? '',
+  displayName: json['display_name'] as String? ?? '',
   role: json['role'] == null
       ? AccountRole.student
       : AccountRoleLabel.fromApiValue(json['role'] as String),

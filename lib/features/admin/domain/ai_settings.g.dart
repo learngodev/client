@@ -26,7 +26,7 @@ _AIAgentSetting _$AIAgentSettingFromJson(Map<String, dynamic> json) =>
       visionEnabled: json['vision_enabled'] as bool? ?? false,
       updatedBy: json['updated_by'] as String? ?? '',
       updatedByName: json['updated_by_name'] as String? ?? '',
-      updatedAt: _parseDateTimeOrNow(json['updated_at']),
+      updatedAt: DateTime.parse(json['updated_at'] as String),
       apiKeyPresent: json['api_key_present'] as bool? ?? false,
     );
 

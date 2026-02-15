@@ -21,8 +21,10 @@ _AdminOssCredential _$AdminOssCredentialFromJson(Map<String, dynamic> json) =>
       useRelayUpload: json['use_relay_upload'] as bool? ?? false,
       isPrimary: json['is_primary'] as bool? ?? false,
       active: json['active'] as bool? ?? false,
-      createdAt: _parseDateDefault0(json['created_at']),
-      lastRotatedAt: _parseNullableDate(json['last_rotated_at']),
+      createdAt: DateTime.parse(json['created_at'] as String),
+      lastRotatedAt: json['last_rotated_at'] == null
+          ? null
+          : DateTime.parse(json['last_rotated_at'] as String),
     );
 
 Map<String, dynamic> _$AdminOssCredentialToJson(_AdminOssCredential instance) =>
@@ -51,7 +53,7 @@ _AdminOssPolicy _$AdminOssPolicyFromJson(Map<String, dynamic> json) =>
       description: json['description'] as String? ?? '',
       status: _parsePolicyStatus(json['status']),
       appliesTo: json['applies_to'] as String? ?? '',
-      lastUpdatedAt: _parseDateDefault0(json['last_updated_at']),
+      lastUpdatedAt: DateTime.parse(json['last_updated_at'] as String),
     );
 
 Map<String, dynamic> _$AdminOssPolicyToJson(_AdminOssPolicy instance) =>
@@ -76,7 +78,7 @@ _AdminOssAuditLog _$AdminOssAuditLogFromJson(Map<String, dynamic> json) =>
       action: json['action'] as String? ?? '',
       operator: json['operator'] as String? ?? '',
       detail: json['detail'] as String? ?? '',
-      createdAt: _parseDateDefault0(json['created_at']),
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
 
 Map<String, dynamic> _$AdminOssAuditLogToJson(_AdminOssAuditLog instance) =>

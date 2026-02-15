@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CourseChapterSummary implements DiagnosticableTreeMixin {
 
- String get id; String get courseId; String get teacherId; String get title; int get orderIndex;@JsonKey(fromJson: _parseDateTime) DateTime? get createdAt;@JsonKey(fromJson: _parseDateTime) DateTime? get updatedAt;
+ String get id; String get courseId; String get teacherId; String get title; int get orderIndex; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of CourseChapterSummary
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +54,7 @@ abstract mixin class $CourseChapterSummaryCopyWith<$Res>  {
   factory $CourseChapterSummaryCopyWith(CourseChapterSummary value, $Res Function(CourseChapterSummary) _then) = _$CourseChapterSummaryCopyWithImpl;
 @useResult
 $Res call({
- String id, String courseId, String teacherId, String title, int orderIndex,@JsonKey(fromJson: _parseDateTime) DateTime? createdAt,@JsonKey(fromJson: _parseDateTime) DateTime? updatedAt
+ String id, String courseId, String teacherId, String title, int orderIndex, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -165,7 +165,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String courseId,  String teacherId,  String title,  int orderIndex, @JsonKey(fromJson: _parseDateTime)  DateTime? createdAt, @JsonKey(fromJson: _parseDateTime)  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String courseId,  String teacherId,  String title,  int orderIndex,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CourseChapterSummary() when $default != null:
 return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.orderIndex,_that.createdAt,_that.updatedAt);case _:
@@ -186,7 +186,7 @@ return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.orderI
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String courseId,  String teacherId,  String title,  int orderIndex, @JsonKey(fromJson: _parseDateTime)  DateTime? createdAt, @JsonKey(fromJson: _parseDateTime)  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String courseId,  String teacherId,  String title,  int orderIndex,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _CourseChapterSummary():
 return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.orderIndex,_that.createdAt,_that.updatedAt);case _:
@@ -206,7 +206,7 @@ return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.orderI
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String courseId,  String teacherId,  String title,  int orderIndex, @JsonKey(fromJson: _parseDateTime)  DateTime? createdAt, @JsonKey(fromJson: _parseDateTime)  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String courseId,  String teacherId,  String title,  int orderIndex,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _CourseChapterSummary() when $default != null:
 return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.orderIndex,_that.createdAt,_that.updatedAt);case _:
@@ -221,7 +221,7 @@ return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.orderI
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _CourseChapterSummary with DiagnosticableTreeMixin implements CourseChapterSummary {
-  const _CourseChapterSummary({this.id = '', this.courseId = '', this.teacherId = '', this.title = '', this.orderIndex = 0, @JsonKey(fromJson: _parseDateTime) this.createdAt, @JsonKey(fromJson: _parseDateTime) this.updatedAt});
+  const _CourseChapterSummary({this.id = '', this.courseId = '', this.teacherId = '', this.title = '', this.orderIndex = 0, this.createdAt, this.updatedAt});
   factory _CourseChapterSummary.fromJson(Map<String, dynamic> json) => _$CourseChapterSummaryFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -229,8 +229,8 @@ class _CourseChapterSummary with DiagnosticableTreeMixin implements CourseChapte
 @override@JsonKey() final  String teacherId;
 @override@JsonKey() final  String title;
 @override@JsonKey() final  int orderIndex;
-@override@JsonKey(fromJson: _parseDateTime) final  DateTime? createdAt;
-@override@JsonKey(fromJson: _parseDateTime) final  DateTime? updatedAt;
+@override final  DateTime? createdAt;
+@override final  DateTime? updatedAt;
 
 /// Create a copy of CourseChapterSummary
 /// with the given fields replaced by the non-null parameter values.
@@ -271,7 +271,7 @@ abstract mixin class _$CourseChapterSummaryCopyWith<$Res> implements $CourseChap
   factory _$CourseChapterSummaryCopyWith(_CourseChapterSummary value, $Res Function(_CourseChapterSummary) _then) = __$CourseChapterSummaryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String courseId, String teacherId, String title, int orderIndex,@JsonKey(fromJson: _parseDateTime) DateTime? createdAt,@JsonKey(fromJson: _parseDateTime) DateTime? updatedAt
+ String id, String courseId, String teacherId, String title, int orderIndex, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -591,6 +591,7 @@ as String,
 
 }
 
+
 /// @nodoc
 mixin _$CourseChapterDetail implements DiagnosticableTreeMixin {
 
@@ -601,6 +602,8 @@ mixin _$CourseChapterDetail implements DiagnosticableTreeMixin {
 @pragma('vm:prefer-inline')
 $CourseChapterDetailCopyWith<CourseChapterDetail> get copyWith => _$CourseChapterDetailCopyWithImpl<CourseChapterDetail>(this as CourseChapterDetail, _$identity);
 
+  /// Serializes this CourseChapterDetail to a JSON map.
+  Map<String, dynamic> toJson();
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -614,7 +617,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is CourseChapterDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.title, title) || other.title == title)&&(identical(other.content, content) || other.content == content)&&(identical(other.orderIndex, orderIndex) || other.orderIndex == orderIndex)&&const DeepCollectionEquality().equals(other.attachments, attachments)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,courseId,teacherId,title,content,orderIndex,const DeepCollectionEquality().hash(attachments),createdAt,updatedAt);
 
@@ -797,11 +800,11 @@ return $default(_that.id,_that.courseId,_that.teacherId,_that.title,_that.conten
 }
 
 /// @nodoc
-
+@JsonSerializable()
 
 class _CourseChapterDetail with DiagnosticableTreeMixin implements CourseChapterDetail {
   const _CourseChapterDetail({this.id = '', this.courseId = '', this.teacherId = '', this.title = '', this.content = '', this.orderIndex = 0, final  List<CourseChapterAttachment> attachments = const [], this.createdAt, this.updatedAt}): _attachments = attachments;
-  
+  factory _CourseChapterDetail.fromJson(Map<String, dynamic> json) => _$CourseChapterDetailFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String courseId;
@@ -825,7 +828,10 @@ class _CourseChapterDetail with DiagnosticableTreeMixin implements CourseChapter
 @pragma('vm:prefer-inline')
 _$CourseChapterDetailCopyWith<_CourseChapterDetail> get copyWith => __$CourseChapterDetailCopyWithImpl<_CourseChapterDetail>(this, _$identity);
 
-
+@override
+Map<String, dynamic> toJson() {
+  return _$CourseChapterDetailToJson(this, );
+}
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
@@ -838,7 +844,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _CourseChapterDetail&&(identical(other.id, id) || other.id == id)&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.title, title) || other.title == title)&&(identical(other.content, content) || other.content == content)&&(identical(other.orderIndex, orderIndex) || other.orderIndex == orderIndex)&&const DeepCollectionEquality().equals(other._attachments, _attachments)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
-
+@JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode => Object.hash(runtimeType,id,courseId,teacherId,title,content,orderIndex,const DeepCollectionEquality().hash(_attachments),createdAt,updatedAt);
 

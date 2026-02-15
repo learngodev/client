@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Course implements DiagnosticableTreeMixin {
 
-@JsonKey(readValue: _readId) String get id;@JsonKey(readValue: _readSchoolId) String get schoolId;@JsonKey(readValue: _readName) String get name;@JsonKey(readValue: _readDescription) String get description;@JsonKey(fromJson: _parseTeachers) List<Teacher> get teachers;
+ String get id; String get schoolId; String get name; String get description;@JsonKey(fromJson: _parseTeachers) List<Teacher> get teachers;
 /// Create a copy of Course
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +54,7 @@ abstract mixin class $CourseCopyWith<$Res>  {
   factory $CourseCopyWith(Course value, $Res Function(Course) _then) = _$CourseCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(readValue: _readId) String id,@JsonKey(readValue: _readSchoolId) String schoolId,@JsonKey(readValue: _readName) String name,@JsonKey(readValue: _readDescription) String description,@JsonKey(fromJson: _parseTeachers) List<Teacher> teachers
+ String id, String schoolId, String name, String description,@JsonKey(fromJson: _parseTeachers) List<Teacher> teachers
 });
 
 
@@ -163,7 +163,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(readValue: _readId)  String id, @JsonKey(readValue: _readSchoolId)  String schoolId, @JsonKey(readValue: _readName)  String name, @JsonKey(readValue: _readDescription)  String description, @JsonKey(fromJson: _parseTeachers)  List<Teacher> teachers)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId,  String name,  String description, @JsonKey(fromJson: _parseTeachers)  List<Teacher> teachers)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Course() when $default != null:
 return $default(_that.id,_that.schoolId,_that.name,_that.description,_that.teachers);case _:
@@ -184,7 +184,7 @@ return $default(_that.id,_that.schoolId,_that.name,_that.description,_that.teach
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(readValue: _readId)  String id, @JsonKey(readValue: _readSchoolId)  String schoolId, @JsonKey(readValue: _readName)  String name, @JsonKey(readValue: _readDescription)  String description, @JsonKey(fromJson: _parseTeachers)  List<Teacher> teachers)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId,  String name,  String description, @JsonKey(fromJson: _parseTeachers)  List<Teacher> teachers)  $default,) {final _that = this;
 switch (_that) {
 case _Course():
 return $default(_that.id,_that.schoolId,_that.name,_that.description,_that.teachers);case _:
@@ -204,7 +204,7 @@ return $default(_that.id,_that.schoolId,_that.name,_that.description,_that.teach
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(readValue: _readId)  String id, @JsonKey(readValue: _readSchoolId)  String schoolId, @JsonKey(readValue: _readName)  String name, @JsonKey(readValue: _readDescription)  String description, @JsonKey(fromJson: _parseTeachers)  List<Teacher> teachers)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId,  String name,  String description, @JsonKey(fromJson: _parseTeachers)  List<Teacher> teachers)?  $default,) {final _that = this;
 switch (_that) {
 case _Course() when $default != null:
 return $default(_that.id,_that.schoolId,_that.name,_that.description,_that.teachers);case _:
@@ -219,13 +219,13 @@ return $default(_that.id,_that.schoolId,_that.name,_that.description,_that.teach
 @JsonSerializable()
 
 class _Course extends Course with DiagnosticableTreeMixin {
-  const _Course({@JsonKey(readValue: _readId) this.id = '', @JsonKey(readValue: _readSchoolId) this.schoolId = '', @JsonKey(readValue: _readName) this.name = '', @JsonKey(readValue: _readDescription) this.description = '', @JsonKey(fromJson: _parseTeachers) final  List<Teacher> teachers = const []}): _teachers = teachers,super._();
+  const _Course({this.id = '', this.schoolId = '', this.name = '', this.description = '', @JsonKey(fromJson: _parseTeachers) final  List<Teacher> teachers = const []}): _teachers = teachers,super._();
   factory _Course.fromJson(Map<String, dynamic> json) => _$CourseFromJson(json);
 
-@override@JsonKey(readValue: _readId) final  String id;
-@override@JsonKey(readValue: _readSchoolId) final  String schoolId;
-@override@JsonKey(readValue: _readName) final  String name;
-@override@JsonKey(readValue: _readDescription) final  String description;
+@override@JsonKey() final  String id;
+@override@JsonKey() final  String schoolId;
+@override@JsonKey() final  String name;
+@override@JsonKey() final  String description;
  final  List<Teacher> _teachers;
 @override@JsonKey(fromJson: _parseTeachers) List<Teacher> get teachers {
   if (_teachers is EqualUnmodifiableListView) return _teachers;
@@ -273,7 +273,7 @@ abstract mixin class _$CourseCopyWith<$Res> implements $CourseCopyWith<$Res> {
   factory _$CourseCopyWith(_Course value, $Res Function(_Course) _then) = __$CourseCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(readValue: _readId) String id,@JsonKey(readValue: _readSchoolId) String schoolId,@JsonKey(readValue: _readName) String name,@JsonKey(readValue: _readDescription) String description,@JsonKey(fromJson: _parseTeachers) List<Teacher> teachers
+ String id, String schoolId, String name, String description,@JsonKey(fromJson: _parseTeachers) List<Teacher> teachers
 });
 
 
@@ -308,7 +308,7 @@ as List<Teacher>,
 /// @nodoc
 mixin _$Teacher implements DiagnosticableTreeMixin {
 
- String get id;@JsonKey(readValue: _readTeacherName) String get name;
+ String get id; String get name;
 /// Create a copy of Teacher
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -347,7 +347,7 @@ abstract mixin class $TeacherCopyWith<$Res>  {
   factory $TeacherCopyWith(Teacher value, $Res Function(Teacher) _then) = _$TeacherCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(readValue: _readTeacherName) String name
+ String id, String name
 });
 
 
@@ -453,7 +453,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(readValue: _readTeacherName)  String name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Teacher() when $default != null:
 return $default(_that.id,_that.name);case _:
@@ -474,7 +474,7 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(readValue: _readTeacherName)  String name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name)  $default,) {final _that = this;
 switch (_that) {
 case _Teacher():
 return $default(_that.id,_that.name);case _:
@@ -494,7 +494,7 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(readValue: _readTeacherName)  String name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name)?  $default,) {final _that = this;
 switch (_that) {
 case _Teacher() when $default != null:
 return $default(_that.id,_that.name);case _:
@@ -509,11 +509,11 @@ return $default(_that.id,_that.name);case _:
 @JsonSerializable()
 
 class _Teacher with DiagnosticableTreeMixin implements Teacher {
-  const _Teacher({this.id = '', @JsonKey(readValue: _readTeacherName) this.name = ''});
+  const _Teacher({this.id = '', this.name = ''});
   factory _Teacher.fromJson(Map<String, dynamic> json) => _$TeacherFromJson(json);
 
 @override@JsonKey() final  String id;
-@override@JsonKey(readValue: _readTeacherName) final  String name;
+@override@JsonKey() final  String name;
 
 /// Create a copy of Teacher
 /// with the given fields replaced by the non-null parameter values.
@@ -554,7 +554,7 @@ abstract mixin class _$TeacherCopyWith<$Res> implements $TeacherCopyWith<$Res> {
   factory _$TeacherCopyWith(_Teacher value, $Res Function(_Teacher) _then) = __$TeacherCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(readValue: _readTeacherName) String name
+ String id, String name
 });
 
 
@@ -586,7 +586,7 @@ as String,
 /// @nodoc
 mixin _$CourseAssignment implements DiagnosticableTreeMixin {
 
- String get courseId; String get courseName; String get classId; String get className;@JsonKey(readValue: _readTeacherNames) List<String> get teacherNames; int get studentCount;
+ String get courseId; String get courseName; String get classId; String get className; List<String> get teacherNames; int get studentCount;
 /// Create a copy of CourseAssignment
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -625,7 +625,7 @@ abstract mixin class $CourseAssignmentCopyWith<$Res>  {
   factory $CourseAssignmentCopyWith(CourseAssignment value, $Res Function(CourseAssignment) _then) = _$CourseAssignmentCopyWithImpl;
 @useResult
 $Res call({
- String courseId, String courseName, String classId, String className,@JsonKey(readValue: _readTeacherNames) List<String> teacherNames, int studentCount
+ String courseId, String courseName, String classId, String className, List<String> teacherNames, int studentCount
 });
 
 
@@ -735,7 +735,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String classId,  String className, @JsonKey(readValue: _readTeacherNames)  List<String> teacherNames,  int studentCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String classId,  String className,  List<String> teacherNames,  int studentCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CourseAssignment() when $default != null:
 return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_that.teacherNames,_that.studentCount);case _:
@@ -756,7 +756,7 @@ return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String classId,  String className, @JsonKey(readValue: _readTeacherNames)  List<String> teacherNames,  int studentCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String classId,  String className,  List<String> teacherNames,  int studentCount)  $default,) {final _that = this;
 switch (_that) {
 case _CourseAssignment():
 return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_that.teacherNames,_that.studentCount);case _:
@@ -776,7 +776,7 @@ return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String courseId,  String courseName,  String classId,  String className, @JsonKey(readValue: _readTeacherNames)  List<String> teacherNames,  int studentCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String courseId,  String courseName,  String classId,  String className,  List<String> teacherNames,  int studentCount)?  $default,) {final _that = this;
 switch (_that) {
 case _CourseAssignment() when $default != null:
 return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_that.teacherNames,_that.studentCount);case _:
@@ -791,7 +791,7 @@ return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_t
 @JsonSerializable()
 
 class _CourseAssignment with DiagnosticableTreeMixin implements CourseAssignment {
-  const _CourseAssignment({this.courseId = '', this.courseName = '', this.classId = '', this.className = '', @JsonKey(readValue: _readTeacherNames) final  List<String> teacherNames = const [], this.studentCount = 0}): _teacherNames = teacherNames;
+  const _CourseAssignment({this.courseId = '', this.courseName = '', this.classId = '', this.className = '', final  List<String> teacherNames = const [], this.studentCount = 0}): _teacherNames = teacherNames;
   factory _CourseAssignment.fromJson(Map<String, dynamic> json) => _$CourseAssignmentFromJson(json);
 
 @override@JsonKey() final  String courseId;
@@ -799,7 +799,7 @@ class _CourseAssignment with DiagnosticableTreeMixin implements CourseAssignment
 @override@JsonKey() final  String classId;
 @override@JsonKey() final  String className;
  final  List<String> _teacherNames;
-@override@JsonKey(readValue: _readTeacherNames) List<String> get teacherNames {
+@override@JsonKey() List<String> get teacherNames {
   if (_teacherNames is EqualUnmodifiableListView) return _teacherNames;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_teacherNames);
@@ -846,7 +846,7 @@ abstract mixin class _$CourseAssignmentCopyWith<$Res> implements $CourseAssignme
   factory _$CourseAssignmentCopyWith(_CourseAssignment value, $Res Function(_CourseAssignment) _then) = __$CourseAssignmentCopyWithImpl;
 @override @useResult
 $Res call({
- String courseId, String courseName, String classId, String className,@JsonKey(readValue: _readTeacherNames) List<String> teacherNames, int studentCount
+ String courseId, String courseName, String classId, String className, List<String> teacherNames, int studentCount
 });
 
 

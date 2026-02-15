@@ -13,8 +13,8 @@ abstract class CourseChapterSummary with _$CourseChapterSummary {
     @Default('') String teacherId,
     @Default('') String title,
     @Default(0) int orderIndex,
-    @JsonKey(fromJson: _parseDateTime) DateTime? createdAt,
-    @JsonKey(fromJson: _parseDateTime) DateTime? updatedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) = _CourseChapterSummary;
 
   factory CourseChapterSummary.fromJson(Map<String, dynamic> json) =>
@@ -55,37 +55,6 @@ abstract class CourseChapterDetail with _$CourseChapterDetail {
     DateTime? updatedAt,
   }) = _CourseChapterDetail;
 
-  factory CourseChapterDetail.fromJson(Map<String, dynamic> json) {
-    final chapter =
-        (json['chapter'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final attachmentsRaw = json['attachments'] as List?;
-    return CourseChapterDetail(
-      id: chapter['id']?.toString() ?? '',
-      courseId: chapter['course_id']?.toString() ?? '',
-      teacherId: chapter['teacher_id']?.toString() ?? '',
-      title: chapter['title']?.toString() ?? '',
-      content: chapter['content']?.toString() ?? '',
-      orderIndex: (chapter['order_index'] as num?)?.toInt() ?? 0,
-      createdAt: _parseDateTime(chapter['created_at']),
-      updatedAt: _parseDateTime(chapter['updated_at']),
-      attachments:
-          attachmentsRaw
-              ?.whereType<Map>()
-              .map(
-                (e) =>
-                    CourseChapterAttachment.fromJson(e.cast<String, dynamic>()),
-              )
-              .toList(growable: false) ??
-          const [],
-    );
-  }
-}
-
-DateTime? _parseDateTime(dynamic raw) {
-  if (raw == null) return null;
-  if (raw is DateTime) return raw;
-  if (raw is String) {
-    return DateTime.tryParse(raw);
-  }
-  return null;
+  factory CourseChapterDetail.fromJson(Map<String, dynamic> json) =>
+      _$CourseChapterDetailFromJson(json);
 }

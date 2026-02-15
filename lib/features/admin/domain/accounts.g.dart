@@ -20,8 +20,10 @@ _AdminAccount _$AdminAccountFromJson(Map<String, dynamic> json) =>
       classId: json['class_id'] as String?,
       className: json['class_name'] as String?,
       status: _parseStatus(json['status']),
-      lastActiveAt: _parseNullableDate(json['last_active_at']),
-      createdAt: _parseDate(json['created_at']),
+      lastActiveAt: json['last_active_at'] == null
+          ? null
+          : DateTime.parse(json['last_active_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
 
 Map<String, dynamic> _$AdminAccountToJson(_AdminAccount instance) =>

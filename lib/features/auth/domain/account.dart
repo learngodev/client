@@ -35,17 +35,13 @@ extension AccountRoleLabel on AccountRole {
   }
 }
 
-Object? _readDisplayName(Map map, String key) {
-  return map['display_name'] ?? map['name'];
-}
-
 @freezed
 abstract class Account with _$Account {
   const factory Account({
     @Default('') String id,
     @Default('') String schoolId,
     @Default('') String identifier,
-    @JsonKey(readValue: _readDisplayName) @Default('') String displayName,
+    @Default('') String displayName,
     @JsonKey(fromJson: AccountRoleLabel.fromApiValue)
     @Default(AccountRole.student)
     AccountRole role,

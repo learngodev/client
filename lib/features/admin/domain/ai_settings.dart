@@ -43,7 +43,7 @@ abstract class AIAgentSetting with _$AIAgentSetting {
     @Default(false) bool visionEnabled,
     @Default('') String updatedBy,
     @Default('') String updatedByName,
-    @JsonKey(fromJson: _parseDateTimeOrNow) required DateTime updatedAt,
+    required DateTime updatedAt,
     @Default(false) bool apiKeyPresent,
   }) = _AIAgentSetting;
 
@@ -53,12 +53,4 @@ abstract class AIAgentSetting with _$AIAgentSetting {
 
 AIProvider _parseProvider(dynamic value) {
   return AIProvider.fromString((value ?? '').toString());
-}
-
-DateTime _parseDateTimeOrNow(dynamic value) {
-  if (value is DateTime) return value;
-  if (value is String && value.isNotEmpty) {
-    return DateTime.tryParse(value) ?? DateTime.now();
-  }
-  return DateTime.now();
 }

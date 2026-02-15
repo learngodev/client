@@ -7,10 +7,10 @@ part of 'course.dart';
 // **************************************************************************
 
 _Course _$CourseFromJson(Map<String, dynamic> json) => _Course(
-  id: _readId(json, 'id') as String? ?? '',
-  schoolId: _readSchoolId(json, 'school_id') as String? ?? '',
-  name: _readName(json, 'name') as String? ?? '',
-  description: _readDescription(json, 'description') as String? ?? '',
+  id: json['id'] as String? ?? '',
+  schoolId: json['school_id'] as String? ?? '',
+  name: json['name'] as String? ?? '',
+  description: json['description'] as String? ?? '',
   teachers: json['teachers'] == null
       ? const []
       : _parseTeachers(json['teachers']),
@@ -26,7 +26,7 @@ Map<String, dynamic> _$CourseToJson(_Course instance) => <String, dynamic>{
 
 _Teacher _$TeacherFromJson(Map<String, dynamic> json) => _Teacher(
   id: json['id'] as String? ?? '',
-  name: _readTeacherName(json, 'name') as String? ?? '',
+  name: json['name'] as String? ?? '',
 );
 
 Map<String, dynamic> _$TeacherToJson(_Teacher instance) => <String, dynamic>{
@@ -41,7 +41,7 @@ _CourseAssignment _$CourseAssignmentFromJson(Map<String, dynamic> json) =>
       classId: json['class_id'] as String? ?? '',
       className: json['class_name'] as String? ?? '',
       teacherNames:
-          (_readTeacherNames(json, 'teacher_names') as List<dynamic>?)
+          (json['teacher_names'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
