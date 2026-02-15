@@ -462,7 +462,7 @@ class _LegacyAdminAccountsPage extends HookConsumerWidget {
     }
 
     final filterKey =
-        '$schoolId|${selectedRole?.apiValue ?? 'all'}|${selectedStatus?.apiValue ?? 'all'}|${department.value}|${classFilter.value}|${debouncedQuery.value}|${sortOption.value.name}';
+        '$schoolId|${selectedRole?.name ?? 'all'}|${selectedStatus?.name ?? 'all'}|${department.value}|${classFilter.value}|${debouncedQuery.value}|${sortOption.value.name}';
     final previousFilterKey = usePrevious(filterKey);
     final filtersChanged =
         previousFilterKey != null && previousFilterKey != filterKey;

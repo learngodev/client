@@ -7,6 +7,7 @@ import 'message.dart';
 part 'conversation.freezed.dart';
 part 'conversation.g.dart';
 
+@JsonEnum(fieldRename: FieldRename.snake)
 enum ConversationType { direct, group }
 
 @freezed

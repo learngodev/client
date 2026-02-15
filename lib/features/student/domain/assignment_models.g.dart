@@ -10,7 +10,7 @@ _AssignmentQuestion _$AssignmentQuestionFromJson(Map<String, dynamic> json) =>
     _AssignmentQuestion(
       id: json['id'] as String? ?? '',
       prompt: json['prompt'] as String? ?? '',
-      type: _parseQuestionType(json['type']),
+      type: $enumDecode(_$QuestionTypeEnumMap, json['type']),
       score: (json['score'] as num?)?.toDouble() ?? 0.0,
       options: json['options'] == null
           ? const []
@@ -31,10 +31,10 @@ Map<String, dynamic> _$AssignmentQuestionToJson(_AssignmentQuestion instance) =>
     };
 
 const _$QuestionTypeEnumMap = {
-  QuestionType.singleChoice: 'singleChoice',
-  QuestionType.multipleChoice: 'multipleChoice',
-  QuestionType.trueFalse: 'trueFalse',
-  QuestionType.fillInBlank: 'fillInBlank',
+  QuestionType.singleChoice: 'single_choice',
+  QuestionType.multipleChoice: 'multiple_choice',
+  QuestionType.trueFalse: 'true_false',
+  QuestionType.fillInBlank: 'fill_in_blank',
   QuestionType.essay: 'essay',
 };
 
@@ -47,9 +47,9 @@ _AssignmentDetail _$AssignmentDetailFromJson(Map<String, dynamic> json) =>
           ? const []
           : _parseAndSortQuestions(json['questions']),
       maxScore: (json['max_score'] as num?)?.toDouble() ?? 0.0,
-      type: json['type'] == null
-          ? AssignmentType.homework
-          : AssignmentTypeX.fromString(json['type'] as String),
+      type:
+          $enumDecodeNullable(_$AssignmentTypeEnumMap, json['type']) ??
+          AssignmentType.homework,
       allowResubmit: json['allow_resubmit'] as bool? ?? false,
       dueAt: json['due_at'] == null
           ? null

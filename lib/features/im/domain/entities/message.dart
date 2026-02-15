@@ -6,6 +6,7 @@ import 'package:learn_go/features/auth/domain/account.dart';
 part 'message.freezed.dart';
 part 'message.g.dart';
 
+@JsonEnum(fieldRename: FieldRename.snake)
 enum MessageKind { text, image, video, audio, file }
 
 @freezed

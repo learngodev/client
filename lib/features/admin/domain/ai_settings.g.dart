@@ -10,7 +10,7 @@ _AIAgentSetting _$AIAgentSettingFromJson(Map<String, dynamic> json) =>
     _AIAgentSetting(
       id: json['id'] as String? ?? '',
       schoolId: json['school_id'] as String? ?? '',
-      provider: _parseProvider(json['provider']),
+      provider: $enumDecode(_$AIProviderEnumMap, json['provider']),
       model: json['model'] as String? ?? '',
       apiKey: json['api_key'] as String? ?? '',
       baseUrl: json['base_url'] as String? ?? '',

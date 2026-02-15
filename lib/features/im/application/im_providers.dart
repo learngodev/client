@@ -220,7 +220,7 @@ class IMService {
       ..id = message.id
       ..conversationId = message.conversationId
       ..senderId = message.senderId
-      ..senderRole = message.senderRole.apiValue
+      ..senderRole = message.senderRole.name
       ..kind = message.kind.name
       ..text = message.text
       ..createdAt = Timestamp.fromDateTime(message.createdAt);

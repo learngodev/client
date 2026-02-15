@@ -219,8 +219,8 @@ class AdminRepository {
           'school_id': schoolId,
           'page': page,
           'page_size': pageSize,
-          if (role != null) 'role': role.apiValue,
-          if (status != null) 'status': status.apiValue,
+          if (role != null) 'role': role.name,
+          if (status != null) 'status': status.name,
           if (departmentId != null && departmentId.isNotEmpty)
             'department_id': departmentId,
           if (departmentScope != null && departmentScope.isNotEmpty)
@@ -1239,7 +1239,7 @@ class AdminRepository {
           'name': name,
           'description': description,
           'applies_to': appliesTo,
-          'status': status.apiValue,
+          'status': status.name,
         },
       );
       final body = response.data;
@@ -1320,10 +1320,7 @@ class AdminRepository {
     try {
       final response = await _dio.patch<Map<String, dynamic>>(
         '/api/v1/admin/oss/policies/$policyId',
-        data: <String, dynamic>{
-          'school_id': schoolId,
-          'status': status.apiValue,
-        },
+        data: <String, dynamic>{'school_id': schoolId, 'status': status.name},
       );
       final body = response.data;
       if (body == null) {

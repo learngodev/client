@@ -62,7 +62,7 @@ _AdminSystemBroadcast _$AdminSystemBroadcastFromJson(
   id: json['id'] as String? ?? '',
   title: json['title'] as String? ?? '',
   messagePreview: json['message_preview'] as String? ?? '',
-  status: _parseBroadcastStatus(json['status']),
+  status: $enumDecode(_$AdminSystemBroadcastStatusEnumMap, json['status']),
   targetLabel: json['target_label'] as String? ?? '',
   scheduleLabel: json['schedule_label'] as String? ?? '',
   createdBy: json['created_by'] as String? ?? '',

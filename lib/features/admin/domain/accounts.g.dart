@@ -10,7 +10,7 @@ _AdminAccount _$AdminAccountFromJson(Map<String, dynamic> json) =>
     _AdminAccount(
       id: json['id'] as String? ?? '',
       profileId: json['profile_id'] as String?,
-      role: _parseRole(json['role']),
+      role: $enumDecode(_$AdminAccountRoleEnumMap, json['role']),
       name: json['name'] as String? ?? '',
       identifier: json['identifier'] as String? ?? '',
       email: json['email'] as String? ?? '',
@@ -19,7 +19,7 @@ _AdminAccount _$AdminAccountFromJson(Map<String, dynamic> json) =>
       department: json['department'] as String?,
       classId: json['class_id'] as String?,
       className: json['class_name'] as String?,
-      status: _parseStatus(json['status']),
+      status: $enumDecode(_$AdminAccountStatusEnumMap, json['status']),
       lastActiveAt: json['last_active_at'] == null
           ? null
           : DateTime.parse(json['last_active_at'] as String),
@@ -52,7 +52,7 @@ const _$AdminAccountRoleEnumMap = {
 const _$AdminAccountStatusEnumMap = {
   AdminAccountStatus.active: 'active',
   AdminAccountStatus.locked: 'locked',
-  AdminAccountStatus.passwordResetRequired: 'passwordResetRequired',
+  AdminAccountStatus.passwordResetRequired: 'password_reset_required',
 };
 
 _AdminAccountPage _$AdminAccountPageFromJson(Map<String, dynamic> json) =>

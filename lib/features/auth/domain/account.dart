@@ -14,25 +14,6 @@ extension AccountRoleLabel on AccountRole {
       AccountRole.ai => 'AI助手',
     };
   }
-
-  String get apiValue {
-    return switch (this) {
-      AccountRole.admin => 'admin',
-      AccountRole.teacher => 'teacher',
-      AccountRole.student => 'student',
-      AccountRole.ai => 'ai',
-    };
-  }
-
-  static AccountRole fromApiValue(String value) {
-    return switch (value.toLowerCase()) {
-      'admin' => AccountRole.admin,
-      'teacher' => AccountRole.teacher,
-      'student' => AccountRole.student,
-      'ai' => AccountRole.ai,
-      _ => AccountRole.student,
-    };
-  }
 }
 
 @freezed
@@ -42,9 +23,7 @@ abstract class Account with _$Account {
     @Default('') String schoolId,
     @Default('') String identifier,
     @Default('') String displayName,
-    @JsonKey(fromJson: AccountRoleLabel.fromApiValue)
-    @Default(AccountRole.student)
-    AccountRole role,
+    @Default(AccountRole.student) AccountRole role,
   }) = _Account;
 
   factory Account.fromJson(Map<String, dynamic> json) =>

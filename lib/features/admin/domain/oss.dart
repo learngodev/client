@@ -14,34 +14,11 @@ extension AdminOssPolicyStatusX on AdminOssPolicyStatus {
     AdminOssPolicyStatus.disabled => '已禁用',
   };
 
-  String get apiValue => switch (this) {
-    AdminOssPolicyStatus.enabled => 'enabled',
-    AdminOssPolicyStatus.readOnly => 'read_only',
-    AdminOssPolicyStatus.disabled => 'disabled',
-  };
-
   Color color(ThemeData theme) => switch (this) {
     AdminOssPolicyStatus.enabled => theme.colorScheme.primary,
     AdminOssPolicyStatus.readOnly => theme.colorScheme.tertiary,
     AdminOssPolicyStatus.disabled => theme.colorScheme.outline,
   };
-
-  static AdminOssPolicyStatus fromApi(String value) {
-    final normalized = value.toLowerCase();
-    switch (normalized) {
-      case 'enabled':
-        return AdminOssPolicyStatus.enabled;
-      case 'read_only':
-      case 'readonly':
-        return AdminOssPolicyStatus.readOnly;
-      default:
-        return AdminOssPolicyStatus.disabled;
-    }
-  }
-}
-
-AdminOssPolicyStatus _parsePolicyStatus(dynamic value) {
-  return AdminOssPolicyStatusX.fromApi((value ?? '').toString());
 }
 
 @freezed
@@ -97,7 +74,7 @@ abstract class AdminOssPolicy with _$AdminOssPolicy {
     @Default('') String id,
     @Default('') String name,
     @Default('') String description,
-    @JsonKey(fromJson: _parsePolicyStatus) required AdminOssPolicyStatus status,
+    required AdminOssPolicyStatus status,
     @Default('') String appliesTo,
     required DateTime lastUpdatedAt,
   }) = _AdminOssPolicy;

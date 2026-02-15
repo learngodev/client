@@ -320,7 +320,7 @@ as DateTime?,
 /// @nodoc
 mixin _$AdminOssPolicy {
 
- String get id; String get name; String get description;@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus get status; String get appliesTo; DateTime get lastUpdatedAt;
+ String get id; String get name; String get description; AdminOssPolicyStatus get status; String get appliesTo; DateTime get lastUpdatedAt;
 /// Create a copy of AdminOssPolicy
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -353,7 +353,7 @@ abstract mixin class $AdminOssPolicyCopyWith<$Res>  {
   factory $AdminOssPolicyCopyWith(AdminOssPolicy value, $Res Function(AdminOssPolicy) _then) = _$AdminOssPolicyCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String description,@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus status, String appliesTo, DateTime lastUpdatedAt
+ String id, String name, String description, AdminOssPolicyStatus status, String appliesTo, DateTime lastUpdatedAt
 });
 
 
@@ -463,7 +463,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status,  String appliesTo,  DateTime lastUpdatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AdminOssPolicyStatus status,  String appliesTo,  DateTime lastUpdatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminOssPolicy() when $default != null:
 return $default(_that.id,_that.name,_that.description,_that.status,_that.appliesTo,_that.lastUpdatedAt);case _:
@@ -484,7 +484,7 @@ return $default(_that.id,_that.name,_that.description,_that.status,_that.applies
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status,  String appliesTo,  DateTime lastUpdatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String description,  AdminOssPolicyStatus status,  String appliesTo,  DateTime lastUpdatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssPolicy():
 return $default(_that.id,_that.name,_that.description,_that.status,_that.appliesTo,_that.lastUpdatedAt);case _:
@@ -504,7 +504,7 @@ return $default(_that.id,_that.name,_that.description,_that.status,_that.applies
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description, @JsonKey(fromJson: _parsePolicyStatus)  AdminOssPolicyStatus status,  String appliesTo,  DateTime lastUpdatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String description,  AdminOssPolicyStatus status,  String appliesTo,  DateTime lastUpdatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminOssPolicy() when $default != null:
 return $default(_that.id,_that.name,_that.description,_that.status,_that.appliesTo,_that.lastUpdatedAt);case _:
@@ -519,13 +519,13 @@ return $default(_that.id,_that.name,_that.description,_that.status,_that.applies
 @JsonSerializable()
 
 class _AdminOssPolicy extends AdminOssPolicy {
-  const _AdminOssPolicy({this.id = '', this.name = '', this.description = '', @JsonKey(fromJson: _parsePolicyStatus) required this.status, this.appliesTo = '', required this.lastUpdatedAt}): super._();
+  const _AdminOssPolicy({this.id = '', this.name = '', this.description = '', required this.status, this.appliesTo = '', required this.lastUpdatedAt}): super._();
   factory _AdminOssPolicy.fromJson(Map<String, dynamic> json) => _$AdminOssPolicyFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String name;
 @override@JsonKey() final  String description;
-@override@JsonKey(fromJson: _parsePolicyStatus) final  AdminOssPolicyStatus status;
+@override final  AdminOssPolicyStatus status;
 @override@JsonKey() final  String appliesTo;
 @override final  DateTime lastUpdatedAt;
 
@@ -562,7 +562,7 @@ abstract mixin class _$AdminOssPolicyCopyWith<$Res> implements $AdminOssPolicyCo
   factory _$AdminOssPolicyCopyWith(_AdminOssPolicy value, $Res Function(_AdminOssPolicy) _then) = __$AdminOssPolicyCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String description,@JsonKey(fromJson: _parsePolicyStatus) AdminOssPolicyStatus status, String appliesTo, DateTime lastUpdatedAt
+ String id, String name, String description, AdminOssPolicyStatus status, String appliesTo, DateTime lastUpdatedAt
 });
 
 

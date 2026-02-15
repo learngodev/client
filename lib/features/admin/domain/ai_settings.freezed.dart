@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AIAgentSetting {
 
- String get id; String get schoolId;@JsonKey(fromJson: _parseProvider) AIProvider get provider; String get model; String get apiKey; String get baseUrl; double get temperature; double get topP; int get maxOutputTokens; int get maxDailyRequests; int get maxConcurrentRequests; int get maxConversationMessages; String get systemPrompt; bool get visionEnabled; String get updatedBy; String get updatedByName; DateTime get updatedAt; bool get apiKeyPresent;
+ String get id; String get schoolId; AIProvider get provider; String get model; String get apiKey; String get baseUrl; double get temperature; double get topP; int get maxOutputTokens; int get maxDailyRequests; int get maxConcurrentRequests; int get maxConversationMessages; String get systemPrompt; bool get visionEnabled; String get updatedBy; String get updatedByName; DateTime get updatedAt; bool get apiKeyPresent;
 /// Create a copy of AIAgentSetting
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $AIAgentSettingCopyWith<$Res>  {
   factory $AIAgentSettingCopyWith(AIAgentSetting value, $Res Function(AIAgentSetting) _then) = _$AIAgentSettingCopyWithImpl;
 @useResult
 $Res call({
- String id, String schoolId,@JsonKey(fromJson: _parseProvider) AIProvider provider, String model, String apiKey, String baseUrl, double temperature, double topP, int maxOutputTokens, int maxDailyRequests, int maxConcurrentRequests, int maxConversationMessages, String systemPrompt, bool visionEnabled, String updatedBy, String updatedByName, DateTime updatedAt, bool apiKeyPresent
+ String id, String schoolId, AIProvider provider, String model, String apiKey, String baseUrl, double temperature, double topP, int maxOutputTokens, int maxDailyRequests, int maxConcurrentRequests, int maxConversationMessages, String systemPrompt, bool visionEnabled, String updatedBy, String updatedByName, DateTime updatedAt, bool apiKeyPresent
 });
 
 
@@ -170,7 +170,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId, @JsonKey(fromJson: _parseProvider)  AIProvider provider,  String model,  String apiKey,  String baseUrl,  double temperature,  double topP,  int maxOutputTokens,  int maxDailyRequests,  int maxConcurrentRequests,  int maxConversationMessages,  String systemPrompt,  bool visionEnabled,  String updatedBy,  String updatedByName,  DateTime updatedAt,  bool apiKeyPresent)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String schoolId,  AIProvider provider,  String model,  String apiKey,  String baseUrl,  double temperature,  double topP,  int maxOutputTokens,  int maxDailyRequests,  int maxConcurrentRequests,  int maxConversationMessages,  String systemPrompt,  bool visionEnabled,  String updatedBy,  String updatedByName,  DateTime updatedAt,  bool apiKeyPresent)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AIAgentSetting() when $default != null:
 return $default(_that.id,_that.schoolId,_that.provider,_that.model,_that.apiKey,_that.baseUrl,_that.temperature,_that.topP,_that.maxOutputTokens,_that.maxDailyRequests,_that.maxConcurrentRequests,_that.maxConversationMessages,_that.systemPrompt,_that.visionEnabled,_that.updatedBy,_that.updatedByName,_that.updatedAt,_that.apiKeyPresent);case _:
@@ -191,7 +191,7 @@ return $default(_that.id,_that.schoolId,_that.provider,_that.model,_that.apiKey,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId, @JsonKey(fromJson: _parseProvider)  AIProvider provider,  String model,  String apiKey,  String baseUrl,  double temperature,  double topP,  int maxOutputTokens,  int maxDailyRequests,  int maxConcurrentRequests,  int maxConversationMessages,  String systemPrompt,  bool visionEnabled,  String updatedBy,  String updatedByName,  DateTime updatedAt,  bool apiKeyPresent)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String schoolId,  AIProvider provider,  String model,  String apiKey,  String baseUrl,  double temperature,  double topP,  int maxOutputTokens,  int maxDailyRequests,  int maxConcurrentRequests,  int maxConversationMessages,  String systemPrompt,  bool visionEnabled,  String updatedBy,  String updatedByName,  DateTime updatedAt,  bool apiKeyPresent)  $default,) {final _that = this;
 switch (_that) {
 case _AIAgentSetting():
 return $default(_that.id,_that.schoolId,_that.provider,_that.model,_that.apiKey,_that.baseUrl,_that.temperature,_that.topP,_that.maxOutputTokens,_that.maxDailyRequests,_that.maxConcurrentRequests,_that.maxConversationMessages,_that.systemPrompt,_that.visionEnabled,_that.updatedBy,_that.updatedByName,_that.updatedAt,_that.apiKeyPresent);case _:
@@ -211,7 +211,7 @@ return $default(_that.id,_that.schoolId,_that.provider,_that.model,_that.apiKey,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId, @JsonKey(fromJson: _parseProvider)  AIProvider provider,  String model,  String apiKey,  String baseUrl,  double temperature,  double topP,  int maxOutputTokens,  int maxDailyRequests,  int maxConcurrentRequests,  int maxConversationMessages,  String systemPrompt,  bool visionEnabled,  String updatedBy,  String updatedByName,  DateTime updatedAt,  bool apiKeyPresent)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String schoolId,  AIProvider provider,  String model,  String apiKey,  String baseUrl,  double temperature,  double topP,  int maxOutputTokens,  int maxDailyRequests,  int maxConcurrentRequests,  int maxConversationMessages,  String systemPrompt,  bool visionEnabled,  String updatedBy,  String updatedByName,  DateTime updatedAt,  bool apiKeyPresent)?  $default,) {final _that = this;
 switch (_that) {
 case _AIAgentSetting() when $default != null:
 return $default(_that.id,_that.schoolId,_that.provider,_that.model,_that.apiKey,_that.baseUrl,_that.temperature,_that.topP,_that.maxOutputTokens,_that.maxDailyRequests,_that.maxConcurrentRequests,_that.maxConversationMessages,_that.systemPrompt,_that.visionEnabled,_that.updatedBy,_that.updatedByName,_that.updatedAt,_that.apiKeyPresent);case _:
@@ -226,12 +226,12 @@ return $default(_that.id,_that.schoolId,_that.provider,_that.model,_that.apiKey,
 @JsonSerializable()
 
 class _AIAgentSetting extends AIAgentSetting {
-  const _AIAgentSetting({this.id = '', this.schoolId = '', @JsonKey(fromJson: _parseProvider) required this.provider, this.model = '', this.apiKey = '', this.baseUrl = '', this.temperature = 0.7, this.topP = 0.9, this.maxOutputTokens = 2048, this.maxDailyRequests = 1000, this.maxConcurrentRequests = 10, this.maxConversationMessages = 50, this.systemPrompt = '', this.visionEnabled = false, this.updatedBy = '', this.updatedByName = '', required this.updatedAt, this.apiKeyPresent = false}): super._();
+  const _AIAgentSetting({this.id = '', this.schoolId = '', required this.provider, this.model = '', this.apiKey = '', this.baseUrl = '', this.temperature = 0.7, this.topP = 0.9, this.maxOutputTokens = 2048, this.maxDailyRequests = 1000, this.maxConcurrentRequests = 10, this.maxConversationMessages = 50, this.systemPrompt = '', this.visionEnabled = false, this.updatedBy = '', this.updatedByName = '', required this.updatedAt, this.apiKeyPresent = false}): super._();
   factory _AIAgentSetting.fromJson(Map<String, dynamic> json) => _$AIAgentSettingFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String schoolId;
-@override@JsonKey(fromJson: _parseProvider) final  AIProvider provider;
+@override final  AIProvider provider;
 @override@JsonKey() final  String model;
 @override@JsonKey() final  String apiKey;
 @override@JsonKey() final  String baseUrl;
@@ -281,7 +281,7 @@ abstract mixin class _$AIAgentSettingCopyWith<$Res> implements $AIAgentSettingCo
   factory _$AIAgentSettingCopyWith(_AIAgentSetting value, $Res Function(_AIAgentSetting) _then) = __$AIAgentSettingCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String schoolId,@JsonKey(fromJson: _parseProvider) AIProvider provider, String model, String apiKey, String baseUrl, double temperature, double topP, int maxOutputTokens, int maxDailyRequests, int maxConcurrentRequests, int maxConversationMessages, String systemPrompt, bool visionEnabled, String updatedBy, String updatedByName, DateTime updatedAt, bool apiKeyPresent
+ String id, String schoolId, AIProvider provider, String model, String apiKey, String baseUrl, double temperature, double topP, int maxOutputTokens, int maxDailyRequests, int maxConcurrentRequests, int maxConversationMessages, String systemPrompt, bool visionEnabled, String updatedBy, String updatedByName, DateTime updatedAt, bool apiKeyPresent
 });
 
 

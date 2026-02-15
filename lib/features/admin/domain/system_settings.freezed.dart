@@ -613,7 +613,7 @@ as bool,
 /// @nodoc
 mixin _$AdminSystemBroadcast implements DiagnosticableTreeMixin {
 
- String get id; String get title; String get messagePreview;@JsonKey(fromJson: _parseBroadcastStatus) AdminSystemBroadcastStatus get status; String get targetLabel; String get scheduleLabel; String get createdBy; bool get pinned;
+ String get id; String get title; String get messagePreview; AdminSystemBroadcastStatus get status; String get targetLabel; String get scheduleLabel; String get createdBy; bool get pinned;
 /// Create a copy of AdminSystemBroadcast
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -652,7 +652,7 @@ abstract mixin class $AdminSystemBroadcastCopyWith<$Res>  {
   factory $AdminSystemBroadcastCopyWith(AdminSystemBroadcast value, $Res Function(AdminSystemBroadcast) _then) = _$AdminSystemBroadcastCopyWithImpl;
 @useResult
 $Res call({
- String id, String title, String messagePreview,@JsonKey(fromJson: _parseBroadcastStatus) AdminSystemBroadcastStatus status, String targetLabel, String scheduleLabel, String createdBy, bool pinned
+ String id, String title, String messagePreview, AdminSystemBroadcastStatus status, String targetLabel, String scheduleLabel, String createdBy, bool pinned
 });
 
 
@@ -764,7 +764,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String messagePreview, @JsonKey(fromJson: _parseBroadcastStatus)  AdminSystemBroadcastStatus status,  String targetLabel,  String scheduleLabel,  String createdBy,  bool pinned)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String title,  String messagePreview,  AdminSystemBroadcastStatus status,  String targetLabel,  String scheduleLabel,  String createdBy,  bool pinned)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminSystemBroadcast() when $default != null:
 return $default(_that.id,_that.title,_that.messagePreview,_that.status,_that.targetLabel,_that.scheduleLabel,_that.createdBy,_that.pinned);case _:
@@ -785,7 +785,7 @@ return $default(_that.id,_that.title,_that.messagePreview,_that.status,_that.tar
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String messagePreview, @JsonKey(fromJson: _parseBroadcastStatus)  AdminSystemBroadcastStatus status,  String targetLabel,  String scheduleLabel,  String createdBy,  bool pinned)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String title,  String messagePreview,  AdminSystemBroadcastStatus status,  String targetLabel,  String scheduleLabel,  String createdBy,  bool pinned)  $default,) {final _that = this;
 switch (_that) {
 case _AdminSystemBroadcast():
 return $default(_that.id,_that.title,_that.messagePreview,_that.status,_that.targetLabel,_that.scheduleLabel,_that.createdBy,_that.pinned);case _:
@@ -805,7 +805,7 @@ return $default(_that.id,_that.title,_that.messagePreview,_that.status,_that.tar
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String messagePreview, @JsonKey(fromJson: _parseBroadcastStatus)  AdminSystemBroadcastStatus status,  String targetLabel,  String scheduleLabel,  String createdBy,  bool pinned)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String title,  String messagePreview,  AdminSystemBroadcastStatus status,  String targetLabel,  String scheduleLabel,  String createdBy,  bool pinned)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminSystemBroadcast() when $default != null:
 return $default(_that.id,_that.title,_that.messagePreview,_that.status,_that.targetLabel,_that.scheduleLabel,_that.createdBy,_that.pinned);case _:
@@ -820,13 +820,13 @@ return $default(_that.id,_that.title,_that.messagePreview,_that.status,_that.tar
 @JsonSerializable()
 
 class _AdminSystemBroadcast extends AdminSystemBroadcast with DiagnosticableTreeMixin {
-  const _AdminSystemBroadcast({this.id = '', this.title = '', this.messagePreview = '', @JsonKey(fromJson: _parseBroadcastStatus) required this.status, this.targetLabel = '', this.scheduleLabel = '', this.createdBy = '', this.pinned = false}): super._();
+  const _AdminSystemBroadcast({this.id = '', this.title = '', this.messagePreview = '', required this.status, this.targetLabel = '', this.scheduleLabel = '', this.createdBy = '', this.pinned = false}): super._();
   factory _AdminSystemBroadcast.fromJson(Map<String, dynamic> json) => _$AdminSystemBroadcastFromJson(json);
 
 @override@JsonKey() final  String id;
 @override@JsonKey() final  String title;
 @override@JsonKey() final  String messagePreview;
-@override@JsonKey(fromJson: _parseBroadcastStatus) final  AdminSystemBroadcastStatus status;
+@override final  AdminSystemBroadcastStatus status;
 @override@JsonKey() final  String targetLabel;
 @override@JsonKey() final  String scheduleLabel;
 @override@JsonKey() final  String createdBy;
@@ -871,7 +871,7 @@ abstract mixin class _$AdminSystemBroadcastCopyWith<$Res> implements $AdminSyste
   factory _$AdminSystemBroadcastCopyWith(_AdminSystemBroadcast value, $Res Function(_AdminSystemBroadcast) _then) = __$AdminSystemBroadcastCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String title, String messagePreview,@JsonKey(fromJson: _parseBroadcastStatus) AdminSystemBroadcastStatus status, String targetLabel, String scheduleLabel, String createdBy, bool pinned
+ String id, String title, String messagePreview, AdminSystemBroadcastStatus status, String targetLabel, String scheduleLabel, String createdBy, bool pinned
 });
 
 

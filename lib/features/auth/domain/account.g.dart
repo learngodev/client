@@ -11,9 +11,9 @@ _Account _$AccountFromJson(Map<String, dynamic> json) => _Account(
   schoolId: json['school_id'] as String? ?? '',
   identifier: json['identifier'] as String? ?? '',
   displayName: json['display_name'] as String? ?? '',
-  role: json['role'] == null
-      ? AccountRole.student
-      : AccountRoleLabel.fromApiValue(json['role'] as String),
+  role:
+      $enumDecodeNullable(_$AccountRoleEnumMap, json['role']) ??
+      AccountRole.student,
 );
 
 Map<String, dynamic> _$AccountToJson(_Account instance) => <String, dynamic>{

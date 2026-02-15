@@ -13,13 +13,6 @@ enum AIProvider {
       AIProvider.deepseek => 'DeepSeek',
     };
   }
-
-  static AIProvider fromString(String value) {
-    return AIProvider.values.firstWhere(
-      (e) => e.name.toLowerCase() == value.toLowerCase(),
-      orElse: () => AIProvider.deepseek,
-    );
-  }
 }
 
 @freezed
@@ -29,7 +22,7 @@ abstract class AIAgentSetting with _$AIAgentSetting {
   const factory AIAgentSetting({
     @Default('') String id,
     @Default('') String schoolId,
-    @JsonKey(fromJson: _parseProvider) required AIProvider provider,
+    required AIProvider provider,
     @Default('') String model,
     @Default('') String apiKey,
     @Default('') String baseUrl,
@@ -49,8 +42,4 @@ abstract class AIAgentSetting with _$AIAgentSetting {
 
   factory AIAgentSetting.fromJson(Map<String, dynamic> json) =>
       _$AIAgentSettingFromJson(json);
-}
-
-AIProvider _parseProvider(dynamic value) {
-  return AIProvider.fromString((value ?? '').toString());
 }

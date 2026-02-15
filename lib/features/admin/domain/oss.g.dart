@@ -51,7 +51,7 @@ _AdminOssPolicy _$AdminOssPolicyFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       description: json['description'] as String? ?? '',
-      status: _parsePolicyStatus(json['status']),
+      status: $enumDecode(_$AdminOssPolicyStatusEnumMap, json['status']),
       appliesTo: json['applies_to'] as String? ?? '',
       lastUpdatedAt: DateTime.parse(json['last_updated_at'] as String),
     );

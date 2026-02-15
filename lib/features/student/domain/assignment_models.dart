@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'assignment_models.freezed.dart';
 part 'assignment_models.g.dart';
 
+@JsonEnum(fieldRename: FieldRename.snake)
 enum QuestionType {
   singleChoice,
   multipleChoice,
@@ -23,20 +24,6 @@ extension QuestionTypeX on QuestionType {
       QuestionType.essay => '简答题',
     };
   }
-
-  static QuestionType fromString(String value) {
-    return switch (value.toLowerCase()) {
-      'choice' => QuestionType.singleChoice,
-      'single_choice' => QuestionType.singleChoice,
-      'multiple_choice' => QuestionType.multipleChoice,
-      'judge' => QuestionType.trueFalse,
-      'true_false' => QuestionType.trueFalse,
-      'fill' => QuestionType.fillInBlank,
-      'fill_blank' => QuestionType.fillInBlank,
-      'essay' => QuestionType.essay,
-      _ => QuestionType.essay,
-    };
-  }
 }
 
 enum AssignmentType { homework, exam }
@@ -48,13 +35,6 @@ extension AssignmentTypeX on AssignmentType {
       AssignmentType.exam => '考试',
     };
   }
-
-  static AssignmentType fromString(String value) {
-    return switch (value.toLowerCase()) {
-      'exam' => AssignmentType.exam,
-      _ => AssignmentType.homework,
-    };
-  }
 }
 
 @freezed
@@ -63,7 +43,7 @@ abstract class AssignmentQuestion with _$AssignmentQuestion {
   const factory AssignmentQuestion({
     @Default('') String id,
     @Default('') String prompt,
-    @JsonKey(fromJson: _parseQuestionType) required QuestionType type,
+    required QuestionType type,
     @Default(0.0) double score,
     @JsonKey(fromJson: _parseOptions) @Default([]) List<String> options,
     @Default(0) int orderIndex,
@@ -72,10 +52,6 @@ abstract class AssignmentQuestion with _$AssignmentQuestion {
 
   factory AssignmentQuestion.fromJson(Map<String, dynamic> json) =>
       _$AssignmentQuestionFromJson(json);
-}
-
-QuestionType _parseQuestionType(dynamic value) {
-  return QuestionTypeX.fromString((value ?? '').toString());
 }
 
 List<String> _parseOptions(dynamic optionsJson) {
@@ -104,9 +80,7 @@ abstract class AssignmentDetail with _$AssignmentDetail {
     @Default([])
     List<AssignmentQuestion> questions,
     @Default(0.0) double maxScore,
-    @Default(AssignmentType.homework)
-    @JsonKey(fromJson: AssignmentTypeX.fromString)
-    AssignmentType type,
+    @Default(AssignmentType.homework) AssignmentType type,
     @Default(false) bool allowResubmit,
     DateTime? dueAt,
     DateTime? startAt,

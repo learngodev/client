@@ -826,7 +826,10 @@ class StudentApiRepository implements StudentRepository {
 
   AccountRole _parseRole(dynamic roleValue) {
     final roleString = roleValue?.toString() ?? 'student';
-    return AccountRoleLabel.fromApiValue(roleString);
+    return AccountRole.values.firstWhere(
+      (e) => e.name.toLowerCase() == roleString.toLowerCase(),
+      orElse: () => AccountRole.student,
+    );
   }
 
   String _resolveConversationTitle(

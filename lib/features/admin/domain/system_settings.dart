@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'system_settings.freezed.dart';
 part 'system_settings.g.dart';
 
+@JsonEnum(fieldRename: FieldRename.snake)
 enum AdminSystemBroadcastStatus { scheduled, sent, draft }
 
 extension AdminSystemBroadcastStatusX on AdminSystemBroadcastStatus {
@@ -23,22 +24,6 @@ extension AdminSystemBroadcastStatusX on AdminSystemBroadcastStatus {
       AdminSystemBroadcastStatus.draft => theme.colorScheme.outline,
     };
   }
-
-  static AdminSystemBroadcastStatus fromApiValue(String value) {
-    switch (value.toLowerCase()) {
-      case 'sent':
-        return AdminSystemBroadcastStatus.sent;
-      case 'draft':
-        return AdminSystemBroadcastStatus.draft;
-      case 'scheduled':
-      default:
-        return AdminSystemBroadcastStatus.scheduled;
-    }
-  }
-}
-
-AdminSystemBroadcastStatus _parseBroadcastStatus(dynamic value) {
-  return AdminSystemBroadcastStatusX.fromApiValue((value ?? '').toString());
 }
 
 IconData _iconFromName(String name) {
@@ -118,7 +103,6 @@ abstract class AdminSystemBroadcast with _$AdminSystemBroadcast {
     @Default('') String id,
     @Default('') String title,
     @Default('') String messagePreview,
-    @JsonKey(fromJson: _parseBroadcastStatus)
     required AdminSystemBroadcastStatus status,
     @Default('') String targetLabel,
     @Default('') String scheduleLabel,

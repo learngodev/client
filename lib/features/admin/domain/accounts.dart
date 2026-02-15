@@ -16,13 +16,6 @@ extension AdminAccountRoleX on AdminAccountRole {
     };
   }
 
-  String get apiValue {
-    return switch (this) {
-      AdminAccountRole.teacher => 'teacher',
-      AdminAccountRole.student => 'student',
-    };
-  }
-
   IconData get icon {
     return switch (this) {
       AdminAccountRole.teacher => Icons.co_present_outlined,
@@ -43,19 +36,18 @@ extension AdminAccountRoleX on AdminAccountRole {
       AdminAccountRole.student => theme.colorScheme.onPrimary,
     };
   }
-
-  static AdminAccountRole fromApiValue(String value) {
-    switch (value) {
-      case 'student':
-        return AdminAccountRole.student;
-      case 'teacher':
-      default:
-        return AdminAccountRole.teacher;
-    }
-  }
 }
 
-enum AdminAccountStatus { active, locked, passwordResetRequired }
+@JsonEnum(fieldRename: FieldRename.snake, alwaysCreate: true)
+enum AdminAccountStatus {
+  active,
+  locked,
+  passwordResetRequired;
+
+  const AdminAccountStatus();
+
+  String get name => _$AdminAccountStatusEnumMap[this]!;
+}
 
 extension AdminAccountStatusX on AdminAccountStatus {
   String get label {
@@ -66,32 +58,12 @@ extension AdminAccountStatusX on AdminAccountStatus {
     };
   }
 
-  String get apiValue {
-    return switch (this) {
-      AdminAccountStatus.active => 'active',
-      AdminAccountStatus.locked => 'locked',
-      AdminAccountStatus.passwordResetRequired => 'password_reset_required',
-    };
-  }
-
   Color statusColor(ThemeData theme) {
     return switch (this) {
       AdminAccountStatus.active => theme.colorScheme.primary,
       AdminAccountStatus.locked => theme.colorScheme.error,
       AdminAccountStatus.passwordResetRequired => theme.colorScheme.tertiary,
     };
-  }
-
-  static AdminAccountStatus fromApiValue(String value) {
-    switch (value) {
-      case 'locked':
-        return AdminAccountStatus.locked;
-      case 'password_reset_required':
-        return AdminAccountStatus.passwordResetRequired;
-      case 'active':
-      default:
-        return AdminAccountStatus.active;
-    }
   }
 }
 
@@ -102,7 +74,7 @@ abstract class AdminAccount with _$AdminAccount {
   const factory AdminAccount({
     @Default('') String id,
     String? profileId,
-    @JsonKey(fromJson: _parseRole) required AdminAccountRole role,
+    required AdminAccountRole role,
     @Default('') String name,
     @Default('') String identifier,
     @Default('') String email,
@@ -111,7 +83,7 @@ abstract class AdminAccount with _$AdminAccount {
     String? department,
     String? classId,
     String? className,
-    @JsonKey(fromJson: _parseStatus) required AdminAccountStatus status,
+    required AdminAccountStatus status,
     DateTime? lastActiveAt,
     required DateTime createdAt,
   }) = _AdminAccount;
@@ -159,16 +131,6 @@ abstract class AdminAccount with _$AdminAccount {
     }
     return DateFormat('yyyy-MM-dd HH:mm').format(reference);
   }
-}
-
-AdminAccountRole _parseRole(dynamic value) {
-  return AdminAccountRoleX.fromApiValue((value ?? '').toString().toLowerCase());
-}
-
-AdminAccountStatus _parseStatus(dynamic value) {
-  return AdminAccountStatusX.fromApiValue(
-    (value ?? '').toString().toLowerCase(),
-  );
 }
 
 @freezed
