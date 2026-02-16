@@ -9,6 +9,7 @@ class AppException implements Exception {
 
   factory AppException.fromDio(DioException error) {
     final body = error.response?.data;
+    final statusCode = error.response?.statusCode;
     String? message;
     String? details;
     if (body is Map<String, dynamic>) {
@@ -18,7 +19,11 @@ class AppException implements Exception {
     }
     message ??= error.message ?? '网络错误';
     details ??= body?.toString();
-    return AppException(message, details: details);
+    return AppException(
+      message,
+      details: details,
+      code: statusCode?.toString(),
+    );
   }
 
   @override

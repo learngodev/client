@@ -7,9 +7,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/exceptions/app_exception.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
+import 'student_api_requests.dart';
 import '../domain/assignment_models.dart';
 import '../domain/course_chapter_models.dart';
 import '../domain/course.dart';
@@ -22,46 +24,22 @@ class StudentApiRepository implements StudentRepository {
     required Dio dio,
     Account? account,
     DateTime Function()? clock,
-  }) : _dio = dio,
+  }) : _apiClient = ApiClient(dio),
        _account = account,
        _clock = clock ?? DateTime.now;
 
-  final Dio _dio;
+  final ApiClient _apiClient;
   final Account? _account;
   final DateTime Function() _clock;
 
   @override
-  Future<List<TimeSlot>> listTimeSlots() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/time-slots',
-      );
-      final data = _extractData(response.data, '未能获取时间段');
-      final list = data['time_slots'] as List?;
-      return list
-              ?.map((e) => TimeSlot.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载时间段');
-    }
+  Future<List<TimeSlot>> listTimeSlots() {
+    return _apiClient.execute(StudentListTimeSlotsRequest());
   }
 
   @override
-  Future<List<Course>> listCourses() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/courses',
-      );
-      final data = _extractData(response.data, '未能获取课程列表');
-      final list = data['items'] as List?;
-      return list
-              ?.map((e) => Course.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载课程列表');
-    }
+  Future<List<Course>> listCourses() {
+    return _apiClient.execute(StudentListCoursesRequest());
   }
 
   @override
@@ -107,115 +85,81 @@ class StudentApiRepository implements StudentRepository {
     String? courseId,
     int limit = 20,
   }) async {
-    try {
-      final query = <String, dynamic>{'limit': limit};
-      final trimmed = courseId?.trim();
-      if (trimmed != null && trimmed.isNotEmpty) {
-        query['course_id'] = trimmed;
+    final trimmed = courseId?.trim();
+    final rawList = await _apiClient.execute(
+      StudentListAssignmentsRequest(),
+      payload: StudentListAssignmentsPayload(
+        limit: limit,
+        courseId: trimmed == null || trimmed.isEmpty ? null : trimmed,
+      ),
+    );
+    final items = <sample.StudentAssignmentItem>[];
+
+    for (final raw in rawList) {
+      final id = raw['id']?.toString();
+      if (id == null || id.isEmpty) {
+        continue;
       }
 
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/assignments',
-        queryParameters: query,
-      );
-      final data = _extractData(response.data, '未能获取作业列表');
-      final rawList = _extractMapList(data, 'assignments');
-      final items = <sample.StudentAssignmentItem>[];
+      final dueAt = _parseDateTime(raw['due_at']);
+      final startAt = _parseDateTime(raw['start_at']);
+      final status = _parseAssignmentStatus(raw['status']);
+      final isOverdue = raw['is_overdue'] == true;
 
-      for (final raw in rawList) {
-        final id = raw['id']?.toString();
-        if (id == null || id.isEmpty) {
-          continue;
-        }
-
-        final dueAt = _parseDateTime(raw['due_at']);
-        final startAt = _parseDateTime(raw['start_at']);
-        final status = _parseAssignmentStatus(raw['status']);
-        final isOverdue = raw['is_overdue'] == true;
-
-        items.add(
-          sample.StudentAssignmentItem(
-            id: id,
-            title: _sanitizeNonEmpty(raw['title']) ?? '未命名作业',
-            course: _sanitizeNonEmpty(raw['course_name']) ?? '课程',
-            teacher: _sanitizeNonEmpty(raw['teacher_name']) ?? '授课教师',
-            dueLabel: _formatAssignmentDueLabel(
-              dueAt: dueAt,
-              status: status,
-              isOverdue: isOverdue,
-            ),
-            status: status,
-            progress: _guessAssignmentProgress(
-              status: status,
-              isOverdue: isOverdue,
-            ),
-            allowResubmit: raw['allow_resubmit'] == true,
-            isOverdue: isOverdue,
-            scoreLabel: _buildScoreLabel(raw['score']),
-            feedback: _sanitizeString(raw['feedback']),
+      items.add(
+        sample.StudentAssignmentItem(
+          id: id,
+          title: _sanitizeNonEmpty(raw['title']) ?? '未命名作业',
+          course: _sanitizeNonEmpty(raw['course_name']) ?? '课程',
+          teacher: _sanitizeNonEmpty(raw['teacher_name']) ?? '授课教师',
+          dueLabel: _formatAssignmentDueLabel(
             dueAt: dueAt,
-            startAt: startAt,
+            status: status,
+            isOverdue: isOverdue,
           ),
-        );
-      }
-
-      return List.unmodifiable(items);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载作业列表');
+          status: status,
+          progress: _guessAssignmentProgress(
+            status: status,
+            isOverdue: isOverdue,
+          ),
+          allowResubmit: raw['allow_resubmit'] == true,
+          isOverdue: isOverdue,
+          scoreLabel: _buildScoreLabel(raw['score']),
+          feedback: _sanitizeString(raw['feedback']),
+          dueAt: dueAt,
+          startAt: startAt,
+        ),
+      );
     }
+
+    return List.unmodifiable(items);
   }
 
   @override
   Future<List<CourseChapterSummary>> listCourseChapters(String courseId) async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/courses/$courseId/chapters',
-      );
-      final data = _extractData(response.data, '未能获取章节列表');
-      final rawList = _extractMapList(data, 'items');
-
-      return List.unmodifiable(
-        rawList
-            .map((e) => CourseChapterSummary.fromJson(e))
-            .where((e) => e.id.isNotEmpty)
-            .toList(growable: false),
-      );
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载章节列表');
-    }
+    final raw = await _apiClient.execute(
+      StudentListCourseChaptersRequest(courseId: courseId),
+    );
+    return List.unmodifiable(
+      raw.where((item) => item.id.isNotEmpty).toList(growable: false),
+    );
   }
 
   @override
   Future<CourseChapterDetail> getCourseChapter(
     String courseId,
     String chapterId,
-  ) async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/courses/$courseId/chapters/$chapterId',
-      );
-      final data = _extractData(response.data, '未能获取章节详情');
-      return CourseChapterDetail.fromJson(data);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载章节详情');
-    }
+  ) {
+    return _apiClient.execute(
+      StudentGetCourseChapterRequest(courseId: courseId, chapterId: chapterId),
+    );
   }
 
   @override
-  Future<AssignmentDetail> getAssignmentDetail(String id) async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/assignments/$id',
-      );
-      final data = _extractData(response.data, '未能获取作业详情');
-      final assignmentData = data['assignment'] as Map<String, dynamic>?;
-      if (assignmentData == null) {
-        throw const AppException('响应数据格式错误：缺少 assignment 字段');
-      }
-      return AssignmentDetail.fromJson(assignmentData);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载作业详情');
-    }
+  Future<AssignmentDetail> getAssignmentDetail(String id) {
+    return _apiClient.execute(
+      StudentGetAssignmentDetailRequest(assignmentId: id),
+    );
   }
 
   @override
@@ -223,23 +167,19 @@ class StudentApiRepository implements StudentRepository {
     String id,
     Map<String, dynamic> answers,
   ) async {
-    try {
-      final requestBody = {
-        'status': 'submitted',
-        'answers': answers.entries
-            .map((e) => {'question_id': e.key, 'answer': e.value.toString()})
-            .toList(),
-      };
-
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/assignments/$id/submissions',
-        data: requestBody,
-      );
-      final data = _extractData(response.data, '提交失败');
-      return SubmissionResult.fromJson(data);
-    } on DioException catch (error) {
-      throw _asAppException(error, '提交作业失败');
-    }
+    return _apiClient.execute(
+      StudentSubmitAssignmentRequest(assignmentId: id),
+      payload: StudentSubmitAssignmentPayload(
+        answers: answers.entries
+            .map(
+              (entry) => StudentSubmitAssignmentAnswer(
+                questionId: entry.key,
+                answer: entry.value.toString(),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
   }
 
   @override
@@ -248,49 +188,24 @@ class StudentApiRepository implements StudentRepository {
     required String prompt,
     required String questionType,
     List<String> options = const [],
-  }) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/ai/explain_question',
-        data: {
-          'title': title,
-          'prompt': prompt,
-          'question_type': questionType,
-          'options': options,
-        },
-      );
-      final data = _extractData(response.data, 'AI 解析失败');
-      return ExplainQuestionResult.fromJson(data);
-    } on DioException catch (error) {
-      throw _asAppException(error, 'AI 解析失败');
-    }
+  }) {
+    return _apiClient.execute(
+      StudentExplainQuestionRequest(),
+      payload: StudentExplainQuestionPayload(
+        title: title,
+        prompt: prompt,
+        questionType: questionType,
+        options: options,
+      ),
+    );
   }
 
   @override
-  Future<void> joinCourse(String code) async {
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        '/api/v1/student/courses/join',
-        data: {'code': code},
-      );
-      _ensureSuccess(response.data, '加入课程失败');
-    } on DioException catch (error) {
-      throw _asAppException(error, '加入课程失败');
-    }
-  }
-
-  void _ensureSuccess(Map<String, dynamic>? body, String fallbackMessage) {
-    if (body == null) {
-      throw AppException(fallbackMessage);
-    }
-    final success = body['success'] as bool? ?? false;
-    if (success) {
-      return;
-    }
-    final error = body['error'] as Map<String, dynamic>?;
-    final message = error?['message']?.toString() ?? fallbackMessage;
-    final details = error?['details']?.toString();
-    throw AppException(message, details: details);
+  Future<void> joinCourse(String code) {
+    return _apiClient.execute(
+      StudentJoinCourseRequest(),
+      payload: StudentJoinCoursePayload(code: code),
+    );
   }
 
   @override
@@ -298,95 +213,69 @@ class StudentApiRepository implements StudentRepository {
     String assignmentId,
   ) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/assignments/$assignmentId/submissions/me',
+      final result = await _apiClient.execute(
+        StudentGetSubmissionDetailRequest(assignmentId: assignmentId),
       );
-      final data = _extractData(response.data, '未能获取提交详情');
-
-      final assignmentData = data['assignment'] as Map<String, dynamic>?;
-      final submissionData = data['submission'] as Map<String, dynamic>;
-      final itemsData = data['items'] as List?;
-
-      AssignmentDetail assignment;
-      if (assignmentData != null) {
-        assignment = AssignmentDetail.fromJson(assignmentData);
-      } else {
-        assignment = await getAssignmentDetail(assignmentId);
-      }
-      final submission = SubmissionResult.fromJson(submissionData);
-      final items =
-          itemsData
-              ?.map((e) => SubmissionItem.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [];
+      final assignment =
+          result.assignment ?? await getAssignmentDetail(assignmentId);
 
       return StudentSubmissionDetail(
         assignment: assignment,
-        submission: submission,
-        items: items,
+        submission: result.submission,
+        items: result.items,
       );
-    } on DioException catch (error) {
-      if (error.response?.statusCode == 404) {
+    } on AppException catch (error) {
+      if (error.code == '404') {
         return null;
       }
-      throw _asAppException(error, '无法加载提交详情');
+      rethrow;
     }
   }
 
   Future<_NoteFetchResult> _fetchNotes() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/notes',
-        queryParameters: const {'include_deleted': false, 'status': 'all'},
-      );
-      final data = _extractData(response.data, '未能获取学习笔记');
-      final rawNotes = _extractMapList(data, 'notes');
-      final items = <sample.StudentNoteItem>[];
-      var draftCount = 0;
+    final rawNotes = await _apiClient.execute(
+      StudentFetchNotesRequest(),
+      payload: const StudentFetchNotesPayload(),
+    );
+    final items = <sample.StudentNoteItem>[];
+    var draftCount = 0;
 
-      for (final raw in rawNotes) {
-        final id = raw['id']?.toString() ?? '';
-        if (id.isEmpty) {
-          continue;
-        }
-
-        final title = raw['title']?.toString().trim();
-        final content = raw['content']?.toString();
-        final status = raw['status']?.toString().toLowerCase() ?? 'draft';
-        if (status == 'draft') {
-          draftCount++;
-        }
-        final visibility = raw['visibility']?.toString().toLowerCase();
-        final updatedAt = _parseDateTime(raw['updated_at']);
-
-        items.add(
-          sample.StudentNoteItem(
-            id: id,
-            title: title?.isNotEmpty == true ? title! : '未命名笔记',
-            updatedAtLabel: _formatUpdatedLabel(updatedAt),
-            preview: _buildPreview(content),
-            tags: _buildNoteTags(status: status, visibility: visibility),
-            pinned: status != 'draft' && visibility != 'private',
-          ),
-        );
+    for (final raw in rawNotes) {
+      final id = raw['id']?.toString() ?? '';
+      if (id.isEmpty) {
+        continue;
       }
 
-      return _NoteFetchResult(
-        items: List.unmodifiable(items),
-        draftCount: draftCount,
+      final title = raw['title']?.toString().trim();
+      final content = raw['content']?.toString();
+      final status = raw['status']?.toString().toLowerCase() ?? 'draft';
+      if (status == 'draft') {
+        draftCount++;
+      }
+      final visibility = raw['visibility']?.toString().toLowerCase();
+      final updatedAt = _parseDateTime(raw['updated_at']);
+
+      items.add(
+        sample.StudentNoteItem(
+          id: id,
+          title: title?.isNotEmpty == true ? title! : '未命名笔记',
+          updatedAtLabel: _formatUpdatedLabel(updatedAt),
+          preview: _buildPreview(content),
+          tags: _buildNoteTags(status: status, visibility: visibility),
+          pinned: status != 'draft' && visibility != 'private',
+        ),
       );
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载学习笔记');
     }
+
+    return _NoteFetchResult(
+      items: List.unmodifiable(items),
+      draftCount: draftCount,
+    );
   }
 
   Future<List<sample.StudentMessageItem>> _fetchMessages() async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/conversations',
-      );
-      final data = _extractData(response.data, '未能获取消息列表');
-      final rawList = _extractMapList(data, 'conversations');
+      final rawList = await _apiClient.execute(StudentFetchMessagesRequest());
       final currentAccountId = _account?.id;
       final records = <_MessageRecord>[];
 
@@ -416,150 +305,128 @@ class StudentApiRepository implements StudentRepository {
       });
 
       return List.unmodifiable(records.map((record) => record.item));
-    } on DioException catch (error) {
-      if (error.response?.statusCode == 401) {
+    } on AppException catch (error) {
+      if (error.code == '401') {
         return [];
       }
-      throw _asAppException(error, '无法获取消息列表');
+      rethrow;
     }
   }
 
   Future<List<sample.StudentExamItem>> _fetchExams() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/exams',
-        queryParameters: const {'limit': 10},
-      );
-      final data = _extractData(response.data, '未能获取考试信息');
-      final rawList = _extractMapList(data, 'exams');
-      final items = <sample.StudentExamItem>[];
-      final now = _clock();
+    final rawList = await _apiClient.execute(
+      StudentFetchExamsRequest(),
+      payload: const StudentFetchExamsPayload(),
+    );
+    final items = <sample.StudentExamItem>[];
+    final now = _clock();
 
-      for (final raw in rawList) {
-        final id = raw['id']?.toString();
-        if (id == null || id.isEmpty) {
-          continue;
-        }
-
-        final startAt =
-            _parseDateTime(raw['start_at']) ?? _parseDateTime(raw['due_at']);
-        final endAt = _parseDateTime(raw['due_at']) ?? startAt;
-        final status = (endAt ?? startAt)?.isBefore(now) == true
-            ? sample.StudentExamStatus.completed
-            : sample.StudentExamStatus.upcoming;
-
-        items.add(
-          sample.StudentExamItem(
-            id: id,
-            course: _sanitizeNonEmpty(raw['course_name']) ?? '课程考试',
-            dateLabel: _formatExamDateLabel(startAt),
-            timeRange: _formatTimeRange(startAt, endAt),
-            location: _sanitizeNonEmpty(raw['location']) ?? '待定',
-            status: status,
-            countdownLabel: _formatCountdownLabel(startAt, status),
-            seat: _sanitizeString(raw['seat']),
-            scoreLabel: _buildScoreLabel(raw['score']),
-            startAt: startAt,
-            endAt: endAt,
-          ),
-        );
+    for (final raw in rawList) {
+      final id = raw['id']?.toString();
+      if (id == null || id.isEmpty) {
+        continue;
       }
 
-      return List.unmodifiable(items);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载考试安排');
+      final startAt =
+          _parseDateTime(raw['start_at']) ?? _parseDateTime(raw['due_at']);
+      final endAt = _parseDateTime(raw['due_at']) ?? startAt;
+      final status = (endAt ?? startAt)?.isBefore(now) == true
+          ? sample.StudentExamStatus.completed
+          : sample.StudentExamStatus.upcoming;
+
+      items.add(
+        sample.StudentExamItem(
+          id: id,
+          course: _sanitizeNonEmpty(raw['course_name']) ?? '课程考试',
+          dateLabel: _formatExamDateLabel(startAt),
+          timeRange: _formatTimeRange(startAt, endAt),
+          location: _sanitizeNonEmpty(raw['location']) ?? '待定',
+          status: status,
+          countdownLabel: _formatCountdownLabel(startAt, status),
+          seat: _sanitizeString(raw['seat']),
+          scoreLabel: _buildScoreLabel(raw['score']),
+          startAt: startAt,
+          endAt: endAt,
+        ),
+      );
     }
+
+    return List.unmodifiable(items);
   }
 
   Future<List<sample.StudentScheduleItem>> _fetchSchedule() async {
-    try {
-      final now = _clock();
-      // Calculate the start of the current week (Monday)
-      final start = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(Duration(days: now.weekday - 1));
-      // Fetch 7 days (Monday to Sunday)
-      final end = start.add(const Duration(days: 7));
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/schedule',
-        queryParameters: {
-          'from': start.toUtc().toIso8601String(),
-          'to': end.toUtc().toIso8601String(),
-        },
-      );
-      final data = _extractData(response.data, '未能获取课表');
-      final rawList = _extractMapList(data, 'sessions');
-      final items = <sample.StudentScheduleItem>[];
+    final now = _clock();
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
+    final end = start.add(const Duration(days: 7));
+    final rawList = await _apiClient.execute(
+      StudentFetchScheduleRequest(),
+      payload: StudentFetchSchedulePayload(
+        from: start.toUtc().toIso8601String(),
+        to: end.toUtc().toIso8601String(),
+      ),
+    );
+    final items = <sample.StudentScheduleItem>[];
 
-      for (final raw in rawList) {
-        final course = _sanitizeNonEmpty(raw['course_name']) ?? '课程安排';
-        final startsAt = _parseDateTime(raw['starts_at']);
-        if (startsAt == null) {
-          continue;
-        }
-        final endsAt =
-            _parseDateTime(raw['ends_at']) ??
-            startsAt.add(const Duration(hours: 1));
-
-        items.add(
-          sample.StudentScheduleItem(
-            course: course,
-            teacher: _sanitizeNonEmpty(raw['teacher_name']) ?? '授课教师',
-            dayLabel: _formatDayLabel(startsAt),
-            timeRange: _formatTimeRange(startsAt, endsAt),
-            startTime: DateFormat.Hm().format(startsAt),
-            location: _sanitizeNonEmpty(raw['location']) ?? '地点待定',
-            type: _resolveScheduleType(course, raw['source']?.toString()),
-            isOnline: _isOnlineLocation(raw['location']),
-            slotId: raw['slot_id']?.toString().trim(),
-            slotName: raw['slot_name']?.toString(),
-            weekDay: _parseDateTime(raw['day'])?.weekday,
-          ),
-        );
+    for (final raw in rawList) {
+      final course = _sanitizeNonEmpty(raw['course_name']) ?? '课程安排';
+      final startsAt = _parseDateTime(raw['starts_at']);
+      if (startsAt == null) {
+        continue;
       }
+      final endsAt =
+          _parseDateTime(raw['ends_at']) ??
+          startsAt.add(const Duration(hours: 1));
 
-      return List.unmodifiable(items);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载课表');
+      items.add(
+        sample.StudentScheduleItem(
+          course: course,
+          teacher: _sanitizeNonEmpty(raw['teacher_name']) ?? '授课教师',
+          dayLabel: _formatDayLabel(startsAt),
+          timeRange: _formatTimeRange(startsAt, endsAt),
+          startTime: DateFormat.Hm().format(startsAt),
+          location: _sanitizeNonEmpty(raw['location']) ?? '地点待定',
+          type: _resolveScheduleType(course, raw['source']?.toString()),
+          isOnline: _isOnlineLocation(raw['location']),
+          slotId: raw['slot_id']?.toString().trim(),
+          slotName: raw['slot_name']?.toString(),
+          weekDay: _parseDateTime(raw['day'])?.weekday,
+        ),
+      );
     }
+
+    return List.unmodifiable(items);
   }
 
   Future<List<sample.StudentReminderItem>> _fetchCustomReminders() async {
-    try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/api/v1/student/reminders',
-      );
-      final data = _extractData(response.data, '未能获取提醒列表');
-      final rawList = _extractMapList(data, 'reminders');
-      final items = <sample.StudentReminderItem>[];
+    final rawList = await _apiClient.execute(StudentFetchRemindersRequest());
+    final items = <sample.StudentReminderItem>[];
 
-      for (final raw in rawList) {
-        final id = raw['id']?.toString();
-        if (id == null || id.isEmpty) {
-          continue;
-        }
-
-        items.add(
-          sample.StudentReminderItem(
-            id: id,
-            title: _sanitizeNonEmpty(raw['title']) ?? '提醒事项',
-            description: _sanitizeString(raw['description']) ?? '',
-            timeLabel: _sanitizeNonEmpty(raw['time_label']) ?? '时间待定',
-            icon: _resolveReminderIcon(raw['icon']?.toString()),
-            priority: _parseReminderPriority(raw['priority']),
-            route: _sanitizeString(raw['route']),
-            isCompleted: raw['is_completed'] == true,
-            isCustom: true,
-          ),
-        );
+    for (final raw in rawList) {
+      final id = raw['id']?.toString();
+      if (id == null || id.isEmpty) {
+        continue;
       }
 
-      return List.unmodifiable(items);
-    } on DioException catch (error) {
-      throw _asAppException(error, '无法加载提醒列表');
+      items.add(
+        sample.StudentReminderItem(
+          id: id,
+          title: _sanitizeNonEmpty(raw['title']) ?? '提醒事项',
+          description: _sanitizeString(raw['description']) ?? '',
+          timeLabel: _sanitizeNonEmpty(raw['time_label']) ?? '时间待定',
+          icon: _resolveReminderIcon(raw['icon']?.toString()),
+          priority: _parseReminderPriority(raw['priority']),
+          route: _sanitizeString(raw['route']),
+          isCompleted: raw['is_completed'] == true,
+          isCustom: true,
+        ),
+      );
     }
+
+    return List.unmodifiable(items);
   }
 
   List<sample.StudentReminderItem> _buildReminders({
@@ -744,38 +611,6 @@ class StudentApiRepository implements StudentRepository {
     }
 
     return items;
-  }
-
-  Map<String, dynamic> _extractData(
-    Map<String, dynamic>? body,
-    String fallbackMessage,
-  ) {
-    if (body == null) {
-      throw AppException(fallbackMessage);
-    }
-    final success = body['success'] as bool? ?? false;
-    if (!success) {
-      final error = body['error'] as Map<String, dynamic>?;
-      final message = error?['message']?.toString() ?? fallbackMessage;
-      final details = error?['details']?.toString();
-      throw AppException(message, details: details);
-    }
-    final data = body['data'];
-    if (data is Map<String, dynamic>) {
-      return data;
-    }
-    throw AppException('响应数据格式异常');
-  }
-
-  List<Map<String, dynamic>> _extractMapList(
-    Map<String, dynamic> source,
-    String key,
-  ) {
-    final value = source[key];
-    if (value is List) {
-      return value.whereType<Map<String, dynamic>>().toList(growable: false);
-    }
-    return const [];
   }
 
   sample.StudentMessageCategory _resolveMessageCategory(
@@ -968,22 +803,6 @@ class StudentApiRepository implements StudentRepository {
       return id;
     }
     return '${id.substring(0, 4)}…';
-  }
-
-  AppException _asAppException(DioException error, String fallback) {
-    final body = error.response?.data;
-    if (body is Map<String, dynamic>) {
-      final map = body['error'] as Map<String, dynamic>?;
-      final message = map?['message']?.toString();
-      final details = map?['details']?.toString();
-      if (message != null && message.isNotEmpty) {
-        return AppException(message, details: details);
-      }
-    }
-    return AppException(
-      error.message ?? fallback,
-      details: error.error?.toString(),
-    );
   }
 
   Map<String, dynamic>? _asMap(dynamic value) {
