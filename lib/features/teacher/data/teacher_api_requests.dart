@@ -106,7 +106,7 @@ class TeacherGetCourseChapterRequest
          '/api/v1/teacher/courses/$courseId/chapters/$chapterId',
          HttpMethod.get,
          fallbackMessage: '无法加载章节详情',
-         responseParser: (value) => CourseChapterDetail.fromJson(value),
+         responseParser: (value) => _parseCourseChapterDetail(value),
        );
 }
 
@@ -531,8 +531,42 @@ class TeacherGetAssignmentDetailRequest
         '/api/v1/teacher/assignments/$assignmentId',
         HttpMethod.get,
         fallbackMessage: '无法加载作业详情',
-        responseParser: (value) => AssignmentDetail.fromJson(value),
+        responseParser: (value) => _parseTeacherAssignmentDetail(value),
       );
+}
+
+CourseChapterDetail _parseCourseChapterDetail(dynamic value) {
+  if (value is! Map) {
+    return const CourseChapterDetail();
+  }
+
+  final payload = value.cast<String, dynamic>();
+  final chapterRaw = payload['chapter'];
+  final chapter = chapterRaw is Map
+      ? chapterRaw.cast<String, dynamic>()
+      : const <String, dynamic>{};
+
+  return CourseChapterDetail.fromJson(<String, dynamic>{
+    ...chapter,
+    'attachments': payload['attachments'],
+  });
+}
+
+AssignmentDetail _parseTeacherAssignmentDetail(dynamic value) {
+  if (value is! Map) {
+    return const AssignmentDetail();
+  }
+
+  final payload = value.cast<String, dynamic>();
+  final assignmentRaw = payload['assignment'];
+  final assignment = assignmentRaw is Map
+      ? assignmentRaw.cast<String, dynamic>()
+      : const <String, dynamic>{};
+
+  return AssignmentDetail.fromJson(<String, dynamic>{
+    ...assignment,
+    'questions': payload['questions'],
+  });
 }
 
 @freezed

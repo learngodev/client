@@ -10,7 +10,7 @@ _LoginResult _$LoginResultFromJson(Map<String, dynamic> json) => _LoginResult(
   account: Account.fromJson(json['account'] as Map<String, dynamic>),
   accessToken: json['access_token'] as String,
   refreshToken: json['refresh_token'] as String,
-  requiresPasswordReset: json['requires_password_reset'] as bool,
+  requiresPasswordReset: json['requires_password_reset'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$LoginResultToJson(_LoginResult instance) =>

@@ -221,13 +221,13 @@ return $default(_that.account,_that.accessToken,_that.refreshToken,_that.require
 @JsonSerializable()
 
 class _LoginResult extends LoginResult {
-  const _LoginResult({required this.account, required this.accessToken, required this.refreshToken, required this.requiresPasswordReset}): super._();
+  const _LoginResult({required this.account, required this.accessToken, required this.refreshToken, this.requiresPasswordReset = false}): super._();
   factory _LoginResult.fromJson(Map<String, dynamic> json) => _$LoginResultFromJson(json);
 
 @override final  Account account;
 @override final  String accessToken;
 @override final  String refreshToken;
-@override final  bool requiresPasswordReset;
+@override@JsonKey() final  bool requiresPasswordReset;
 
 /// Create a copy of LoginResult
 /// with the given fields replaced by the non-null parameter values.

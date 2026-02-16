@@ -18,7 +18,7 @@ abstract class LoginResult with _$LoginResult {
     required Account account,
     required String accessToken,
     required String refreshToken,
-    required bool requiresPasswordReset,
+    @Default(false) bool requiresPasswordReset,
   }) = _LoginResult;
 
   factory LoginResult.fromJson(Map<String, dynamic> json) =>

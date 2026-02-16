@@ -81,7 +81,7 @@ class StudentGetCourseChapterRequest
          '/api/v1/student/courses/$courseId/chapters/$chapterId',
          HttpMethod.get,
          fallbackMessage: '无法加载章节详情',
-         responseParser: (value) => CourseChapterDetail.fromJson(value),
+         responseParser: (value) => _parseCourseChapterDetail(value),
        );
 }
 
@@ -141,8 +141,42 @@ class StudentSubmitAssignmentRequest
         HttpMethod.post,
         fallbackMessage: '提交作业失败',
         requestEncoder: (value) => value.toJson(),
-        responseParser: (value) => SubmissionResult.fromJson(value),
+        responseParser: (value) => _parseSubmitAssignmentResult(value),
       );
+}
+
+CourseChapterDetail _parseCourseChapterDetail(dynamic value) {
+  if (value is! Map) {
+    return const CourseChapterDetail();
+  }
+
+  final payload = value.cast<String, dynamic>();
+  final chapterRaw = payload['chapter'];
+  final chapter = chapterRaw is Map
+      ? chapterRaw.cast<String, dynamic>()
+      : const <String, dynamic>{};
+
+  return CourseChapterDetail.fromJson(<String, dynamic>{
+    ...chapter,
+    'attachments': payload['attachments'],
+  });
+}
+
+SubmissionResult _parseSubmitAssignmentResult(dynamic value) {
+  if (value is Map) {
+    final payload = value.cast<String, dynamic>();
+    final submission = payload['submission'];
+
+    if (submission is Map) {
+      return SubmissionResult.fromJson(submission.cast<String, dynamic>());
+    }
+
+    if (payload.containsKey('submitted_at')) {
+      return SubmissionResult.fromJson(payload);
+    }
+  }
+
+  return SubmissionResult(status: 'submitted', submittedAt: DateTime.now());
 }
 
 @freezed
