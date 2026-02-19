@@ -1076,7 +1076,7 @@ class FakeStudentRepository implements StudentRepository {
         const AssignmentQuestion(
           id: 'q1',
           prompt: '1 + 1 = ?',
-          type: QuestionType.singleChoice,
+          type: QuestionType.choice,
           score: 10.0,
           options: ['1', '2', '3', '4'],
           orderIndex: 0,

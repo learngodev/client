@@ -6,21 +6,14 @@ part 'assignment_models.freezed.dart';
 part 'assignment_models.g.dart';
 
 @JsonEnum(fieldRename: FieldRename.snake)
-enum QuestionType {
-  singleChoice,
-  multipleChoice,
-  trueFalse,
-  fillInBlank,
-  essay,
-}
+enum QuestionType { choice, judge, fill, essay }
 
 extension QuestionTypeX on QuestionType {
   String get label {
     return switch (this) {
-      QuestionType.singleChoice => '单选题',
-      QuestionType.multipleChoice => '多选题',
-      QuestionType.trueFalse => '判断题',
-      QuestionType.fillInBlank => '填空题',
+      QuestionType.choice => '选择题',
+      QuestionType.judge => '判断题',
+      QuestionType.fill => '填空题',
       QuestionType.essay => '简答题',
     };
   }

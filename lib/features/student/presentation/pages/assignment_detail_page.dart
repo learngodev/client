@@ -82,7 +82,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
                     }
                   }
 
-                  if (type == QuestionType.multipleChoice) {
+                  if (type == QuestionType.choice) {
                     // Try to parse JSON list
                     try {
                       final List<dynamic> list = jsonDecode(item.answer);
@@ -102,7 +102,7 @@ class AssignmentDetailPage extends HookConsumerWidget {
                 if (initialAnswers.isEmpty) {
                   for (final q in submissionDetail.assignment.questions) {
                     if (q.answer != null && q.answer!.isNotEmpty) {
-                      if (q.type == QuestionType.multipleChoice) {
+                      if (q.type == QuestionType.choice) {
                         try {
                           final List<dynamic> list = jsonDecode(q.answer!);
                           initialAnswers[q.id] = list
@@ -657,35 +657,14 @@ class _QuestionCard extends StatelessWidget {
 
   Widget _buildInput(BuildContext context) {
     switch (question.type) {
-      case QuestionType.singleChoice:
-      case QuestionType.trueFalse:
+      case QuestionType.choice:
+      case QuestionType.judge:
         return _SingleChoiceInput(
           options: question.options,
           currentAnswer: currentAnswer?.toString(),
           onChanged: onAnswerChanged,
         );
-      case QuestionType.multipleChoice:
-        List<String> selected = [];
-        if (currentAnswer is List) {
-          selected = (currentAnswer as List).map((e) => e.toString()).toList();
-        } else if (currentAnswer is String) {
-          try {
-            final decoded = jsonDecode(currentAnswer);
-            if (decoded is List) {
-              selected = decoded.map((e) => e.toString()).toList();
-            } else {
-              selected = [currentAnswer];
-            }
-          } catch (_) {
-            if (currentAnswer.isNotEmpty) selected = [currentAnswer];
-          }
-        }
-        return _MultipleChoiceInput(
-          options: question.options,
-          currentAnswer: selected,
-          onChanged: onAnswerChanged,
-        );
-      case QuestionType.fillInBlank:
+      case QuestionType.fill:
       case QuestionType.essay:
         return _TextInput(
           initialValue: currentAnswer?.toString(),

@@ -31,10 +31,9 @@ Map<String, dynamic> _$AssignmentQuestionToJson(_AssignmentQuestion instance) =>
     };
 
 const _$QuestionTypeEnumMap = {
-  QuestionType.singleChoice: 'single_choice',
-  QuestionType.multipleChoice: 'multiple_choice',
-  QuestionType.trueFalse: 'true_false',
-  QuestionType.fillInBlank: 'fill_in_blank',
+  QuestionType.choice: 'choice',
+  QuestionType.judge: 'judge',
+  QuestionType.fill: 'fill',
   QuestionType.essay: 'essay',
 };
 
