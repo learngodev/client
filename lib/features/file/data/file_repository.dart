@@ -2,34 +2,42 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/core/network/api_client.dart';
 import 'package:learn_go/core/network/dio_provider.dart';
 import 'package:learn_go/features/file/domain/file_model.dart';
 
+import 'file_api_requests.dart';
+
 final fileRepositoryProvider = Provider<FileRepository>((ref) {
-  return FileRepository(ref.watch(dioProvider));
+  final dio = ref.watch(dioProvider);
+  return FileRepository(ApiClient(dio));
 });
 
 class FileRepository {
-  final Dio _dio;
+  final ApiClient _apiClient;
 
-  FileRepository(this._dio);
+  const FileRepository(this._apiClient);
 
   Future<FileModel> getUploadUrl({
     required String fileName,
     required String fileType,
     required int size,
     required String role, // 'student' or 'teacher'
-  }) async {
-    final response = await _dio.post(
-      '/api/v1/files/upload',
-      data: {'file_name': fileName, 'file_type': fileType, 'size': size},
+  }) {
+    return _apiClient.execute(
+      GetUploadUrlRequest(),
+      payload: GetUploadUrlPayload(
+        fileName: fileName,
+        fileType: fileType,
+        size: size,
+      ),
     );
-    return FileModel.fromJson(response.data['data']);
   }
 
-  Future<String> getDownloadUrl(String fileId, String role) async {
-    final response = await _dio.get('/api/v1/files/download/$fileId');
-    return response.data['data']['url'];
+  Future<String> getDownloadUrl(String fileId, String role) {
+    return _apiClient
+        .execute(GetDownloadUrlRequest(fileId: fileId))
+        .then((result) => result.url);
   }
 
   Future<void> uploadFileToOss(
@@ -54,20 +62,15 @@ class FileRepository {
     String? fileId,
     required String fileName,
     required String fileType,
-  }) async {
-    final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(file.path, filename: fileName),
-      if (fileId != null && fileId.isNotEmpty) 'file_id': fileId,
-      'file_name': fileName,
-      'file_type': fileType,
-    });
-
-    final response = await _dio.post(
-      '/api/v1/files/upload/relay',
-      data: formData,
-      options: Options(contentType: 'multipart/form-data'),
+  }) {
+    return _apiClient.execute(
+      RelayUploadFileRequest(),
+      payload: RelayUploadFilePayload(
+        file: file,
+        fileId: fileId,
+        fileName: fileName,
+        fileType: fileType,
+      ),
     );
-
-    return FileModel.fromJson(response.data['data']);
   }
 }

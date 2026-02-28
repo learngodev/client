@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:grpc/grpc.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:learn_go/core/network/api_client.dart';
 import 'package:learn_go/core/network/dio_provider.dart';
 import 'package:learn_go/features/im/domain/entities/conversation.dart';
 import 'package:learn_go/features/im/domain/entities/message.dart';
@@ -17,18 +17,21 @@ import 'package:learn_go/generated/proto/conversation.pb.dart' as pb;
 import 'package:grpc/service_api.dart' as grpc_api;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+import '../im_api_requests.dart';
+
 final imRepositoryProvider = Provider<IMRepository>((ref) {
-  final repo = IMRepository(ref.watch(dioProvider), ref);
+  final apiClient = ApiClient(ref.watch(dioProvider));
+  final repo = IMRepository(apiClient, ref);
   ref.onDispose(() => repo.dispose());
   return repo;
 });
 
 class IMRepository {
-  final Dio _dio;
+  final ApiClient _apiClient;
   final Ref _ref;
   grpc_api.ClientChannel? _channel;
 
-  IMRepository(this._dio, this._ref);
+  IMRepository(this._apiClient, this._ref);
 
   void dispose() {
     final ch = _channel;
@@ -38,25 +41,19 @@ class IMRepository {
     }
   }
 
-  Future<List<Conversation>> getConversations() async {
-    final response = await _dio.get('/api/v1/conversations');
-    final data = response.data['data'];
-    final List<dynamic> list = data['conversations'] ?? [];
-    return list.map((e) => Conversation.fromJson(e)).toList();
+  Future<List<Conversation>> getConversations() {
+    return _apiClient.execute(GetConversationsRequest());
   }
 
   Future<List<Message>> getMessages(
     String conversationId, {
     int page = 1,
     int pageSize = 20,
-  }) async {
-    final response = await _dio.get(
-      '/api/v1/conversations/$conversationId/messages',
-      queryParameters: {'page': page, 'pageSize': pageSize},
+  }) {
+    return _apiClient.execute(
+      GetConversationMessagesRequest(conversationId: conversationId),
+      payload: GetConversationMessagesPayload(page: page, pageSize: pageSize),
     );
-    final data = response.data['data'];
-    final List<dynamic> list = data['messages'] ?? [];
-    return list.map((e) => Message.fromJson(e)).toList();
   }
 
   Future<Message> sendMessage(
@@ -64,55 +61,39 @@ class IMRepository {
     String text, {
     MessageKind kind = MessageKind.text,
     String? mediaUri,
-  }) async {
-    final response = await _dio.post(
-      '/api/v1/conversations/$conversationId/messages',
-      data: {
-        'kind': kind.name,
-        'text': text,
-        'media_uri': mediaUri ?? '',
-        'metadata': '',
-      },
-    );
-    final data = response.data['data'];
-    return Message.fromJson(data['message']);
-  }
-
-  Future<void> markConversationAsRead(
-    String conversationId,
-    String messageId,
-  ) async {
-    await _dio.post(
-      '/api/v1/conversations/$conversationId/read',
-      data: {'message_id': messageId},
+  }) {
+    return _apiClient.execute(
+      SendMessageRequest(conversationId: conversationId),
+      payload: SendMessagePayload(
+        kind: kind.name,
+        text: text,
+        mediaUri: mediaUri,
+      ),
     );
   }
 
-  Future<Conversation> createConversation(String participantId) async {
-    final response = await _dio.post(
-      '/api/v1/conversations',
-      data: {
-        'participant_ids': [participantId],
-      },
+  Future<void> markConversationAsRead(String conversationId, String messageId) {
+    return _apiClient.execute(
+      MarkConversationAsReadRequest(conversationId: conversationId),
+      payload: MarkConversationAsReadPayload(messageId: messageId),
     );
-    final data = response.data['data'];
-    return Conversation.fromJson(data['conversation']);
   }
 
-  Future<List<Account>> getSchoolMembers({String? query, String? role}) async {
+  Future<Conversation> createConversation(String participantId) {
+    return _apiClient.execute(
+      CreateConversationRequest(),
+      payload: CreateConversationPayload(participantIds: [participantId]),
+    );
+  }
+
+  Future<List<Account>> getSchoolMembers({String? query, String? role}) {
     final currentRole = _ref.read(authStateProvider).account?.role;
     final prefix = currentRole == AccountRole.teacher ? 'teacher' : 'student';
 
-    final response = await _dio.get(
-      '/api/v1/$prefix/school/members',
-      queryParameters: {
-        if (query != null && query.isNotEmpty) 'query': query,
-        if (role != null && role.isNotEmpty) 'role': role,
-      },
+    return _apiClient.execute(
+      GetSchoolMembersRequest(rolePrefix: prefix),
+      payload: GetSchoolMembersPayload(query: query, role: role),
     );
-    final data = response.data['data'];
-    final List<dynamic> list = data['members'] ?? [];
-    return list.map((e) => Account.fromJson(e)).toList();
   }
 
   ResponseStream<pb.ConversationStreamResponse> subscribeConversation(
