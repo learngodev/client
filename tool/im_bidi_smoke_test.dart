@@ -439,14 +439,16 @@ Future<void> _testWebSocketConcurrent({
 
   try {
     // Join both.
-    studentClient.send(
-      pb.ConversationStreamRequest()
-        ..join = (pb.JoinConversation()..conversationId = conversationId),
-    );
-    teacherClient.send(
-      pb.ConversationStreamRequest()
-        ..join = (pb.JoinConversation()..conversationId = conversationId),
-    );
+    Future.delayed(Duration(seconds: 1), () {
+      studentClient.send(
+        pb.ConversationStreamRequest()
+          ..join = (pb.JoinConversation()..conversationId = conversationId),
+      );
+      teacherClient.send(
+        pb.ConversationStreamRequest()
+          ..join = (pb.JoinConversation()..conversationId = conversationId),
+      );
+    });
 
     await studentClient.responses
         .firstWhere((e) => e.hasSnapshot())
