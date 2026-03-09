@@ -107,28 +107,6 @@ Map<String, dynamic> _$TeacherUpdateSessionPayloadToJson(
   'status': instance.status,
 };
 
-_TeacherCreateCoursePayload _$TeacherCreateCoursePayloadFromJson(
-  Map<String, dynamic> json,
-) => _TeacherCreateCoursePayload(
-  schoolId: json['school_id'] as String,
-  name: json['name'] as String,
-  description: json['description'] as String,
-  imageUrl: json['image_url'] as String?,
-  classIds: (json['class_ids'] as List<dynamic>?)
-      ?.map((e) => e as String)
-      .toList(),
-);
-
-Map<String, dynamic> _$TeacherCreateCoursePayloadToJson(
-  _TeacherCreateCoursePayload instance,
-) => <String, dynamic>{
-  'school_id': instance.schoolId,
-  'name': instance.name,
-  'description': instance.description,
-  'image_url': instance.imageUrl,
-  'class_ids': instance.classIds,
-};
-
 _TeacherUpdateCoursePayload _$TeacherUpdateCoursePayloadFromJson(
   Map<String, dynamic> json,
 ) => _TeacherUpdateCoursePayload(
@@ -211,14 +189,6 @@ _TeacherListMyClassesResult _$TeacherListMyClassesResultFromJson(
 Map<String, dynamic> _$TeacherListMyClassesResultToJson(
   _TeacherListMyClassesResult instance,
 ) => <String, dynamic>{'sessions': instance.sessions};
-
-_TeacherAssignCourseClassPayload _$TeacherAssignCourseClassPayloadFromJson(
-  Map<String, dynamic> json,
-) => _TeacherAssignCourseClassPayload(classId: json['class_id'] as String);
-
-Map<String, dynamic> _$TeacherAssignCourseClassPayloadToJson(
-  _TeacherAssignCourseClassPayload instance,
-) => <String, dynamic>{'class_id': instance.classId};
 
 _TeacherListSchedulePayload _$TeacherListSchedulePayloadFromJson(
   Map<String, dynamic> json,

@@ -5,7 +5,6 @@ import 'package:learn_go/features/file/application/file_service.dart';
 
 import '../../application/teacher_courses_provider.dart';
 import '../../domain/teacher_models.dart';
-import 'create_course_dialog.dart';
 
 class TeacherCoursesPage extends HookConsumerWidget {
   const TeacherCoursesPage({super.key});
@@ -25,17 +24,6 @@ class TeacherCoursesPage extends HookConsumerWidget {
                 title: const Text('我的课程'),
                 centerTitle: true,
                 pinned: true,
-                actions: [
-                  IconButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => const CreateCourseDialog(),
-                      );
-                    },
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
               ),
               SliverToBoxAdapter(
                 child: Padding(

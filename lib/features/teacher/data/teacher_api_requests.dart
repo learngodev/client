@@ -236,38 +236,6 @@ class TeacherUpdateSessionRequest
 }
 
 @freezed
-abstract class TeacherCreateCoursePayload with _$TeacherCreateCoursePayload {
-  const factory TeacherCreateCoursePayload({
-    required String schoolId,
-    required String name,
-    required String description,
-    String? imageUrl,
-    List<String>? classIds,
-  }) = _TeacherCreateCoursePayload;
-
-  factory TeacherCreateCoursePayload.fromJson(Map<String, dynamic> json) =>
-      _$TeacherCreateCoursePayloadFromJson(json);
-}
-
-class TeacherCreateCourseRequest
-    extends BaseRequest<TeacherCreateCoursePayload, TeacherCourse> {
-  TeacherCreateCourseRequest()
-    : super(
-        '/api/v1/teacher/courses',
-        HttpMethod.post,
-        fallbackMessage: '无法创建课程',
-        queryParameters: (value) => {'school_id': value.schoolId},
-        requestEncoder: (value) {
-          final json = value.toJson();
-          json.remove('school_id');
-          json.removeWhere((_, fieldValue) => fieldValue == null);
-          return json;
-        },
-        responseParser: (value) => TeacherCourse.fromJson(value),
-      );
-}
-
-@freezed
 abstract class TeacherUpdateCoursePayload with _$TeacherUpdateCoursePayload {
   const factory TeacherUpdateCoursePayload({
     required String schoolId,
@@ -397,38 +365,6 @@ class TeacherListMyClassesRequest
           return classes.values.toList(growable: false);
         },
       );
-}
-
-@freezed
-abstract class TeacherAssignCourseClassPayload
-    with _$TeacherAssignCourseClassPayload {
-  const factory TeacherAssignCourseClassPayload({required String classId}) =
-      _TeacherAssignCourseClassPayload;
-
-  factory TeacherAssignCourseClassPayload.fromJson(Map<String, dynamic> json) =>
-      _$TeacherAssignCourseClassPayloadFromJson(json);
-}
-
-class TeacherAssignCourseClassRequest
-    extends BaseRequest<TeacherAssignCourseClassPayload, void> {
-  TeacherAssignCourseClassRequest({required String courseId})
-    : super(
-        '/api/v1/teacher/courses/$courseId/classes',
-        HttpMethod.post,
-        fallbackMessage: '无法分配班级',
-        requestEncoder: (value) => value.toJson(),
-      );
-}
-
-class TeacherRemoveCourseClassRequest extends BaseRequest<void, void> {
-  TeacherRemoveCourseClassRequest({
-    required String courseId,
-    required String classId,
-  }) : super(
-         '/api/v1/teacher/courses/$courseId/classes/$classId',
-         HttpMethod.delete,
-         fallbackMessage: '无法移除班级',
-       );
 }
 
 @freezed

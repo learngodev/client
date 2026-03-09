@@ -306,25 +306,6 @@ class TeacherApiRepository implements TeacherRepository {
   }
 
   @override
-  Future<TeacherCourse> createCourse({
-    required String name,
-    required String description,
-    String? imageUrl,
-    List<String>? classIds,
-  }) {
-    return _apiClient.execute(
-      TeacherCreateCourseRequest(),
-      payload: TeacherCreateCoursePayload(
-        schoolId: _requireSchoolId(),
-        name: name,
-        description: description,
-        imageUrl: imageUrl,
-        classIds: classIds,
-      ),
-    );
-  }
-
-  @override
   Future<TeacherCourse> updateCourse({
     required String courseId,
     String? name,
@@ -342,27 +323,6 @@ class TeacherApiRepository implements TeacherRepository {
         description: description,
         imageUrl: imageUrl,
       ),
-    );
-  }
-
-  @override
-  Future<void> assignCourseClass({
-    required String courseId,
-    required String classId,
-  }) {
-    return _apiClient.execute(
-      TeacherAssignCourseClassRequest(courseId: courseId),
-      payload: TeacherAssignCourseClassPayload(classId: classId),
-    );
-  }
-
-  @override
-  Future<void> removeCourseClass({
-    required String courseId,
-    required String classId,
-  }) {
-    return _apiClient.execute(
-      TeacherRemoveCourseClassRequest(courseId: courseId, classId: classId),
     );
   }
 }
