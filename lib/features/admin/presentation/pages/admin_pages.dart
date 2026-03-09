@@ -601,14 +601,21 @@ class _LegacyAdminAccountsPage extends HookConsumerWidget {
 
     var hasNoDepartment = false;
     for (final account in accounts) {
-      final deptId = account.departmentId?.trim() ?? '';
-      if (deptId.isEmpty) {
+      if (account.departmentId.isEmpty) {
         hasNoDepartment = true;
         continue;
       }
-      final label = account.department?.trim();
-      if (label != null && label.isNotEmpty) {
-        departmentLabels.putIfAbsent(deptId, () => label);
+      for (var i = 0; i < account.departmentId.length; i++) {
+        final deptId = account.departmentId[i].trim();
+        if (deptId.isEmpty) {
+          continue;
+        }
+        final label = i < account.department.length
+            ? account.department[i].trim()
+            : '';
+        if (label.isNotEmpty) {
+          departmentLabels.putIfAbsent(deptId, () => label);
+        }
       }
     }
     final sortedDepartmentEntries = departmentLabels.entries.toList()
@@ -625,17 +632,24 @@ class _LegacyAdminAccountsPage extends HookConsumerWidget {
     var hasNoClass = false;
     if (selectedDepartmentId != null && selectedDepartmentId.isNotEmpty) {
       for (final account in accounts) {
-        if (account.departmentId != selectedDepartmentId) {
+        if (!account.departmentId.contains(selectedDepartmentId)) {
           continue;
         }
-        final clsId = account.classId?.trim() ?? '';
-        if (clsId.isEmpty) {
+        if (account.classId.isEmpty) {
           hasNoClass = true;
           continue;
         }
-        final label = account.className?.trim();
-        if (label != null && label.isNotEmpty) {
-          classLabels.putIfAbsent(clsId, () => label);
+        for (var i = 0; i < account.classId.length; i++) {
+          final clsId = account.classId[i].trim();
+          if (clsId.isEmpty) {
+            continue;
+          }
+          final label = i < account.className.length
+              ? account.className[i].trim()
+              : '';
+          if (label.isNotEmpty) {
+            classLabels.putIfAbsent(clsId, () => label);
+          }
         }
       }
     }
@@ -910,8 +924,8 @@ class _LegacyAdminAccountsPage extends HookConsumerWidget {
             account.name,
             account.role.label,
             account.status.label,
-            account.department?.trim() ?? '',
-            account.className?.trim() ?? '',
+            account.departmentLabel,
+            account.classLabel,
             account.identifier,
             account.email,
             account.phone?.trim() ?? '',
@@ -4658,7 +4672,11 @@ class _AccountTile extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(account.email.isEmpty ? '未提供邮箱' : account.email),
+                    Text(
+                      account.email.isEmpty ? '未提供邮箱' : account.email,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       '账号：${account.identifier}',
@@ -4669,6 +4687,8 @@ class _AccountTile extends StatelessWidget {
                       Text(
                         '所属：${account.structureLabel}',
                         style: theme.textTheme.bodySmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                     ],

@@ -192,8 +192,8 @@ class AccountManagementPage extends HookConsumerWidget {
             account.name,
             account.role.label,
             account.status.label,
-            account.department?.trim() ?? '',
-            account.className?.trim() ?? '',
+            account.departmentLabel,
+            account.classLabel,
             account.identifier,
             account.email,
             account.phone?.trim() ?? '',
@@ -523,10 +523,16 @@ class AccountManagementPage extends HookConsumerWidget {
                         children: [
                           CircleAvatar(
                             radius: 12,
-                            child: Text(account.name.substring(0, 1)),
+                            child: Text(_avatarInitial(account.name)),
                           ),
                           const SizedBox(width: 8),
-                          Text(account.name),
+                          Expanded(
+                            child: Text(
+                              account.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -536,8 +542,28 @@ class AccountManagementPage extends HookConsumerWidget {
                         account.role == AdminAccountRole.teacher ? '教师' : '学生',
                       ),
                     ),
-                    DataCell(Text(account.department ?? '-')),
-                    DataCell(Text(account.className ?? '-')),
+                    DataCell(
+                      SizedBox(
+                        width: 200,
+                        child: Text(
+                          account.departmentLabel.isEmpty
+                              ? '-'
+                              : account.departmentLabel,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    DataCell(
+                      SizedBox(
+                        width: 220,
+                        child: Text(
+                          account.classLabel.isEmpty ? '-' : account.classLabel,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
                     DataCell(_buildStatusChip(context, account.status)),
                     DataCell(
                       Row(
@@ -694,11 +720,20 @@ class AccountManagementPage extends HookConsumerWidget {
       itemCount: accounts.length,
       itemBuilder: (context, index) {
         final account = accounts[index];
+        final structureLabel = account.structureLabel;
         return ListTile(
-          leading: CircleAvatar(child: Text(account.name.substring(0, 1))),
-          title: Text(account.name),
+          leading: CircleAvatar(child: Text(_avatarInitial(account.name))),
+          title: Text(
+            account.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text(
-            '${account.identifier} · ${account.role == AdminAccountRole.teacher ? '教师' : '学生'}',
+            structureLabel.isEmpty
+                ? '${account.identifier} · ${account.role == AdminAccountRole.teacher ? '教师' : '学生'}'
+                : '${account.identifier} · ${account.role == AdminAccountRole.teacher ? '教师' : '学生'}\n$structureLabel',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -878,6 +913,14 @@ String _escapeCsvField(String value) {
     return '"${value.replaceAll('"', '""')}"';
   }
   return value;
+}
+
+String _avatarInitial(String name) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty) {
+    return '?';
+  }
+  return trimmed.characters.first;
 }
 
 class _CreateAccountDialog extends HookConsumerWidget {

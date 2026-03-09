@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AdminAccount implements DiagnosticableTreeMixin {
 
- String get id; String? get profileId; AdminAccountRole get role; String get name; String get identifier; String get email; String? get phone; String? get departmentId; String? get department; String? get classId; String? get className; AdminAccountStatus get status; DateTime? get lastActiveAt; DateTime get createdAt;
+ String get id; String? get profileId; AdminAccountRole get role; String get name; String get identifier; String get email; String? get phone; List<String> get departmentId; List<String> get department; List<String> get classId; List<String> get className; AdminAccountStatus get status; DateTime? get lastActiveAt; DateTime get createdAt;
 /// Create a copy of AdminAccount
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,12 +34,12 @@ void debugFillProperties(DiagnosticPropertiesBuilder properties) {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AdminAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.role, role) || other.role == role)&&(identical(other.name, name) || other.name == name)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.departmentId, departmentId) || other.departmentId == departmentId)&&(identical(other.department, department) || other.department == department)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.className, className) || other.className == className)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AdminAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.role, role) || other.role == role)&&(identical(other.name, name) || other.name == name)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&const DeepCollectionEquality().equals(other.departmentId, departmentId)&&const DeepCollectionEquality().equals(other.department, department)&&const DeepCollectionEquality().equals(other.classId, classId)&&const DeepCollectionEquality().equals(other.className, className)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,profileId,role,name,identifier,email,phone,departmentId,department,classId,className,status,lastActiveAt,createdAt);
+int get hashCode => Object.hash(runtimeType,id,profileId,role,name,identifier,email,phone,const DeepCollectionEquality().hash(departmentId),const DeepCollectionEquality().hash(department),const DeepCollectionEquality().hash(classId),const DeepCollectionEquality().hash(className),status,lastActiveAt,createdAt);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
@@ -54,7 +54,7 @@ abstract mixin class $AdminAccountCopyWith<$Res>  {
   factory $AdminAccountCopyWith(AdminAccount value, $Res Function(AdminAccount) _then) = _$AdminAccountCopyWithImpl;
 @useResult
 $Res call({
- String id, String? profileId, AdminAccountRole role, String name, String identifier, String email, String? phone, String? departmentId, String? department, String? classId, String? className, AdminAccountStatus status, DateTime? lastActiveAt, DateTime createdAt
+ String id, String? profileId, AdminAccountRole role, String name, String identifier, String email, String? phone, List<String> departmentId, List<String> department, List<String> classId, List<String> className, AdminAccountStatus status, DateTime? lastActiveAt, DateTime createdAt
 });
 
 
@@ -71,7 +71,7 @@ class _$AdminAccountCopyWithImpl<$Res>
 
 /// Create a copy of AdminAccount
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? profileId = freezed,Object? role = null,Object? name = null,Object? identifier = null,Object? email = null,Object? phone = freezed,Object? departmentId = freezed,Object? department = freezed,Object? classId = freezed,Object? className = freezed,Object? status = null,Object? lastActiveAt = freezed,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? profileId = freezed,Object? role = null,Object? name = null,Object? identifier = null,Object? email = null,Object? phone = freezed,Object? departmentId = null,Object? department = null,Object? classId = null,Object? className = null,Object? status = null,Object? lastActiveAt = freezed,Object? createdAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
@@ -80,11 +80,11 @@ as AdminAccountRole,name: null == name ? _self.name : name // ignore: cast_nulla
 as String,identifier: null == identifier ? _self.identifier : identifier // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String?,departmentId: freezed == departmentId ? _self.departmentId : departmentId // ignore: cast_nullable_to_non_nullable
-as String?,department: freezed == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
-as String?,classId: freezed == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
-as String?,className: freezed == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
-as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,departmentId: null == departmentId ? _self.departmentId : departmentId // ignore: cast_nullable_to_non_nullable
+as List<String>,department: null == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
+as List<String>,classId: null == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
+as List<String>,className: null == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
+as List<String>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AdminAccountStatus,lastActiveAt: freezed == lastActiveAt ? _self.lastActiveAt : lastActiveAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,
@@ -172,7 +172,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? profileId,  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  String? departmentId,  String? department,  String? classId,  String? className,  AdminAccountStatus status,  DateTime? lastActiveAt,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? profileId,  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  List<String> departmentId,  List<String> department,  List<String> classId,  List<String> className,  AdminAccountStatus status,  DateTime? lastActiveAt,  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AdminAccount() when $default != null:
 return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,_that.email,_that.phone,_that.departmentId,_that.department,_that.classId,_that.className,_that.status,_that.lastActiveAt,_that.createdAt);case _:
@@ -193,7 +193,7 @@ return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? profileId,  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  String? departmentId,  String? department,  String? classId,  String? className,  AdminAccountStatus status,  DateTime? lastActiveAt,  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? profileId,  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  List<String> departmentId,  List<String> department,  List<String> classId,  List<String> className,  AdminAccountStatus status,  DateTime? lastActiveAt,  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _AdminAccount():
 return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,_that.email,_that.phone,_that.departmentId,_that.department,_that.classId,_that.className,_that.status,_that.lastActiveAt,_that.createdAt);case _:
@@ -213,7 +213,7 @@ return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? profileId,  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  String? departmentId,  String? department,  String? classId,  String? className,  AdminAccountStatus status,  DateTime? lastActiveAt,  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? profileId,  AdminAccountRole role,  String name,  String identifier,  String email,  String? phone,  List<String> departmentId,  List<String> department,  List<String> classId,  List<String> className,  AdminAccountStatus status,  DateTime? lastActiveAt,  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _AdminAccount() when $default != null:
 return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,_that.email,_that.phone,_that.departmentId,_that.department,_that.classId,_that.className,_that.status,_that.lastActiveAt,_that.createdAt);case _:
@@ -228,7 +228,7 @@ return $default(_that.id,_that.profileId,_that.role,_that.name,_that.identifier,
 @JsonSerializable()
 
 class _AdminAccount extends AdminAccount with DiagnosticableTreeMixin {
-  const _AdminAccount({this.id = '', this.profileId, required this.role, this.name = '', this.identifier = '', this.email = '', this.phone, this.departmentId, this.department, this.classId, this.className, required this.status, this.lastActiveAt, required this.createdAt}): super._();
+  const _AdminAccount({this.id = '', this.profileId, required this.role, this.name = '', this.identifier = '', this.email = '', this.phone, final  List<String> departmentId = const <String>[], final  List<String> department = const <String>[], final  List<String> classId = const <String>[], final  List<String> className = const <String>[], required this.status, this.lastActiveAt, required this.createdAt}): _departmentId = departmentId,_department = department,_classId = classId,_className = className,super._();
   factory _AdminAccount.fromJson(Map<String, dynamic> json) => _$AdminAccountFromJson(json);
 
 @override@JsonKey() final  String id;
@@ -238,10 +238,34 @@ class _AdminAccount extends AdminAccount with DiagnosticableTreeMixin {
 @override@JsonKey() final  String identifier;
 @override@JsonKey() final  String email;
 @override final  String? phone;
-@override final  String? departmentId;
-@override final  String? department;
-@override final  String? classId;
-@override final  String? className;
+ final  List<String> _departmentId;
+@override@JsonKey() List<String> get departmentId {
+  if (_departmentId is EqualUnmodifiableListView) return _departmentId;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_departmentId);
+}
+
+ final  List<String> _department;
+@override@JsonKey() List<String> get department {
+  if (_department is EqualUnmodifiableListView) return _department;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_department);
+}
+
+ final  List<String> _classId;
+@override@JsonKey() List<String> get classId {
+  if (_classId is EqualUnmodifiableListView) return _classId;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_classId);
+}
+
+ final  List<String> _className;
+@override@JsonKey() List<String> get className {
+  if (_className is EqualUnmodifiableListView) return _className;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_className);
+}
+
 @override final  AdminAccountStatus status;
 @override final  DateTime? lastActiveAt;
 @override final  DateTime createdAt;
@@ -265,12 +289,12 @@ void debugFillProperties(DiagnosticPropertiesBuilder properties) {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AdminAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.role, role) || other.role == role)&&(identical(other.name, name) || other.name == name)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.departmentId, departmentId) || other.departmentId == departmentId)&&(identical(other.department, department) || other.department == department)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.className, className) || other.className == className)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AdminAccount&&(identical(other.id, id) || other.id == id)&&(identical(other.profileId, profileId) || other.profileId == profileId)&&(identical(other.role, role) || other.role == role)&&(identical(other.name, name) || other.name == name)&&(identical(other.identifier, identifier) || other.identifier == identifier)&&(identical(other.email, email) || other.email == email)&&(identical(other.phone, phone) || other.phone == phone)&&const DeepCollectionEquality().equals(other._departmentId, _departmentId)&&const DeepCollectionEquality().equals(other._department, _department)&&const DeepCollectionEquality().equals(other._classId, _classId)&&const DeepCollectionEquality().equals(other._className, _className)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastActiveAt, lastActiveAt) || other.lastActiveAt == lastActiveAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,profileId,role,name,identifier,email,phone,departmentId,department,classId,className,status,lastActiveAt,createdAt);
+int get hashCode => Object.hash(runtimeType,id,profileId,role,name,identifier,email,phone,const DeepCollectionEquality().hash(_departmentId),const DeepCollectionEquality().hash(_department),const DeepCollectionEquality().hash(_classId),const DeepCollectionEquality().hash(_className),status,lastActiveAt,createdAt);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
@@ -285,7 +309,7 @@ abstract mixin class _$AdminAccountCopyWith<$Res> implements $AdminAccountCopyWi
   factory _$AdminAccountCopyWith(_AdminAccount value, $Res Function(_AdminAccount) _then) = __$AdminAccountCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? profileId, AdminAccountRole role, String name, String identifier, String email, String? phone, String? departmentId, String? department, String? classId, String? className, AdminAccountStatus status, DateTime? lastActiveAt, DateTime createdAt
+ String id, String? profileId, AdminAccountRole role, String name, String identifier, String email, String? phone, List<String> departmentId, List<String> department, List<String> classId, List<String> className, AdminAccountStatus status, DateTime? lastActiveAt, DateTime createdAt
 });
 
 
@@ -302,7 +326,7 @@ class __$AdminAccountCopyWithImpl<$Res>
 
 /// Create a copy of AdminAccount
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? profileId = freezed,Object? role = null,Object? name = null,Object? identifier = null,Object? email = null,Object? phone = freezed,Object? departmentId = freezed,Object? department = freezed,Object? classId = freezed,Object? className = freezed,Object? status = null,Object? lastActiveAt = freezed,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? profileId = freezed,Object? role = null,Object? name = null,Object? identifier = null,Object? email = null,Object? phone = freezed,Object? departmentId = null,Object? department = null,Object? classId = null,Object? className = null,Object? status = null,Object? lastActiveAt = freezed,Object? createdAt = null,}) {
   return _then(_AdminAccount(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,profileId: freezed == profileId ? _self.profileId : profileId // ignore: cast_nullable_to_non_nullable
@@ -311,11 +335,11 @@ as AdminAccountRole,name: null == name ? _self.name : name // ignore: cast_nulla
 as String,identifier: null == identifier ? _self.identifier : identifier // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
 as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String?,departmentId: freezed == departmentId ? _self.departmentId : departmentId // ignore: cast_nullable_to_non_nullable
-as String?,department: freezed == department ? _self.department : department // ignore: cast_nullable_to_non_nullable
-as String?,classId: freezed == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
-as String?,className: freezed == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
-as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,departmentId: null == departmentId ? _self._departmentId : departmentId // ignore: cast_nullable_to_non_nullable
+as List<String>,department: null == department ? _self._department : department // ignore: cast_nullable_to_non_nullable
+as List<String>,classId: null == classId ? _self._classId : classId // ignore: cast_nullable_to_non_nullable
+as List<String>,className: null == className ? _self._className : className // ignore: cast_nullable_to_non_nullable
+as List<String>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as AdminAccountStatus,lastActiveAt: freezed == lastActiveAt ? _self.lastActiveAt : lastActiveAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,

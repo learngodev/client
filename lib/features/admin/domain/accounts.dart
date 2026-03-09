@@ -79,10 +79,10 @@ abstract class AdminAccount with _$AdminAccount {
     @Default('') String identifier,
     @Default('') String email,
     String? phone,
-    String? departmentId,
-    String? department,
-    String? classId,
-    String? className,
+    @Default(<String>[]) List<String> departmentId,
+    @Default(<String>[]) List<String> department,
+    @Default(<String>[]) List<String> classId,
+    @Default(<String>[]) List<String> className,
     required AdminAccountStatus status,
     DateTime? lastActiveAt,
     required DateTime createdAt,
@@ -91,9 +91,18 @@ abstract class AdminAccount with _$AdminAccount {
   factory AdminAccount.fromJson(Map<String, dynamic> json) =>
       _$AdminAccountFromJson(json);
 
+  List<String> _cleanValues(List<String> values) => values
+      .map((value) => value.trim())
+      .where((value) => value.isNotEmpty)
+      .toList(growable: false);
+
+  String get departmentLabel => _cleanValues(department).join(' / ');
+
+  String get classLabel => _cleanValues(className).join(' / ');
+
   String get structureLabel {
-    final trimmedDepartment = department?.trim() ?? '';
-    final trimmedClass = className?.trim() ?? '';
+    final trimmedDepartment = departmentLabel;
+    final trimmedClass = classLabel;
     if (trimmedDepartment.isNotEmpty && trimmedClass.isNotEmpty) {
       return '$trimmedDepartment · $trimmedClass';
     }

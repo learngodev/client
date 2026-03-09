@@ -15,10 +15,26 @@ _AdminAccount _$AdminAccountFromJson(Map<String, dynamic> json) =>
       identifier: json['identifier'] as String? ?? '',
       email: json['email'] as String? ?? '',
       phone: json['phone'] as String?,
-      departmentId: json['department_id'] as String?,
-      department: json['department'] as String?,
-      classId: json['class_id'] as String?,
-      className: json['class_name'] as String?,
+      departmentId:
+          (json['department_id'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      department:
+          (json['department'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      classId:
+          (json['class_id'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      className:
+          (json['class_name'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
       status: $enumDecode(_$AdminAccountStatusEnumMap, json['status']),
       lastActiveAt: json['last_active_at'] == null
           ? null
