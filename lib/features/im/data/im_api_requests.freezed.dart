@@ -2183,42 +2183,42 @@ $ConversationCopyWith<$Res> get conversation {
 
 
 /// @nodoc
-mixin _$GetSchoolMembersPayload {
+mixin _$SearchConversationCandidatesPayload {
 
- String? get query; String? get role;
-/// Create a copy of GetSchoolMembersPayload
+ String get query; int get limit;
+/// Create a copy of SearchConversationCandidatesPayload
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$GetSchoolMembersPayloadCopyWith<GetSchoolMembersPayload> get copyWith => _$GetSchoolMembersPayloadCopyWithImpl<GetSchoolMembersPayload>(this as GetSchoolMembersPayload, _$identity);
+$SearchConversationCandidatesPayloadCopyWith<SearchConversationCandidatesPayload> get copyWith => _$SearchConversationCandidatesPayloadCopyWithImpl<SearchConversationCandidatesPayload>(this as SearchConversationCandidatesPayload, _$identity);
 
-  /// Serializes this GetSchoolMembersPayload to a JSON map.
+  /// Serializes this SearchConversationCandidatesPayload to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GetSchoolMembersPayload&&(identical(other.query, query) || other.query == query)&&(identical(other.role, role) || other.role == role));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchConversationCandidatesPayload&&(identical(other.query, query) || other.query == query)&&(identical(other.limit, limit) || other.limit == limit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,query,role);
+int get hashCode => Object.hash(runtimeType,query,limit);
 
 @override
 String toString() {
-  return 'GetSchoolMembersPayload(query: $query, role: $role)';
+  return 'SearchConversationCandidatesPayload(query: $query, limit: $limit)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $GetSchoolMembersPayloadCopyWith<$Res>  {
-  factory $GetSchoolMembersPayloadCopyWith(GetSchoolMembersPayload value, $Res Function(GetSchoolMembersPayload) _then) = _$GetSchoolMembersPayloadCopyWithImpl;
+abstract mixin class $SearchConversationCandidatesPayloadCopyWith<$Res>  {
+  factory $SearchConversationCandidatesPayloadCopyWith(SearchConversationCandidatesPayload value, $Res Function(SearchConversationCandidatesPayload) _then) = _$SearchConversationCandidatesPayloadCopyWithImpl;
 @useResult
 $Res call({
- String? query, String? role
+ String query, int limit
 });
 
 
@@ -2226,28 +2226,28 @@ $Res call({
 
 }
 /// @nodoc
-class _$GetSchoolMembersPayloadCopyWithImpl<$Res>
-    implements $GetSchoolMembersPayloadCopyWith<$Res> {
-  _$GetSchoolMembersPayloadCopyWithImpl(this._self, this._then);
+class _$SearchConversationCandidatesPayloadCopyWithImpl<$Res>
+    implements $SearchConversationCandidatesPayloadCopyWith<$Res> {
+  _$SearchConversationCandidatesPayloadCopyWithImpl(this._self, this._then);
 
-  final GetSchoolMembersPayload _self;
-  final $Res Function(GetSchoolMembersPayload) _then;
+  final SearchConversationCandidatesPayload _self;
+  final $Res Function(SearchConversationCandidatesPayload) _then;
 
-/// Create a copy of GetSchoolMembersPayload
+/// Create a copy of SearchConversationCandidatesPayload
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? query = freezed,Object? role = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? query = null,Object? limit = null,}) {
   return _then(_self.copyWith(
-query: freezed == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
-as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as String?,
+query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [GetSchoolMembersPayload].
-extension GetSchoolMembersPayloadPatterns on GetSchoolMembersPayload {
+/// Adds pattern-matching-related methods to [SearchConversationCandidatesPayload].
+extension SearchConversationCandidatesPayloadPatterns on SearchConversationCandidatesPayload {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -2260,10 +2260,10 @@ extension GetSchoolMembersPayloadPatterns on GetSchoolMembersPayload {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GetSchoolMembersPayload value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SearchConversationCandidatesPayload value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _GetSchoolMembersPayload() when $default != null:
+case _SearchConversationCandidatesPayload() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -2282,10 +2282,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GetSchoolMembersPayload value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SearchConversationCandidatesPayload value)  $default,){
 final _that = this;
 switch (_that) {
-case _GetSchoolMembersPayload():
+case _SearchConversationCandidatesPayload():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -2303,10 +2303,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GetSchoolMembersPayload value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SearchConversationCandidatesPayload value)?  $default,){
 final _that = this;
 switch (_that) {
-case _GetSchoolMembersPayload() when $default != null:
+case _SearchConversationCandidatesPayload() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -2324,10 +2324,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? query,  String? role)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String query,  int limit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _GetSchoolMembersPayload() when $default != null:
-return $default(_that.query,_that.role);case _:
+case _SearchConversationCandidatesPayload() when $default != null:
+return $default(_that.query,_that.limit);case _:
   return orElse();
 
 }
@@ -2345,10 +2345,10 @@ return $default(_that.query,_that.role);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? query,  String? role)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String query,  int limit)  $default,) {final _that = this;
 switch (_that) {
-case _GetSchoolMembersPayload():
-return $default(_that.query,_that.role);case _:
+case _SearchConversationCandidatesPayload():
+return $default(_that.query,_that.limit);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2365,10 +2365,10 @@ return $default(_that.query,_that.role);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? query,  String? role)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String query,  int limit)?  $default,) {final _that = this;
 switch (_that) {
-case _GetSchoolMembersPayload() when $default != null:
-return $default(_that.query,_that.role);case _:
+case _SearchConversationCandidatesPayload() when $default != null:
+return $default(_that.query,_that.limit);case _:
   return null;
 
 }
@@ -2379,47 +2379,47 @@ return $default(_that.query,_that.role);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _GetSchoolMembersPayload implements GetSchoolMembersPayload {
-  const _GetSchoolMembersPayload({this.query, this.role});
-  factory _GetSchoolMembersPayload.fromJson(Map<String, dynamic> json) => _$GetSchoolMembersPayloadFromJson(json);
+class _SearchConversationCandidatesPayload implements SearchConversationCandidatesPayload {
+  const _SearchConversationCandidatesPayload({required this.query, this.limit = 100});
+  factory _SearchConversationCandidatesPayload.fromJson(Map<String, dynamic> json) => _$SearchConversationCandidatesPayloadFromJson(json);
 
-@override final  String? query;
-@override final  String? role;
+@override final  String query;
+@override@JsonKey() final  int limit;
 
-/// Create a copy of GetSchoolMembersPayload
+/// Create a copy of SearchConversationCandidatesPayload
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$GetSchoolMembersPayloadCopyWith<_GetSchoolMembersPayload> get copyWith => __$GetSchoolMembersPayloadCopyWithImpl<_GetSchoolMembersPayload>(this, _$identity);
+_$SearchConversationCandidatesPayloadCopyWith<_SearchConversationCandidatesPayload> get copyWith => __$SearchConversationCandidatesPayloadCopyWithImpl<_SearchConversationCandidatesPayload>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$GetSchoolMembersPayloadToJson(this, );
+  return _$SearchConversationCandidatesPayloadToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GetSchoolMembersPayload&&(identical(other.query, query) || other.query == query)&&(identical(other.role, role) || other.role == role));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchConversationCandidatesPayload&&(identical(other.query, query) || other.query == query)&&(identical(other.limit, limit) || other.limit == limit));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,query,role);
+int get hashCode => Object.hash(runtimeType,query,limit);
 
 @override
 String toString() {
-  return 'GetSchoolMembersPayload(query: $query, role: $role)';
+  return 'SearchConversationCandidatesPayload(query: $query, limit: $limit)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$GetSchoolMembersPayloadCopyWith<$Res> implements $GetSchoolMembersPayloadCopyWith<$Res> {
-  factory _$GetSchoolMembersPayloadCopyWith(_GetSchoolMembersPayload value, $Res Function(_GetSchoolMembersPayload) _then) = __$GetSchoolMembersPayloadCopyWithImpl;
+abstract mixin class _$SearchConversationCandidatesPayloadCopyWith<$Res> implements $SearchConversationCandidatesPayloadCopyWith<$Res> {
+  factory _$SearchConversationCandidatesPayloadCopyWith(_SearchConversationCandidatesPayload value, $Res Function(_SearchConversationCandidatesPayload) _then) = __$SearchConversationCandidatesPayloadCopyWithImpl;
 @override @useResult
 $Res call({
- String? query, String? role
+ String query, int limit
 });
 
 
@@ -2427,20 +2427,20 @@ $Res call({
 
 }
 /// @nodoc
-class __$GetSchoolMembersPayloadCopyWithImpl<$Res>
-    implements _$GetSchoolMembersPayloadCopyWith<$Res> {
-  __$GetSchoolMembersPayloadCopyWithImpl(this._self, this._then);
+class __$SearchConversationCandidatesPayloadCopyWithImpl<$Res>
+    implements _$SearchConversationCandidatesPayloadCopyWith<$Res> {
+  __$SearchConversationCandidatesPayloadCopyWithImpl(this._self, this._then);
 
-  final _GetSchoolMembersPayload _self;
-  final $Res Function(_GetSchoolMembersPayload) _then;
+  final _SearchConversationCandidatesPayload _self;
+  final $Res Function(_SearchConversationCandidatesPayload) _then;
 
-/// Create a copy of GetSchoolMembersPayload
+/// Create a copy of SearchConversationCandidatesPayload
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? query = freezed,Object? role = freezed,}) {
-  return _then(_GetSchoolMembersPayload(
-query: freezed == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
-as String?,role: freezed == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
-as String?,
+@override @pragma('vm:prefer-inline') $Res call({Object? query = null,Object? limit = null,}) {
+  return _then(_SearchConversationCandidatesPayload(
+query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as String,limit: null == limit ? _self.limit : limit // ignore: cast_nullable_to_non_nullable
+as int,
   ));
 }
 
@@ -2449,42 +2449,42 @@ as String?,
 
 
 /// @nodoc
-mixin _$GetSchoolMembersResult {
+mixin _$SearchConversationCandidatesResult {
 
- List<Account> get members;
-/// Create a copy of GetSchoolMembersResult
+ List<ConversationCandidate> get candidates;
+/// Create a copy of SearchConversationCandidatesResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$GetSchoolMembersResultCopyWith<GetSchoolMembersResult> get copyWith => _$GetSchoolMembersResultCopyWithImpl<GetSchoolMembersResult>(this as GetSchoolMembersResult, _$identity);
+$SearchConversationCandidatesResultCopyWith<SearchConversationCandidatesResult> get copyWith => _$SearchConversationCandidatesResultCopyWithImpl<SearchConversationCandidatesResult>(this as SearchConversationCandidatesResult, _$identity);
 
-  /// Serializes this GetSchoolMembersResult to a JSON map.
+  /// Serializes this SearchConversationCandidatesResult to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GetSchoolMembersResult&&const DeepCollectionEquality().equals(other.members, members));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchConversationCandidatesResult&&const DeepCollectionEquality().equals(other.candidates, candidates));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(members));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(candidates));
 
 @override
 String toString() {
-  return 'GetSchoolMembersResult(members: $members)';
+  return 'SearchConversationCandidatesResult(candidates: $candidates)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $GetSchoolMembersResultCopyWith<$Res>  {
-  factory $GetSchoolMembersResultCopyWith(GetSchoolMembersResult value, $Res Function(GetSchoolMembersResult) _then) = _$GetSchoolMembersResultCopyWithImpl;
+abstract mixin class $SearchConversationCandidatesResultCopyWith<$Res>  {
+  factory $SearchConversationCandidatesResultCopyWith(SearchConversationCandidatesResult value, $Res Function(SearchConversationCandidatesResult) _then) = _$SearchConversationCandidatesResultCopyWithImpl;
 @useResult
 $Res call({
- List<Account> members
+ List<ConversationCandidate> candidates
 });
 
 
@@ -2492,27 +2492,27 @@ $Res call({
 
 }
 /// @nodoc
-class _$GetSchoolMembersResultCopyWithImpl<$Res>
-    implements $GetSchoolMembersResultCopyWith<$Res> {
-  _$GetSchoolMembersResultCopyWithImpl(this._self, this._then);
+class _$SearchConversationCandidatesResultCopyWithImpl<$Res>
+    implements $SearchConversationCandidatesResultCopyWith<$Res> {
+  _$SearchConversationCandidatesResultCopyWithImpl(this._self, this._then);
 
-  final GetSchoolMembersResult _self;
-  final $Res Function(GetSchoolMembersResult) _then;
+  final SearchConversationCandidatesResult _self;
+  final $Res Function(SearchConversationCandidatesResult) _then;
 
-/// Create a copy of GetSchoolMembersResult
+/// Create a copy of SearchConversationCandidatesResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? members = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? candidates = null,}) {
   return _then(_self.copyWith(
-members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
-as List<Account>,
+candidates: null == candidates ? _self.candidates : candidates // ignore: cast_nullable_to_non_nullable
+as List<ConversationCandidate>,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [GetSchoolMembersResult].
-extension GetSchoolMembersResultPatterns on GetSchoolMembersResult {
+/// Adds pattern-matching-related methods to [SearchConversationCandidatesResult].
+extension SearchConversationCandidatesResultPatterns on SearchConversationCandidatesResult {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -2525,10 +2525,10 @@ extension GetSchoolMembersResultPatterns on GetSchoolMembersResult {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GetSchoolMembersResult value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SearchConversationCandidatesResult value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _GetSchoolMembersResult() when $default != null:
+case _SearchConversationCandidatesResult() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -2547,10 +2547,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GetSchoolMembersResult value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SearchConversationCandidatesResult value)  $default,){
 final _that = this;
 switch (_that) {
-case _GetSchoolMembersResult():
+case _SearchConversationCandidatesResult():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -2568,10 +2568,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GetSchoolMembersResult value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SearchConversationCandidatesResult value)?  $default,){
 final _that = this;
 switch (_that) {
-case _GetSchoolMembersResult() when $default != null:
+case _SearchConversationCandidatesResult() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -2589,10 +2589,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<Account> members)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ConversationCandidate> candidates)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _GetSchoolMembersResult() when $default != null:
-return $default(_that.members);case _:
+case _SearchConversationCandidatesResult() when $default != null:
+return $default(_that.candidates);case _:
   return orElse();
 
 }
@@ -2610,10 +2610,10 @@ return $default(_that.members);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<Account> members)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ConversationCandidate> candidates)  $default,) {final _that = this;
 switch (_that) {
-case _GetSchoolMembersResult():
-return $default(_that.members);case _:
+case _SearchConversationCandidatesResult():
+return $default(_that.candidates);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2630,10 +2630,10 @@ return $default(_that.members);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<Account> members)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ConversationCandidate> candidates)?  $default,) {final _that = this;
 switch (_that) {
-case _GetSchoolMembersResult() when $default != null:
-return $default(_that.members);case _:
+case _SearchConversationCandidatesResult() when $default != null:
+return $default(_that.candidates);case _:
   return null;
 
 }
@@ -2644,52 +2644,52 @@ return $default(_that.members);case _:
 /// @nodoc
 @JsonSerializable()
 
-class _GetSchoolMembersResult implements GetSchoolMembersResult {
-  const _GetSchoolMembersResult({final  List<Account> members = const <Account>[]}): _members = members;
-  factory _GetSchoolMembersResult.fromJson(Map<String, dynamic> json) => _$GetSchoolMembersResultFromJson(json);
+class _SearchConversationCandidatesResult implements SearchConversationCandidatesResult {
+  const _SearchConversationCandidatesResult({final  List<ConversationCandidate> candidates = const <ConversationCandidate>[]}): _candidates = candidates;
+  factory _SearchConversationCandidatesResult.fromJson(Map<String, dynamic> json) => _$SearchConversationCandidatesResultFromJson(json);
 
- final  List<Account> _members;
-@override@JsonKey() List<Account> get members {
-  if (_members is EqualUnmodifiableListView) return _members;
+ final  List<ConversationCandidate> _candidates;
+@override@JsonKey() List<ConversationCandidate> get candidates {
+  if (_candidates is EqualUnmodifiableListView) return _candidates;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_members);
+  return EqualUnmodifiableListView(_candidates);
 }
 
 
-/// Create a copy of GetSchoolMembersResult
+/// Create a copy of SearchConversationCandidatesResult
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$GetSchoolMembersResultCopyWith<_GetSchoolMembersResult> get copyWith => __$GetSchoolMembersResultCopyWithImpl<_GetSchoolMembersResult>(this, _$identity);
+_$SearchConversationCandidatesResultCopyWith<_SearchConversationCandidatesResult> get copyWith => __$SearchConversationCandidatesResultCopyWithImpl<_SearchConversationCandidatesResult>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$GetSchoolMembersResultToJson(this, );
+  return _$SearchConversationCandidatesResultToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GetSchoolMembersResult&&const DeepCollectionEquality().equals(other._members, _members));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchConversationCandidatesResult&&const DeepCollectionEquality().equals(other._candidates, _candidates));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_members));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_candidates));
 
 @override
 String toString() {
-  return 'GetSchoolMembersResult(members: $members)';
+  return 'SearchConversationCandidatesResult(candidates: $candidates)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$GetSchoolMembersResultCopyWith<$Res> implements $GetSchoolMembersResultCopyWith<$Res> {
-  factory _$GetSchoolMembersResultCopyWith(_GetSchoolMembersResult value, $Res Function(_GetSchoolMembersResult) _then) = __$GetSchoolMembersResultCopyWithImpl;
+abstract mixin class _$SearchConversationCandidatesResultCopyWith<$Res> implements $SearchConversationCandidatesResultCopyWith<$Res> {
+  factory _$SearchConversationCandidatesResultCopyWith(_SearchConversationCandidatesResult value, $Res Function(_SearchConversationCandidatesResult) _then) = __$SearchConversationCandidatesResultCopyWithImpl;
 @override @useResult
 $Res call({
- List<Account> members
+ List<ConversationCandidate> candidates
 });
 
 
@@ -2697,19 +2697,19 @@ $Res call({
 
 }
 /// @nodoc
-class __$GetSchoolMembersResultCopyWithImpl<$Res>
-    implements _$GetSchoolMembersResultCopyWith<$Res> {
-  __$GetSchoolMembersResultCopyWithImpl(this._self, this._then);
+class __$SearchConversationCandidatesResultCopyWithImpl<$Res>
+    implements _$SearchConversationCandidatesResultCopyWith<$Res> {
+  __$SearchConversationCandidatesResultCopyWithImpl(this._self, this._then);
 
-  final _GetSchoolMembersResult _self;
-  final $Res Function(_GetSchoolMembersResult) _then;
+  final _SearchConversationCandidatesResult _self;
+  final $Res Function(_SearchConversationCandidatesResult) _then;
 
-/// Create a copy of GetSchoolMembersResult
+/// Create a copy of SearchConversationCandidatesResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? members = null,}) {
-  return _then(_GetSchoolMembersResult(
-members: null == members ? _self._members : members // ignore: cast_nullable_to_non_nullable
-as List<Account>,
+@override @pragma('vm:prefer-inline') $Res call({Object? candidates = null,}) {
+  return _then(_SearchConversationCandidatesResult(
+candidates: null == candidates ? _self._candidates : candidates // ignore: cast_nullable_to_non_nullable
+as List<ConversationCandidate>,
   ));
 }
 

@@ -101,27 +101,30 @@ Map<String, dynamic> _$CreateConversationResultToJson(
   _CreateConversationResult instance,
 ) => <String, dynamic>{'conversation': instance.conversation};
 
-_GetSchoolMembersPayload _$GetSchoolMembersPayloadFromJson(
-  Map<String, dynamic> json,
-) => _GetSchoolMembersPayload(
-  query: json['query'] as String?,
-  role: json['role'] as String?,
-);
+_SearchConversationCandidatesPayload
+_$SearchConversationCandidatesPayloadFromJson(Map<String, dynamic> json) =>
+    _SearchConversationCandidatesPayload(
+      query: json['query'] as String,
+      limit: (json['limit'] as num?)?.toInt() ?? 100,
+    );
 
-Map<String, dynamic> _$GetSchoolMembersPayloadToJson(
-  _GetSchoolMembersPayload instance,
-) => <String, dynamic>{'query': instance.query, 'role': instance.role};
+Map<String, dynamic> _$SearchConversationCandidatesPayloadToJson(
+  _SearchConversationCandidatesPayload instance,
+) => <String, dynamic>{'query': instance.query, 'limit': instance.limit};
 
-_GetSchoolMembersResult _$GetSchoolMembersResultFromJson(
-  Map<String, dynamic> json,
-) => _GetSchoolMembersResult(
-  members:
-      (json['members'] as List<dynamic>?)
-          ?.map((e) => Account.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      const <Account>[],
-);
+_SearchConversationCandidatesResult
+_$SearchConversationCandidatesResultFromJson(Map<String, dynamic> json) =>
+    _SearchConversationCandidatesResult(
+      candidates:
+          (json['candidates'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    ConversationCandidate.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <ConversationCandidate>[],
+    );
 
-Map<String, dynamic> _$GetSchoolMembersResultToJson(
-  _GetSchoolMembersResult instance,
-) => <String, dynamic>{'members': instance.members};
+Map<String, dynamic> _$SearchConversationCandidatesResultToJson(
+  _SearchConversationCandidatesResult instance,
+) => <String, dynamic>{'candidates': instance.candidates};

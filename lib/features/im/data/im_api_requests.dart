@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../core/network/base_request.dart';
-import '../../auth/domain/account.dart';
+import '../domain/entities/conversation_candidate.dart';
 import '../domain/entities/conversation.dart';
 import '../domain/entities/message.dart';
 
@@ -152,40 +152,46 @@ class CreateConversationRequest
 }
 
 @freezed
-abstract class GetSchoolMembersPayload with _$GetSchoolMembersPayload {
-  const factory GetSchoolMembersPayload({String? query, String? role}) =
-      _GetSchoolMembersPayload;
+abstract class SearchConversationCandidatesPayload
+    with _$SearchConversationCandidatesPayload {
+  const factory SearchConversationCandidatesPayload({
+    required String query,
+    @Default(100) int limit,
+  }) = _SearchConversationCandidatesPayload;
 
-  factory GetSchoolMembersPayload.fromJson(Map<String, dynamic> json) =>
-      _$GetSchoolMembersPayloadFromJson(json);
+  factory SearchConversationCandidatesPayload.fromJson(
+    Map<String, dynamic> json,
+  ) => _$SearchConversationCandidatesPayloadFromJson(json);
 }
 
 @freezed
-abstract class GetSchoolMembersResult with _$GetSchoolMembersResult {
-  const factory GetSchoolMembersResult({
-    @Default(<Account>[]) List<Account> members,
-  }) = _GetSchoolMembersResult;
+abstract class SearchConversationCandidatesResult
+    with _$SearchConversationCandidatesResult {
+  const factory SearchConversationCandidatesResult({
+    @Default(<ConversationCandidate>[]) List<ConversationCandidate> candidates,
+  }) = _SearchConversationCandidatesResult;
 
-  factory GetSchoolMembersResult.fromJson(Map<String, dynamic> json) =>
-      _$GetSchoolMembersResultFromJson(json);
+  factory SearchConversationCandidatesResult.fromJson(
+    Map<String, dynamic> json,
+  ) => _$SearchConversationCandidatesResultFromJson(json);
 }
 
-class GetSchoolMembersRequest
-    extends BaseRequest<GetSchoolMembersPayload, List<Account>> {
-  GetSchoolMembersRequest({required String rolePrefix})
+class SearchConversationCandidatesRequest
+    extends
+        BaseRequest<
+          SearchConversationCandidatesPayload,
+          List<ConversationCandidate>
+        > {
+  SearchConversationCandidatesRequest()
     : super(
-        '/api/v1/$rolePrefix/school/members',
+        '/api/v1/conversations/candidates',
         HttpMethod.get,
-        fallbackMessage: '获取学校成员失败',
+        fallbackMessage: '搜索会话对象失败',
         queryParameters: (value) {
-          final query = value.query?.trim();
-          final role = value.role?.trim();
-          return {
-            if (query != null && query.isNotEmpty) 'query': query,
-            if (role != null && role.isNotEmpty) 'role': role,
-          };
+          final query = value.query.trim();
+          return {'query': query, 'limit': value.limit};
         },
         responseParser: (value) =>
-            GetSchoolMembersResult.fromJson(value).members,
+            SearchConversationCandidatesResult.fromJson(value).candidates,
       );
 }

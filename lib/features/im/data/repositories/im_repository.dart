@@ -7,8 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:learn_go/core/network/api_client.dart';
 import 'package:learn_go/core/network/dio_provider.dart';
 import 'package:learn_go/features/im/domain/entities/conversation.dart';
+import 'package:learn_go/features/im/domain/entities/conversation_candidate.dart';
 import 'package:learn_go/features/im/domain/entities/message.dart';
-import 'package:learn_go/features/auth/domain/account.dart';
 import 'package:learn_go/core/config/app_environment.dart';
 import 'package:learn_go/core/grpc/grpc_channel.dart';
 import 'package:learn_go/features/auth/application/auth_controller.dart';
@@ -86,13 +86,13 @@ class IMRepository {
     );
   }
 
-  Future<List<Account>> getSchoolMembers({String? query, String? role}) {
-    final currentRole = _ref.read(authStateProvider).account?.role;
-    final prefix = currentRole == AccountRole.teacher ? 'teacher' : 'student';
-
+  Future<List<ConversationCandidate>> searchConversationCandidates(
+    String query, {
+    int limit = 100,
+  }) {
     return _apiClient.execute(
-      GetSchoolMembersRequest(rolePrefix: prefix),
-      payload: GetSchoolMembersPayload(query: query, role: role),
+      SearchConversationCandidatesRequest(),
+      payload: SearchConversationCandidatesPayload(query: query, limit: limit),
     );
   }
 
