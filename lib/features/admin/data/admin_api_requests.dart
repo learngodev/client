@@ -306,43 +306,6 @@ class UpdateAccountStructureRequest
       );
 }
 
-@freezed
-abstract class AddTeacherToClassPayload with _$AddTeacherToClassPayload {
-  @JsonSerializable(fieldRename: FieldRename.snake, includeIfNull: false)
-  const factory AddTeacherToClassPayload({
-    required String schoolId,
-    required String accountId,
-  }) = _AddTeacherToClassPayload;
-
-  factory AddTeacherToClassPayload.fromJson(Map<String, dynamic> json) =>
-      _$AddTeacherToClassPayloadFromJson(json);
-}
-
-class AddTeacherToClassRequest
-    extends BaseRequest<AddTeacherToClassPayload, void> {
-  AddTeacherToClassRequest({required String classId})
-    : super(
-        '/api/v1/admin/classes/$classId/teachers',
-        HttpMethod.post,
-        fallbackMessage: '添加教师失败',
-        queryParameters: (value) => {'school_id': value.schoolId},
-        requestEncoder: (value) => {'account_id': value.accountId},
-      );
-}
-
-class RemoveTeacherFromClassRequest
-    extends BaseRequest<SchoolScopedQueryPayload, void> {
-  RemoveTeacherFromClassRequest({
-    required String classId,
-    required String accountId,
-  }) : super(
-         '/api/v1/admin/classes/$classId/teachers/$accountId',
-         HttpMethod.delete,
-         fallbackMessage: '移除教师失败',
-         queryParameters: (value) => value.toJson(),
-       );
-}
-
 class ResetAccountPasswordRequest
     extends BaseRequest<SchoolScopedBodyPayload, void> {
   ResetAccountPasswordRequest({required String accountId})

@@ -186,31 +186,6 @@ class AdminRepository {
     );
   }
 
-  Future<void> addTeacherToClass({
-    required String schoolId,
-    required String classId,
-    required String accountId,
-  }) {
-    return _apiClient.execute(
-      AddTeacherToClassRequest(classId: classId),
-      payload: AddTeacherToClassPayload(
-        schoolId: schoolId,
-        accountId: accountId,
-      ),
-    );
-  }
-
-  Future<void> removeTeacherFromClass({
-    required String schoolId,
-    required String classId,
-    required String accountId,
-  }) {
-    return _apiClient.execute(
-      RemoveTeacherFromClassRequest(classId: classId, accountId: accountId),
-      payload: SchoolScopedQueryPayload(schoolId: schoolId),
-    );
-  }
-
   Future<void> resetAccountPassword({
     required String schoolId,
     required String accountId,

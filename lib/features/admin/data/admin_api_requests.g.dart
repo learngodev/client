@@ -193,20 +193,6 @@ Map<String, dynamic> _$UpdateAccountStructurePayloadToJson(
   'class_id': ?instance.classId,
 };
 
-_AddTeacherToClassPayload _$AddTeacherToClassPayloadFromJson(
-  Map<String, dynamic> json,
-) => _AddTeacherToClassPayload(
-  schoolId: json['school_id'] as String,
-  accountId: json['account_id'] as String,
-);
-
-Map<String, dynamic> _$AddTeacherToClassPayloadToJson(
-  _AddTeacherToClassPayload instance,
-) => <String, dynamic>{
-  'school_id': instance.schoolId,
-  'account_id': instance.accountId,
-};
-
 _BatchOperateAccountsPayload _$BatchOperateAccountsPayloadFromJson(
   Map<String, dynamic> json,
 ) => _BatchOperateAccountsPayload(

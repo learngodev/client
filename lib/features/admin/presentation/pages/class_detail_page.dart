@@ -6,7 +6,6 @@ import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../../auth/application/auth_controller.dart';
 import '../widgets/assign_student_dialog.dart';
-import '../widgets/assign_teacher_dialog.dart';
 
 class ClassDetailPage extends ConsumerStatefulWidget {
   const ClassDetailPage({
@@ -79,21 +78,8 @@ class _ClassDetailPageState extends ConsumerState<ClassDetailPage>
               icon: const Icon(Icons.person_add),
               label: const Text('分配学生'),
             );
-          } else {
-            return FloatingActionButton.extended(
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AssignTeacherDialog(
-                    department: widget.department,
-                    classInfo: widget.classInfo,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.person_add),
-              label: const Text('分配教师'),
-            );
           }
+          return const SizedBox.shrink();
         },
       ),
       body: TabBarView(
@@ -131,6 +117,7 @@ class _ClassAccountListState extends ConsumerState<_ClassAccountList> {
     required AdminAccount account,
     required String schoolId,
   }) async {
+    if (widget.role != AdminAccountRole.student) return;
     if (_processingIds.contains(account.id)) return;
 
     setState(() {
@@ -140,30 +127,18 @@ class _ClassAccountListState extends ConsumerState<_ClassAccountList> {
     try {
       final repository = ref.read(adminRepositoryProvider);
 
-      if (widget.role == AdminAccountRole.student) {
-        await repository.updateAccountStructure(
-          schoolId: schoolId,
-          accountId: account.id,
-          departmentId: '',
-          classId: '',
-        );
-      } else {
-        await repository.removeTeacherFromClass(
-          schoolId: schoolId,
-          classId: widget.classInfo.id,
-          accountId: account.id,
-        );
-      }
+      await repository.updateAccountStructure(
+        schoolId: schoolId,
+        accountId: account.id,
+        departmentId: '',
+        classId: '',
+      );
 
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            widget.role == AdminAccountRole.student ? '已取消学生分配' : '已移除教师分配',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已取消学生分配')));
 
       ref.invalidate(adminAccountListProvider);
       ref.invalidate(adminDepartmentTreeProvider);
@@ -221,25 +196,25 @@ class _ClassAccountListState extends ConsumerState<_ClassAccountList> {
               ),
               title: Text(account.name),
               subtitle: Text(account.identifier),
-              trailing: IconButton(
-                tooltip: widget.role == AdminAccountRole.student
-                    ? '取消分配'
-                    : '移除教师',
-                onPressed: schoolId.isEmpty || isProcessing
-                    ? null
-                    : () => _removeFromClass(
-                        context: context,
-                        account: account,
-                        schoolId: schoolId,
-                      ),
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.person_remove_outlined),
-              ),
+              trailing: widget.role == AdminAccountRole.student
+                  ? IconButton(
+                      tooltip: '取消分配',
+                      onPressed: schoolId.isEmpty || isProcessing
+                          ? null
+                          : () => _removeFromClass(
+                              context: context,
+                              account: account,
+                              schoolId: schoolId,
+                            ),
+                      icon: isProcessing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.person_remove_outlined),
+                    )
+                  : null,
             );
           },
         );
