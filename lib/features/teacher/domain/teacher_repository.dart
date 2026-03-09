@@ -48,12 +48,6 @@ abstract class TeacherRepository {
     String? location,
     String? status,
   });
-  Future<TeacherCourse> updateCourse({
-    required String courseId,
-    String? name,
-    String? description,
-    String? imageUrl,
-  });
 
   Future<List<CourseChapterSummary>> listCourseChapters(String courseId);
   Future<CourseChapterDetail> getCourseChapter(

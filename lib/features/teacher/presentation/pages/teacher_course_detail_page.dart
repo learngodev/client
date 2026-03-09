@@ -4,10 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/teacher_courses_provider.dart';
-import '../../domain/teacher_models.dart';
 import 'teacher_course_chapters_page.dart';
 import 'teacher_course_classes_page.dart';
-import 'edit_course_dialog.dart';
 
 class TeacherCourseDetailPage extends HookConsumerWidget {
   const TeacherCourseDetailPage({super.key, required this.courseId});
@@ -17,12 +15,10 @@ class TeacherCourseDetailPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final coursesAsync = ref.watch(teacherCoursesProvider);
-    TeacherCourse? currentCourse;
     final title = coursesAsync.maybeWhen(
       data: (courses) {
         for (final c in courses) {
           if (c.id == courseId) {
-            currentCourse = c;
             return c.name.trim().isEmpty ? '课程' : c.name;
           }
         }
@@ -37,19 +33,6 @@ class TeacherCourseDetailPage extends HookConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        actions: [
-          if (currentCourse != null)
-            IconButton(
-              tooltip: '编辑课程',
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => EditCourseDialog(course: currentCourse!),
-                );
-              },
-            ),
-        ],
         bottom: TabBar(
           controller: tabController,
           tabs: const [

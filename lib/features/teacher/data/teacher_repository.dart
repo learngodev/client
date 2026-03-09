@@ -1,10 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../core/exceptions/app_exception.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_provider.dart';
-import '../../auth/application/auth_controller.dart';
 import '../../student/domain/assignment_models.dart';
 import '../../student/domain/course_chapter_models.dart';
 import 'teacher_api_requests.dart';
@@ -14,20 +12,9 @@ import '../domain/teacher_schedule_model.dart';
 import '../domain/time_slot.dart';
 
 class TeacherApiRepository implements TeacherRepository {
-  TeacherApiRepository({required Dio dio, required String Function() schoolId})
-    : _apiClient = ApiClient(dio),
-      _schoolId = schoolId;
+  TeacherApiRepository({required Dio dio}) : _apiClient = ApiClient(dio);
 
   final ApiClient _apiClient;
-  final String Function() _schoolId;
-
-  String _requireSchoolId() {
-    final value = _schoolId().trim();
-    if (value.isEmpty) {
-      throw AppException('缺少学校信息，请重新登录后再试。');
-    }
-    return value;
-  }
 
   @override
   Future<List<TimeSlot>> listTimeSlots() {
@@ -304,33 +291,9 @@ class TeacherApiRepository implements TeacherRepository {
       payload: TeacherUpdateSessionPayload(location: location, status: status),
     );
   }
-
-  @override
-  Future<TeacherCourse> updateCourse({
-    required String courseId,
-    String? name,
-    String? description,
-    String? imageUrl,
-  }) {
-    if (name == null && description == null && imageUrl == null) {
-      throw AppException('未提供需要更新的字段');
-    }
-    return _apiClient.execute(
-      TeacherUpdateCourseRequest(courseId: courseId),
-      payload: TeacherUpdateCoursePayload(
-        schoolId: _requireSchoolId(),
-        name: name,
-        description: description,
-        imageUrl: imageUrl,
-      ),
-    );
-  }
 }
 
 final teacherRepositoryProvider = Provider<TeacherRepository>((ref) {
   final dio = ref.watch(dioProvider);
-  return TeacherApiRepository(
-    dio: dio,
-    schoolId: () => ref.read(authStateProvider).account?.schoolId ?? '',
-  );
+  return TeacherApiRepository(dio: dio);
 });
