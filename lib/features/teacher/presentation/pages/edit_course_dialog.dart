@@ -86,90 +86,90 @@ class EditCourseDialog extends HookConsumerWidget {
               maxLines: 3,
             ),
             const SizedBox(height: 12),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('封面图片 (可选)'),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: coverLocalFile.value != null
-                        ? Image.file(coverLocalFile.value!, fit: BoxFit.cover)
-                        : (coverRef.value != null &&
-                              coverRef.value!.trim().isNotEmpty)
-                        ? (looksLikeFileId(coverRef.value)
-                              ? Consumer(
-                                  builder: (context, ref, _) {
-                                    final urlAsync = ref.watch(
-                                      downloadUrlProvider(
-                                        coverRef.value!.trim(),
-                                      ),
-                                    );
-                                    return urlAsync.when(
-                                      data: (url) =>
-                                          Image.network(url, fit: BoxFit.cover),
-                                      loading: () => Container(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                        alignment: Alignment.center,
-                                        child: const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        ),
-                                      ),
-                                      error: (e, _) => Container(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                        alignment: Alignment.center,
-                                        child: const Icon(
-                                          Icons.broken_image_outlined,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : Image.network(
-                                  coverRef.value!.trim(),
-                                  fit: BoxFit.cover,
-                                ))
-                        : Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.image_outlined),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: (isUploadingCover.value || isLoading.value)
-                        ? null
-                        : pickAndUploadCover,
-                    icon: isUploadingCover.value
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.cloud_upload_outlined),
-                    label: const Text('选择图片并上传'),
-                  ),
-                ),
-              ],
-            ),
+            // const Align(
+            //   alignment: Alignment.centerLeft,
+            //   child: Text('封面图片 (可选)'),
+            // ),
+            // const SizedBox(height: 8),
+            // Row(
+            //   crossAxisAlignment: CrossAxisAlignment.start,
+            //   children: [
+            //     ClipRRect(
+            //       borderRadius: BorderRadius.circular(8),
+            //       child: SizedBox(
+            //         width: 72,
+            //         height: 72,
+            //         child: coverLocalFile.value != null
+            //             ? Image.file(coverLocalFile.value!, fit: BoxFit.cover)
+            //             : (coverRef.value != null &&
+            //                   coverRef.value!.trim().isNotEmpty)
+            //             ? (looksLikeFileId(coverRef.value)
+            //                   ? Consumer(
+            //                       builder: (context, ref, _) {
+            //                         final urlAsync = ref.watch(
+            //                           downloadUrlProvider(
+            //                             coverRef.value!.trim(),
+            //                           ),
+            //                         );
+            //                         return urlAsync.when(
+            //                           data: (url) =>
+            //                               Image.network(url, fit: BoxFit.cover),
+            //                           loading: () => Container(
+            //                             color: Theme.of(
+            //                               context,
+            //                             ).colorScheme.surfaceContainerHighest,
+            //                             alignment: Alignment.center,
+            //                             child: const SizedBox(
+            //                               width: 18,
+            //                               height: 18,
+            //                               child: CircularProgressIndicator(
+            //                                 strokeWidth: 2,
+            //                               ),
+            //                             ),
+            //                           ),
+            //                           error: (e, _) => Container(
+            //                             color: Theme.of(
+            //                               context,
+            //                             ).colorScheme.surfaceContainerHighest,
+            //                             alignment: Alignment.center,
+            //                             child: const Icon(
+            //                               Icons.broken_image_outlined,
+            //                             ),
+            //                           ),
+            //                         );
+            //                       },
+            //                     )
+            //                   : Image.network(
+            //                       coverRef.value!.trim(),
+            //                       fit: BoxFit.cover,
+            //                     ))
+            //             : Container(
+            //                 color: Theme.of(
+            //                   context,
+            //                 ).colorScheme.surfaceContainerHighest,
+            //                 alignment: Alignment.center,
+            //                 child: const Icon(Icons.image_outlined),
+            //               ),
+            //       ),
+            //     ),
+            //     const SizedBox(width: 12),
+            //     Expanded(
+            //       child: OutlinedButton.icon(
+            //         onPressed: (isUploadingCover.value || isLoading.value)
+            //             ? null
+            //             : pickAndUploadCover,
+            //         icon: isUploadingCover.value
+            //             ? const SizedBox(
+            //                 width: 18,
+            //                 height: 18,
+            //                 child: CircularProgressIndicator(strokeWidth: 2),
+            //               )
+            //             : const Icon(Icons.cloud_upload_outlined),
+            //         label: const Text('选择图片并上传'),
+            //       ),
+            //     ),
+            //   ],
+            // ),
           ],
         ),
       ),

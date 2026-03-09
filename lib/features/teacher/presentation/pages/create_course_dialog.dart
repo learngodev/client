@@ -84,51 +84,51 @@ class CreateCourseDialog extends HookConsumerWidget {
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('封面图片 (可选)'),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: coverLocalFile.value != null
-                        ? Image.file(coverLocalFile.value!, fit: BoxFit.cover)
-                        : Container(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.image_outlined),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: (isUploadingCover.value || isLoading.value)
-                        ? null
-                        : pickAndUploadCover,
-                    icon: isUploadingCover.value
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.cloud_upload_outlined),
-                    label: Text(
-                      coverFileId.value == null ? '选择图片并上传' : '重新选择并上传',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+            // const Align(
+            //   alignment: Alignment.centerLeft,
+            //   child: Text('封面图片 (可选)'),
+            // ),
+            // const SizedBox(height: 8),
+            // Row(
+            //   crossAxisAlignment: CrossAxisAlignment.start,
+            //   children: [
+            //     ClipRRect(
+            //       borderRadius: BorderRadius.circular(8),
+            //       child: SizedBox(
+            //         width: 72,
+            //         height: 72,
+            //         child: coverLocalFile.value != null
+            //             ? Image.file(coverLocalFile.value!, fit: BoxFit.cover)
+            //             : Container(
+            //                 color: Theme.of(
+            //                   context,
+            //                 ).colorScheme.surfaceContainerHighest,
+            //                 alignment: Alignment.center,
+            //                 child: const Icon(Icons.image_outlined),
+            //               ),
+            //       ),
+            //     ),
+            //     const SizedBox(width: 12),
+            //     Expanded(
+            //       child: OutlinedButton.icon(
+            //         onPressed: (isUploadingCover.value || isLoading.value)
+            //             ? null
+            //             : pickAndUploadCover,
+            //         icon: isUploadingCover.value
+            //             ? const SizedBox(
+            //                 width: 18,
+            //                 height: 18,
+            //                 child: CircularProgressIndicator(strokeWidth: 2),
+            //               )
+            //             : const Icon(Icons.cloud_upload_outlined),
+            //         label: Text(
+            //           coverFileId.value == null ? '选择图片并上传' : '重新选择并上传',
+            //         ),
+            //       ),
+            //     ),
+            //   ],
+            // ),
+            // const SizedBox(height: 16),
             const Align(
               alignment: Alignment.centerLeft,
               child: Text('选择班级 (可选)'),
