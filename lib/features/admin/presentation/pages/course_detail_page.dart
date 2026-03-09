@@ -9,7 +9,7 @@ import 'class_detail_page.dart';
 class CourseDetailPage extends ConsumerStatefulWidget {
   const CourseDetailPage({super.key, required this.course});
 
-  final Course course;
+  final CourseAssignmentInfo course;
 
   @override
   ConsumerState<CourseDetailPage> createState() => _CourseDetailPageState();
@@ -38,14 +38,14 @@ class _CourseDetailPageState extends ConsumerState<CourseDetailPage>
     final teacherRequest = AdminAccountListRequest(
       schoolId: schoolId,
       role: AdminAccountRole.teacher,
-      courseId: widget.course.id,
+      courseId: widget.course.courseId,
       page: 1,
       pageSize: 100,
     );
 
     final assignmentRequest = AdminCourseAssignmentsRequest(
       schoolId: schoolId,
-      courseId: widget.course.id,
+      courseId: widget.course.courseId,
     );
 
     final teachersAsync = ref.watch(adminAccountListProvider(teacherRequest));
@@ -70,6 +70,7 @@ class _CourseDetailPageState extends ConsumerState<CourseDetailPage>
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: _CourseOverviewCard(
               course: widget.course,
+              schoolId: schoolId,
               teachersAsync: teachersAsync,
               assignmentsAsync: assignmentsAsync,
             ),
@@ -100,13 +101,15 @@ class _CourseDetailPageState extends ConsumerState<CourseDetailPage>
 class _CourseOverviewCard extends StatelessWidget {
   const _CourseOverviewCard({
     required this.course,
+    required this.schoolId,
     required this.teachersAsync,
     required this.assignmentsAsync,
   });
 
-  final Course course;
+  final CourseAssignmentInfo course;
+  final String schoolId;
   final AsyncValue<AdminAccountPage> teachersAsync;
-  final AsyncValue<List<CourseAssignment>> assignmentsAsync;
+  final AsyncValue<List<CourseAssignmentInfo>> assignmentsAsync;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +151,7 @@ class _CourseOverviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        course.name,
+                        course.courseName,
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: theme.colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -178,12 +181,12 @@ class _CourseOverviewCard extends StatelessWidget {
               children: [
                 Chip(
                   avatar: const Icon(Icons.tag, size: 16),
-                  label: Text('课程 ID: ${course.id}'),
+                  label: Text('课程 ID: ${course.courseId}'),
                   backgroundColor: theme.colorScheme.surface,
                 ),
                 Chip(
                   avatar: const Icon(Icons.apartment_outlined, size: 16),
-                  label: Text('学校 ID: ${course.schoolId}'),
+                  label: Text('学校 ID: $schoolId'),
                   backgroundColor: theme.colorScheme.surface,
                 ),
               ],
@@ -276,7 +279,7 @@ class _TeacherListTab extends ConsumerWidget {
     required this.teachersAsync,
   });
 
-  final Course course;
+  final CourseAssignmentInfo course;
   final AdminAccountListRequest teacherRequest;
   final AsyncValue<AdminAccountPage> teachersAsync;
 
@@ -342,9 +345,9 @@ class _ClassAssignmentTab extends ConsumerWidget {
     required this.assignmentsAsync,
   });
 
-  final Course course;
+  final CourseAssignmentInfo course;
   final AdminCourseAssignmentsRequest assignmentRequest;
-  final AsyncValue<List<CourseAssignment>> assignmentsAsync;
+  final AsyncValue<List<CourseAssignmentInfo>> assignmentsAsync;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -432,10 +435,8 @@ class _ClassAssignmentTab extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('学生: ${assignment.studentCount} 人'),
-                            if (assignment.teacherNames.isNotEmpty)
-                              Text(
-                                '任课教师: ${assignment.teacherNames.join(", ")}',
-                              ),
+                            if (assignment.teacherName.isNotEmpty)
+                              Text('任课教师: ${assignment.teacherName}'),
                           ],
                         ),
                         trailing: const Icon(Icons.chevron_right),

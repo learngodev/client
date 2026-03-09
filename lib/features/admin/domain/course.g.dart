@@ -34,26 +34,30 @@ Map<String, dynamic> _$TeacherToJson(_Teacher instance) => <String, dynamic>{
   'name': instance.name,
 };
 
-_CourseAssignment _$CourseAssignmentFromJson(Map<String, dynamic> json) =>
-    _CourseAssignment(
-      courseId: json['course_id'] as String? ?? '',
-      courseName: json['course_name'] as String? ?? '',
-      classId: json['class_id'] as String? ?? '',
-      className: json['class_name'] as String? ?? '',
-      teacherNames:
-          (json['teacher_names'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
-      studentCount: (json['student_count'] as num?)?.toInt() ?? 0,
-    );
+_CourseAssignmentInfo _$CourseAssignmentInfoFromJson(
+  Map<String, dynamic> json,
+) => _CourseAssignmentInfo(
+  courseId: json['course_id'] as String? ?? '',
+  courseName: json['course_name'] as String? ?? '',
+  description: json['description'] as String? ?? '',
+  imageUrl: json['image_url'] as String? ?? '',
+  teacherId: json['teacher_id'] as String? ?? '',
+  teacherName: json['teacher_name'] as String? ?? '',
+  classId: json['class_id'] as String? ?? '',
+  className: json['class_name'] as String? ?? '',
+  studentCount: (json['student_count'] as num?)?.toInt() ?? 0,
+);
 
-Map<String, dynamic> _$CourseAssignmentToJson(_CourseAssignment instance) =>
-    <String, dynamic>{
-      'course_id': instance.courseId,
-      'course_name': instance.courseName,
-      'class_id': instance.classId,
-      'class_name': instance.className,
-      'teacher_names': instance.teacherNames,
-      'student_count': instance.studentCount,
-    };
+Map<String, dynamic> _$CourseAssignmentInfoToJson(
+  _CourseAssignmentInfo instance,
+) => <String, dynamic>{
+  'course_id': instance.courseId,
+  'course_name': instance.courseName,
+  'description': instance.description,
+  'image_url': instance.imageUrl,
+  'teacher_id': instance.teacherId,
+  'teacher_name': instance.teacherName,
+  'class_id': instance.classId,
+  'class_name': instance.className,
+  'student_count': instance.studentCount,
+};

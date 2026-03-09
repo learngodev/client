@@ -592,7 +592,7 @@ class AdminRepository {
     );
   }
 
-  Future<List<Course>> fetchCourses({
+  Future<List<CourseAssignmentInfo>> fetchCourses({
     required String schoolId,
     String? departmentId,
     String? classId,
@@ -656,7 +656,7 @@ class AdminRepository {
     return _apiClient.execute(RemoveAssignmentRequest(assignmentId: id));
   }
 
-  Future<List<CourseAssignment>> fetchCourseAssignments({
+  Future<List<CourseAssignmentInfo>> fetchCourseAssignments({
     required String schoolId,
     String? courseId,
     String? departmentId,

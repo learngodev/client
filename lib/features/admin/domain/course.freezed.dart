@@ -584,48 +584,48 @@ as String,
 
 
 /// @nodoc
-mixin _$CourseAssignment implements DiagnosticableTreeMixin {
+mixin _$CourseAssignmentInfo implements DiagnosticableTreeMixin {
 
- String get courseId; String get courseName; String get classId; String get className; List<String> get teacherNames; int get studentCount;
-/// Create a copy of CourseAssignment
+ String get courseId; String get courseName; String get description; String get imageUrl; String get teacherId; String get teacherName; String get classId; String get className; int get studentCount;
+/// Create a copy of CourseAssignmentInfo
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$CourseAssignmentCopyWith<CourseAssignment> get copyWith => _$CourseAssignmentCopyWithImpl<CourseAssignment>(this as CourseAssignment, _$identity);
+$CourseAssignmentInfoCopyWith<CourseAssignmentInfo> get copyWith => _$CourseAssignmentInfoCopyWithImpl<CourseAssignmentInfo>(this as CourseAssignmentInfo, _$identity);
 
-  /// Serializes this CourseAssignment to a JSON map.
+  /// Serializes this CourseAssignmentInfo to a JSON map.
   Map<String, dynamic> toJson();
 
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
-    ..add(DiagnosticsProperty('type', 'CourseAssignment'))
-    ..add(DiagnosticsProperty('courseId', courseId))..add(DiagnosticsProperty('courseName', courseName))..add(DiagnosticsProperty('classId', classId))..add(DiagnosticsProperty('className', className))..add(DiagnosticsProperty('teacherNames', teacherNames))..add(DiagnosticsProperty('studentCount', studentCount));
+    ..add(DiagnosticsProperty('type', 'CourseAssignmentInfo'))
+    ..add(DiagnosticsProperty('courseId', courseId))..add(DiagnosticsProperty('courseName', courseName))..add(DiagnosticsProperty('description', description))..add(DiagnosticsProperty('imageUrl', imageUrl))..add(DiagnosticsProperty('teacherId', teacherId))..add(DiagnosticsProperty('teacherName', teacherName))..add(DiagnosticsProperty('classId', classId))..add(DiagnosticsProperty('className', className))..add(DiagnosticsProperty('studentCount', studentCount));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CourseAssignment&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.className, className) || other.className == className)&&const DeepCollectionEquality().equals(other.teacherNames, teacherNames)&&(identical(other.studentCount, studentCount) || other.studentCount == studentCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CourseAssignmentInfo&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.description, description) || other.description == description)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.teacherName, teacherName) || other.teacherName == teacherName)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.className, className) || other.className == className)&&(identical(other.studentCount, studentCount) || other.studentCount == studentCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,courseId,courseName,classId,className,const DeepCollectionEquality().hash(teacherNames),studentCount);
+int get hashCode => Object.hash(runtimeType,courseId,courseName,description,imageUrl,teacherId,teacherName,classId,className,studentCount);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'CourseAssignment(courseId: $courseId, courseName: $courseName, classId: $classId, className: $className, teacherNames: $teacherNames, studentCount: $studentCount)';
+  return 'CourseAssignmentInfo(courseId: $courseId, courseName: $courseName, description: $description, imageUrl: $imageUrl, teacherId: $teacherId, teacherName: $teacherName, classId: $classId, className: $className, studentCount: $studentCount)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $CourseAssignmentCopyWith<$Res>  {
-  factory $CourseAssignmentCopyWith(CourseAssignment value, $Res Function(CourseAssignment) _then) = _$CourseAssignmentCopyWithImpl;
+abstract mixin class $CourseAssignmentInfoCopyWith<$Res>  {
+  factory $CourseAssignmentInfoCopyWith(CourseAssignmentInfo value, $Res Function(CourseAssignmentInfo) _then) = _$CourseAssignmentInfoCopyWithImpl;
 @useResult
 $Res call({
- String courseId, String courseName, String classId, String className, List<String> teacherNames, int studentCount
+ String courseId, String courseName, String description, String imageUrl, String teacherId, String teacherName, String classId, String className, int studentCount
 });
 
 
@@ -633,23 +633,26 @@ $Res call({
 
 }
 /// @nodoc
-class _$CourseAssignmentCopyWithImpl<$Res>
-    implements $CourseAssignmentCopyWith<$Res> {
-  _$CourseAssignmentCopyWithImpl(this._self, this._then);
+class _$CourseAssignmentInfoCopyWithImpl<$Res>
+    implements $CourseAssignmentInfoCopyWith<$Res> {
+  _$CourseAssignmentInfoCopyWithImpl(this._self, this._then);
 
-  final CourseAssignment _self;
-  final $Res Function(CourseAssignment) _then;
+  final CourseAssignmentInfo _self;
+  final $Res Function(CourseAssignmentInfo) _then;
 
-/// Create a copy of CourseAssignment
+/// Create a copy of CourseAssignmentInfo
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? courseId = null,Object? courseName = null,Object? classId = null,Object? className = null,Object? teacherNames = null,Object? studentCount = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? courseId = null,Object? courseName = null,Object? description = null,Object? imageUrl = null,Object? teacherId = null,Object? teacherName = null,Object? classId = null,Object? className = null,Object? studentCount = null,}) {
   return _then(_self.copyWith(
 courseId: null == courseId ? _self.courseId : courseId // ignore: cast_nullable_to_non_nullable
 as String,courseName: null == courseName ? _self.courseName : courseName // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,imageUrl: null == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
+as String,teacherId: null == teacherId ? _self.teacherId : teacherId // ignore: cast_nullable_to_non_nullable
+as String,teacherName: null == teacherName ? _self.teacherName : teacherName // ignore: cast_nullable_to_non_nullable
 as String,classId: null == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
 as String,className: null == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
-as String,teacherNames: null == teacherNames ? _self.teacherNames : teacherNames // ignore: cast_nullable_to_non_nullable
-as List<String>,studentCount: null == studentCount ? _self.studentCount : studentCount // ignore: cast_nullable_to_non_nullable
+as String,studentCount: null == studentCount ? _self.studentCount : studentCount // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -657,8 +660,8 @@ as int,
 }
 
 
-/// Adds pattern-matching-related methods to [CourseAssignment].
-extension CourseAssignmentPatterns on CourseAssignment {
+/// Adds pattern-matching-related methods to [CourseAssignmentInfo].
+extension CourseAssignmentInfoPatterns on CourseAssignmentInfo {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -671,10 +674,10 @@ extension CourseAssignmentPatterns on CourseAssignment {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CourseAssignment value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CourseAssignmentInfo value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _CourseAssignment() when $default != null:
+case _CourseAssignmentInfo() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -693,10 +696,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CourseAssignment value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CourseAssignmentInfo value)  $default,){
 final _that = this;
 switch (_that) {
-case _CourseAssignment():
+case _CourseAssignmentInfo():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -714,10 +717,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CourseAssignment value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CourseAssignmentInfo value)?  $default,){
 final _that = this;
 switch (_that) {
-case _CourseAssignment() when $default != null:
+case _CourseAssignmentInfo() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -735,10 +738,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String classId,  String className,  List<String> teacherNames,  int studentCount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String description,  String imageUrl,  String teacherId,  String teacherName,  String classId,  String className,  int studentCount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _CourseAssignment() when $default != null:
-return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_that.teacherNames,_that.studentCount);case _:
+case _CourseAssignmentInfo() when $default != null:
+return $default(_that.courseId,_that.courseName,_that.description,_that.imageUrl,_that.teacherId,_that.teacherName,_that.classId,_that.className,_that.studentCount);case _:
   return orElse();
 
 }
@@ -756,10 +759,10 @@ return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String classId,  String className,  List<String> teacherNames,  int studentCount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String courseId,  String courseName,  String description,  String imageUrl,  String teacherId,  String teacherName,  String classId,  String className,  int studentCount)  $default,) {final _that = this;
 switch (_that) {
-case _CourseAssignment():
-return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_that.teacherNames,_that.studentCount);case _:
+case _CourseAssignmentInfo():
+return $default(_that.courseId,_that.courseName,_that.description,_that.imageUrl,_that.teacherId,_that.teacherName,_that.classId,_that.className,_that.studentCount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -776,10 +779,10 @@ return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String courseId,  String courseName,  String classId,  String className,  List<String> teacherNames,  int studentCount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String courseId,  String courseName,  String description,  String imageUrl,  String teacherId,  String teacherName,  String classId,  String className,  int studentCount)?  $default,) {final _that = this;
 switch (_that) {
-case _CourseAssignment() when $default != null:
-return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_that.teacherNames,_that.studentCount);case _:
+case _CourseAssignmentInfo() when $default != null:
+return $default(_that.courseId,_that.courseName,_that.description,_that.imageUrl,_that.teacherId,_that.teacherName,_that.classId,_that.className,_that.studentCount);case _:
   return null;
 
 }
@@ -790,63 +793,60 @@ return $default(_that.courseId,_that.courseName,_that.classId,_that.className,_t
 /// @nodoc
 @JsonSerializable()
 
-class _CourseAssignment with DiagnosticableTreeMixin implements CourseAssignment {
-  const _CourseAssignment({this.courseId = '', this.courseName = '', this.classId = '', this.className = '', final  List<String> teacherNames = const [], this.studentCount = 0}): _teacherNames = teacherNames;
-  factory _CourseAssignment.fromJson(Map<String, dynamic> json) => _$CourseAssignmentFromJson(json);
+class _CourseAssignmentInfo with DiagnosticableTreeMixin implements CourseAssignmentInfo {
+  const _CourseAssignmentInfo({this.courseId = '', this.courseName = '', this.description = '', this.imageUrl = '', this.teacherId = '', this.teacherName = '', this.classId = '', this.className = '', this.studentCount = 0});
+  factory _CourseAssignmentInfo.fromJson(Map<String, dynamic> json) => _$CourseAssignmentInfoFromJson(json);
 
 @override@JsonKey() final  String courseId;
 @override@JsonKey() final  String courseName;
+@override@JsonKey() final  String description;
+@override@JsonKey() final  String imageUrl;
+@override@JsonKey() final  String teacherId;
+@override@JsonKey() final  String teacherName;
 @override@JsonKey() final  String classId;
 @override@JsonKey() final  String className;
- final  List<String> _teacherNames;
-@override@JsonKey() List<String> get teacherNames {
-  if (_teacherNames is EqualUnmodifiableListView) return _teacherNames;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_teacherNames);
-}
-
 @override@JsonKey() final  int studentCount;
 
-/// Create a copy of CourseAssignment
+/// Create a copy of CourseAssignmentInfo
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$CourseAssignmentCopyWith<_CourseAssignment> get copyWith => __$CourseAssignmentCopyWithImpl<_CourseAssignment>(this, _$identity);
+_$CourseAssignmentInfoCopyWith<_CourseAssignmentInfo> get copyWith => __$CourseAssignmentInfoCopyWithImpl<_CourseAssignmentInfo>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$CourseAssignmentToJson(this, );
+  return _$CourseAssignmentInfoToJson(this, );
 }
 @override
 void debugFillProperties(DiagnosticPropertiesBuilder properties) {
   properties
-    ..add(DiagnosticsProperty('type', 'CourseAssignment'))
-    ..add(DiagnosticsProperty('courseId', courseId))..add(DiagnosticsProperty('courseName', courseName))..add(DiagnosticsProperty('classId', classId))..add(DiagnosticsProperty('className', className))..add(DiagnosticsProperty('teacherNames', teacherNames))..add(DiagnosticsProperty('studentCount', studentCount));
+    ..add(DiagnosticsProperty('type', 'CourseAssignmentInfo'))
+    ..add(DiagnosticsProperty('courseId', courseId))..add(DiagnosticsProperty('courseName', courseName))..add(DiagnosticsProperty('description', description))..add(DiagnosticsProperty('imageUrl', imageUrl))..add(DiagnosticsProperty('teacherId', teacherId))..add(DiagnosticsProperty('teacherName', teacherName))..add(DiagnosticsProperty('classId', classId))..add(DiagnosticsProperty('className', className))..add(DiagnosticsProperty('studentCount', studentCount));
 }
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CourseAssignment&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.className, className) || other.className == className)&&const DeepCollectionEquality().equals(other._teacherNames, _teacherNames)&&(identical(other.studentCount, studentCount) || other.studentCount == studentCount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CourseAssignmentInfo&&(identical(other.courseId, courseId) || other.courseId == courseId)&&(identical(other.courseName, courseName) || other.courseName == courseName)&&(identical(other.description, description) || other.description == description)&&(identical(other.imageUrl, imageUrl) || other.imageUrl == imageUrl)&&(identical(other.teacherId, teacherId) || other.teacherId == teacherId)&&(identical(other.teacherName, teacherName) || other.teacherName == teacherName)&&(identical(other.classId, classId) || other.classId == classId)&&(identical(other.className, className) || other.className == className)&&(identical(other.studentCount, studentCount) || other.studentCount == studentCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,courseId,courseName,classId,className,const DeepCollectionEquality().hash(_teacherNames),studentCount);
+int get hashCode => Object.hash(runtimeType,courseId,courseName,description,imageUrl,teacherId,teacherName,classId,className,studentCount);
 
 @override
 String toString({ DiagnosticLevel minLevel = DiagnosticLevel.info }) {
-  return 'CourseAssignment(courseId: $courseId, courseName: $courseName, classId: $classId, className: $className, teacherNames: $teacherNames, studentCount: $studentCount)';
+  return 'CourseAssignmentInfo(courseId: $courseId, courseName: $courseName, description: $description, imageUrl: $imageUrl, teacherId: $teacherId, teacherName: $teacherName, classId: $classId, className: $className, studentCount: $studentCount)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$CourseAssignmentCopyWith<$Res> implements $CourseAssignmentCopyWith<$Res> {
-  factory _$CourseAssignmentCopyWith(_CourseAssignment value, $Res Function(_CourseAssignment) _then) = __$CourseAssignmentCopyWithImpl;
+abstract mixin class _$CourseAssignmentInfoCopyWith<$Res> implements $CourseAssignmentInfoCopyWith<$Res> {
+  factory _$CourseAssignmentInfoCopyWith(_CourseAssignmentInfo value, $Res Function(_CourseAssignmentInfo) _then) = __$CourseAssignmentInfoCopyWithImpl;
 @override @useResult
 $Res call({
- String courseId, String courseName, String classId, String className, List<String> teacherNames, int studentCount
+ String courseId, String courseName, String description, String imageUrl, String teacherId, String teacherName, String classId, String className, int studentCount
 });
 
 
@@ -854,23 +854,26 @@ $Res call({
 
 }
 /// @nodoc
-class __$CourseAssignmentCopyWithImpl<$Res>
-    implements _$CourseAssignmentCopyWith<$Res> {
-  __$CourseAssignmentCopyWithImpl(this._self, this._then);
+class __$CourseAssignmentInfoCopyWithImpl<$Res>
+    implements _$CourseAssignmentInfoCopyWith<$Res> {
+  __$CourseAssignmentInfoCopyWithImpl(this._self, this._then);
 
-  final _CourseAssignment _self;
-  final $Res Function(_CourseAssignment) _then;
+  final _CourseAssignmentInfo _self;
+  final $Res Function(_CourseAssignmentInfo) _then;
 
-/// Create a copy of CourseAssignment
+/// Create a copy of CourseAssignmentInfo
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? courseId = null,Object? courseName = null,Object? classId = null,Object? className = null,Object? teacherNames = null,Object? studentCount = null,}) {
-  return _then(_CourseAssignment(
+@override @pragma('vm:prefer-inline') $Res call({Object? courseId = null,Object? courseName = null,Object? description = null,Object? imageUrl = null,Object? teacherId = null,Object? teacherName = null,Object? classId = null,Object? className = null,Object? studentCount = null,}) {
+  return _then(_CourseAssignmentInfo(
 courseId: null == courseId ? _self.courseId : courseId // ignore: cast_nullable_to_non_nullable
 as String,courseName: null == courseName ? _self.courseName : courseName // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,imageUrl: null == imageUrl ? _self.imageUrl : imageUrl // ignore: cast_nullable_to_non_nullable
+as String,teacherId: null == teacherId ? _self.teacherId : teacherId // ignore: cast_nullable_to_non_nullable
+as String,teacherName: null == teacherName ? _self.teacherName : teacherName // ignore: cast_nullable_to_non_nullable
 as String,classId: null == classId ? _self.classId : classId // ignore: cast_nullable_to_non_nullable
 as String,className: null == className ? _self.className : className // ignore: cast_nullable_to_non_nullable
-as String,teacherNames: null == teacherNames ? _self._teacherNames : teacherNames // ignore: cast_nullable_to_non_nullable
-as List<String>,studentCount: null == studentCount ? _self.studentCount : studentCount // ignore: cast_nullable_to_non_nullable
+as String,studentCount: null == studentCount ? _self.studentCount : studentCount // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

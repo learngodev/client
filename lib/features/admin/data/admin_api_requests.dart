@@ -1046,7 +1046,7 @@ abstract class FetchCoursesPayload with _$FetchCoursesPayload {
 }
 
 class FetchCoursesRequest
-    extends BaseRequest<FetchCoursesPayload, List<Course>> {
+    extends BaseRequest<FetchCoursesPayload, List<CourseAssignmentInfo>> {
   FetchCoursesRequest()
     : super(
         '/api/v1/admin/courses',
@@ -1055,7 +1055,9 @@ class FetchCoursesRequest
         queryParameters: (value) => _dropNullAndEmpty(value.toJson()),
         responseParser: (value) {
           final map = _requireMap(value);
-          return _asMapList(map['items']).map(Course.fromJson).toList();
+          return _asMapList(
+            map['items'],
+          ).map(CourseAssignmentInfo.fromJson).toList();
         },
       );
 }
@@ -1167,7 +1169,8 @@ abstract class FetchCourseAssignmentsPayload
 }
 
 class FetchCourseAssignmentsRequest
-    extends BaseRequest<FetchCourseAssignmentsPayload, List<CourseAssignment>> {
+    extends
+        BaseRequest<FetchCourseAssignmentsPayload, List<CourseAssignmentInfo>> {
   FetchCourseAssignmentsRequest()
     : super(
         '/api/v1/admin/courses/assignments',
@@ -1183,7 +1186,7 @@ class FetchCourseAssignmentsRequest
           final map = _requireMap(value);
           return _asMapList(
             map['items'],
-          ).map(CourseAssignment.fromJson).toList();
+          ).map(CourseAssignmentInfo.fromJson).toList();
         },
       );
 }

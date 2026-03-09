@@ -1066,7 +1066,7 @@ class AdminCourseAssignmentsRequest {
 }
 
 final adminCourseAssignmentsProvider = FutureProvider.autoDispose
-    .family<List<CourseAssignment>, AdminCourseAssignmentsRequest>((
+    .family<List<CourseAssignmentInfo>, AdminCourseAssignmentsRequest>((
       ref,
       request,
     ) async {

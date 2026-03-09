@@ -215,7 +215,7 @@ class CourseManagementPage extends ConsumerWidget {
   Widget _buildCourseCard(
     BuildContext context,
     WidgetRef ref,
-    Course course,
+    CourseAssignmentInfo course,
     String schoolId,
   ) {
     final theme = Theme.of(context);
@@ -244,7 +244,7 @@ class CourseManagementPage extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      course.name,
+                      course.courseName,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -408,7 +408,7 @@ class CourseManagementPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String schoolId,
-    Course course,
+    CourseAssignmentInfo course,
   ) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -430,7 +430,9 @@ class CourseManagementPage extends ConsumerWidget {
 
     if (confirm == true) {
       try {
-        await ref.read(adminRepositoryProvider).deleteCourse(id: course.id);
+        await ref
+            .read(adminRepositoryProvider)
+            .deleteCourse(id: course.courseId);
         ref.invalidate(courseListProvider(schoolId));
       } catch (e) {
         if (context.mounted) {
@@ -446,7 +448,7 @@ class CourseManagementPage extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String schoolId,
-    Course course,
+    CourseAssignmentInfo course,
   ) async {
     ScaffoldMessenger.of(
       context,

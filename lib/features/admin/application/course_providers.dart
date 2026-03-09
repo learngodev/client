@@ -40,7 +40,7 @@ final courseFilterProvider = StateProvider<CourseFilter>(
 );
 
 final courseListProvider = FutureProvider.autoDispose
-    .family<List<Course>, String>((ref, schoolId) async {
+    .family<List<CourseAssignmentInfo>, String>((ref, schoolId) async {
       final repo = ref.watch(adminRepositoryProvider);
       final filter = ref.watch(courseFilterProvider);
 

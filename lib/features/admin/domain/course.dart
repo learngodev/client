@@ -39,16 +39,19 @@ abstract class Teacher with _$Teacher {
 }
 
 @freezed
-abstract class CourseAssignment with _$CourseAssignment {
-  const factory CourseAssignment({
+abstract class CourseAssignmentInfo with _$CourseAssignmentInfo {
+  const factory CourseAssignmentInfo({
     @Default('') String courseId,
     @Default('') String courseName,
+    @Default('') String description,
+    @Default('') String imageUrl,
+    @Default('') String teacherId,
+    @Default('') String teacherName,
     @Default('') String classId,
     @Default('') String className,
-    @Default([]) List<String> teacherNames,
     @Default(0) int studentCount,
-  }) = _CourseAssignment;
+  }) = _CourseAssignmentInfo;
 
-  factory CourseAssignment.fromJson(Map<String, dynamic> json) =>
-      _$CourseAssignmentFromJson(json);
+  factory CourseAssignmentInfo.fromJson(Map<String, dynamic> json) =>
+      _$CourseAssignmentInfoFromJson(json);
 }

@@ -318,11 +318,13 @@ class _CoursesTab extends ConsumerWidget {
                   // Keyword filter
                   if (filter.keyword != null && filter.keyword!.isNotEmpty) {
                     final k = filter.keyword!.toLowerCase();
-                    final matchesName = course.name.toLowerCase().contains(k);
+                    final matchesName = course.courseName
+                        .toLowerCase()
+                        .contains(k);
 
                     final courseRules =
                         rulesAsync.valueOrNull?.where(
-                          (r) => r.courseId == course.id,
+                          (r) => r.courseId == course.courseId,
                         ) ??
                         [];
 
@@ -343,7 +345,7 @@ class _CoursesTab extends ConsumerWidget {
                     final rules = rulesAsync.valueOrNull ?? [];
                     final hasSlot = rules.any(
                       (r) =>
-                          r.courseId == course.id &&
+                          r.courseId == course.courseId &&
                           r.slotId.trim() == filter.slotId!.trim(),
                     );
                     if (!hasSlot) {
@@ -440,7 +442,9 @@ class _CoursesTab extends ConsumerWidget {
                                       final rules =
                                           rulesAsync.valueOrNull
                                               ?.where(
-                                                (r) => r.courseId == course.id,
+                                                (r) =>
+                                                    r.courseId ==
+                                                    course.courseId,
                                               )
                                               .toList() ??
                                           [];
@@ -455,7 +459,7 @@ class _CoursesTab extends ConsumerWidget {
                                                   MainAxisAlignment.center,
                                               children: [
                                                 Text(
-                                                  course.name,
+                                                  course.courseName,
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 15,
@@ -794,7 +798,7 @@ class _CoursesTab extends ConsumerWidget {
                                                         context,
                                                         ref,
                                                         schoolId,
-                                                        course.id,
+                                                        course.courseId,
                                                       ),
                                                 ),
                                               ],
@@ -827,13 +831,13 @@ class _CoursesTab extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String schoolId,
-    Course? course,
+    CourseAssignmentInfo? course,
   ) {
     showDialog(
       context: context,
       builder: (context) => _ModifyScheduleInfoDialog(
         schoolId: schoolId,
-        initialCourseId: course?.id,
+        initialCourseId: course?.courseId,
       ),
     );
   }
@@ -842,12 +846,12 @@ class _CoursesTab extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
     String schoolId,
-    Course course,
+    CourseAssignmentInfo course,
   ) {
     showDialog(
       context: context,
       builder: (context) =>
-          _AddCourseTimeDialog(schoolId: schoolId, courseId: course.id),
+          _AddCourseTimeDialog(schoolId: schoolId, courseId: course.courseId),
     );
   }
 
@@ -1233,8 +1237,10 @@ class _ModifyScheduleInfoDialog extends HookConsumerWidget {
     useEffect(() {
       if (initialCourseId != null && courses.isNotEmpty) {
         try {
-          final course = courses.firstWhere((c) => c.id == initialCourseId);
-          nameController.text = course.name;
+          final course = courses.firstWhere(
+            (c) => c.courseId == initialCourseId,
+          );
+          nameController.text = course.courseName;
           descController.text = course.description;
         } catch (_) {}
       }
@@ -1340,19 +1346,6 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
 
     // Watch the controller state to handle loading and errors
     final scheduleState = ref.watch(scheduleControllerProvider);
-
-    // Auto-select teacher if course has one
-    useEffect(() {
-      if (selectedTeacherId.value == null && courses.isNotEmpty) {
-        try {
-          final course = courses.firstWhere((c) => c.id == courseId);
-          if (course.teachers.isNotEmpty) {
-            selectedTeacherId.value = course.teachers.first.id;
-          }
-        } catch (_) {}
-      }
-      return null;
-    }, [courses, courseId]);
 
     return AlertDialog(
       title: const Text('新增排课信息'),
