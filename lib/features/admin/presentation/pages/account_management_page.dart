@@ -249,7 +249,7 @@ class AccountManagementPage extends HookConsumerWidget {
             onAIBatch: () async {
               final success = await showDialog<bool>(
                 context: context,
-                builder: (context) => const _AIBatchDialog(),
+                builder: (context) => const AIBatchDialog(),
               );
               if (success == true) {
                 ref.invalidate(adminAccountListProvider);
@@ -1041,10 +1041,27 @@ class _CreateAccountDialog extends HookConsumerWidget {
                   decoration: const InputDecoration(labelText: '手机号 (可选)'),
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
-                  controller: passwordController,
-                  decoration: const InputDecoration(labelText: '默认密码'),
-                  validator: (v) => v?.isEmpty == true ? '请输入默认密码' : null,
+                HookBuilder(
+                  builder: (context) {
+                    final obscureText = useState(true);
+                    return TextFormField(
+                      controller: passwordController,
+                      decoration: InputDecoration(
+                        labelText: '默认密码',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureText.value
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                          ),
+                          onPressed: () =>
+                              obscureText.value = !obscureText.value,
+                        ),
+                      ),
+                      validator: (v) => v?.isEmpty == true ? '请输入默认密码' : null,
+                      obscureText: obscureText.value,
+                    );
+                  },
                 ),
               ],
             ),
@@ -1067,8 +1084,8 @@ class _CreateAccountDialog extends HookConsumerWidget {
 
 enum _BatchStep { input, preview, result }
 
-class _AIBatchDialog extends HookConsumerWidget {
-  const _AIBatchDialog();
+class AIBatchDialog extends HookConsumerWidget {
+  const AIBatchDialog({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
