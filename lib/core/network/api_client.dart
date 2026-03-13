@@ -25,7 +25,11 @@ class ApiClient {
         final message =
             error?['message']?.toString() ?? request.fallbackMessage ?? '请求失败';
         final details = error?['details']?.toString();
-        throw AppException(message, details: details);
+        throw AppException.fromServer(
+          message: message,
+          details: details,
+          statusCode: response.statusCode,
+        );
       }
 
       if (request.responseParser != null) {
