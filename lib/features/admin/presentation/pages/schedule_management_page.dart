@@ -1412,18 +1412,12 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
               initialValue: teachers.any((t) => t.id == selectedTeacherId.value)
                   ? selectedTeacherId.value
                   : null,
-              decoration: const InputDecoration(
-                labelText: '教师 (可选，留空则使用课程默认教师)',
-              ),
-              items: [
-                const DropdownMenuItem<String>(
-                  value: null,
-                  child: Text('使用课程默认教师'),
-                ),
-                ...teachers.map(
-                  (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
-                ),
-              ],
+              decoration: const InputDecoration(labelText: '教师'),
+              items: teachers
+                  .map(
+                    (t) => DropdownMenuItem(value: t.id, child: Text(t.name)),
+                  )
+                  .toList(),
               onChanged: (v) {
                 selectedTeacherId.value = v;
               },
@@ -1476,6 +1470,12 @@ class _AddCourseTimeDialog extends HookConsumerWidget {
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(const SnackBar(content: Text('请选择时间段')));
+                    return;
+                  }
+                  if (selectedTeacherId.value == null) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('请选择教师')));
                     return;
                   }
 
