@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:learn_go/features/admin/data/admin_repository.dart';
+import 'package:learn_go/features/admin/presentation/pages/classroom_management_page.dart';
 
 import '../../application/schedule_providers.dart';
 import '../../application/course_providers.dart';
@@ -24,7 +25,7 @@ class ScheduleManagementPage extends HookConsumerWidget {
       return const Center(child: Text('School ID not found'));
     }
 
-    final tabController = useTabController(initialLength: 2);
+    final tabController = useTabController(initialLength: 3);
 
     useEffect(() {
       void listener() {
@@ -45,6 +46,7 @@ class ScheduleManagementPage extends HookConsumerWidget {
           tabs: const [
             Tab(text: '课程与排课'),
             Tab(text: '时间段管理'),
+            Tab(text: '教室管理'),
           ],
         ),
         actions: [
@@ -61,6 +63,7 @@ class ScheduleManagementPage extends HookConsumerWidget {
         children: [
           _CoursesTab(schoolId: schoolId),
           _TimeSlotsTab(schoolId: schoolId),
+          ClassroomManagementPage(),
         ],
       ),
     );
@@ -101,17 +104,13 @@ class _CoursesTab extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: const Text('创建课程'),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: const EdgeInsets.all(16.0) + EdgeInsets.only(bottom: 80),
         children: [
-          if (statsAsync.hasValue)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: _ScheduleStatsCard(stats: statsAsync.value!),
-            ),
+          if (statsAsync.hasValue) _ScheduleStatsCard(stats: statsAsync.value!),
           // Filter Bar
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            margin: const EdgeInsets.symmetric(vertical: 16.0),
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -149,6 +148,7 @@ class _CoursesTab extends ConsumerWidget {
                 );
 
                 return Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
@@ -306,521 +306,495 @@ class _CoursesTab extends ConsumerWidget {
           ),
 
           // Course List
-          Expanded(
-            child: coursesAsync.when(
-              data: (rawCourses) {
-                // If filtering by slot, ensure rules are loaded
-                if (filter.slotId != null && !rulesAsync.hasValue) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          coursesAsync.when(
+            data: (rawCourses) {
+              // If filtering by slot, ensure rules are loaded
+              if (filter.slotId != null && !rulesAsync.hasValue) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                final courses = rawCourses.where((course) {
-                  // Keyword filter
-                  if (filter.keyword != null && filter.keyword!.isNotEmpty) {
-                    final k = filter.keyword!.toLowerCase();
-                    final matchesName = course.courseName
-                        .toLowerCase()
-                        .contains(k);
-
-                    final courseRules =
-                        rulesAsync.valueOrNull?.where(
-                          (r) => r.courseId == course.courseId,
-                        ) ??
-                        [];
-
-                    final matchesTeacher = courseRules.any(
-                      (r) => (r.teacherName ?? '').toLowerCase().contains(k),
-                    );
-                    final matchesClass = courseRules.any(
-                      (r) => (r.className ?? '').toLowerCase().contains(k),
-                    );
-
-                    if (!matchesName && !matchesTeacher && !matchesClass) {
-                      return false;
-                    }
-                  }
-
-                  // Slot filter
-                  if (filter.slotId != null) {
-                    final rules = rulesAsync.valueOrNull ?? [];
-                    final hasSlot = rules.any(
-                      (r) =>
-                          r.courseId == course.courseId &&
-                          r.slotId.trim() == filter.slotId!.trim(),
-                    );
-                    if (!hasSlot) {
-                      return false;
-                    }
-                  }
-
-                  return true;
-                }).toList();
-
-                if (courses.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.class_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '暂无课程数据',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
+              final courses = rawCourses.where((course) {
+                // Keyword filter
+                if (filter.keyword != null && filter.keyword!.isNotEmpty) {
+                  final k = filter.keyword!.toLowerCase();
+                  final matchesName = course.courseName.toLowerCase().contains(
+                    k,
                   );
+
+                  final courseRules =
+                      rulesAsync.valueOrNull?.where(
+                        (r) => r.courseId == course.courseId,
+                      ) ??
+                      [];
+
+                  final matchesTeacher = courseRules.any(
+                    (r) => (r.teacherName ?? '').toLowerCase().contains(k),
+                  );
+                  final matchesClass = courseRules.any(
+                    (r) => (r.className ?? '').toLowerCase().contains(k),
+                  );
+
+                  if (!matchesName && !matchesTeacher && !matchesClass) {
+                    return false;
+                  }
                 }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 8.0,
+
+                // Slot filter
+                if (filter.slotId != null) {
+                  final rules = rulesAsync.valueOrNull ?? [];
+                  final hasSlot = rules.any(
+                    (r) =>
+                        r.courseId == course.courseId &&
+                        r.slotId.trim() == filter.slotId!.trim(),
+                  );
+                  if (!hasSlot) {
+                    return false;
+                  }
+                }
+
+                return true;
+              }).toList();
+
+              if (courses.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.class_outlined,
+                        size: 64,
+                        color: Colors.grey[400],
                       ),
-                      child: Text(
-                        '共找到 ${courses.length} 门课程',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.bold,
-                        ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '暂无课程数据',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      '共找到 ${courses.length} 门课程',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                            child: Container(
-                              width: constraints.maxWidth - 32,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                  ),
+                  Flexible(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
                               ),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    minWidth: constraints.maxWidth - 32,
-                                  ),
-                                  child: DataTable(
-                                    dataRowMinHeight: 72,
-                                    dataRowMaxHeight: double.infinity,
-                                    headingRowColor: WidgetStateProperty.all(
-                                      Colors.grey.shade50,
-                                    ),
-                                    headingTextStyle: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
-                                    columns: const [
-                                      DataColumn(label: Text('序号')),
-                                      DataColumn(label: Text('课程名称')),
-                                      DataColumn(label: Text('教师')),
-                                      DataColumn(label: Text('班级')),
-                                      DataColumn(label: Text('排课状态')),
-                                      DataColumn(label: Text('操作')),
-                                    ],
-                                    rows: courses.asMap().entries.map((entry) {
-                                      final index = entry.key;
-                                      final course = entry.value;
-                                      final rules =
-                                          rulesAsync.valueOrNull
-                                              ?.where(
-                                                (r) =>
-                                                    r.courseId ==
-                                                    course.courseId,
-                                              )
-                                              .toList() ??
-                                          [];
-                                      return DataRow(
-                                        cells: [
-                                          DataCell(Text('${index + 1}')),
-                                          DataCell(
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  course.courseName,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 15,
-                                                  ),
+                            ],
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minWidth: constraints.maxWidth,
+                              ),
+                              child: DataTable(
+                                dataRowMinHeight: 72,
+                                dataRowMaxHeight: double.infinity,
+                                headingRowColor: WidgetStateProperty.all(
+                                  Colors.grey.shade50,
+                                ),
+                                border: TableBorder.all(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                headingTextStyle: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                columns: const [
+                                  DataColumn(label: Text('序号')),
+                                  DataColumn(label: Text('课程名称')),
+                                  DataColumn(label: Text('教师')),
+                                  DataColumn(label: Text('班级')),
+                                  DataColumn(label: Text('排课状态')),
+                                  DataColumn(label: Text('操作')),
+                                ],
+                                rows: courses.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final course = entry.value;
+                                  final rules =
+                                      rulesAsync.valueOrNull
+                                          ?.where(
+                                            (r) =>
+                                                r.courseId == course.courseId,
+                                          )
+                                          .toList() ??
+                                      [];
+                                  return DataRow(
+                                    cells: [
+                                      DataCell(Text('${index + 1}')),
+                                      DataCell(
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              course.courseName,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            if (course.description.isNotEmpty)
+                                              Text(
+                                                course.description,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey.shade600,
                                                 ),
-                                                if (course
-                                                    .description
-                                                    .isNotEmpty)
-                                                  Text(
-                                                    course.description,
-                                                    style: TextStyle(
-                                                      fontSize: 13,
-                                                      color:
-                                                          Colors.grey.shade600,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                          ],
+                                        ),
+                                        onTap: () async {
+                                          await Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  CourseDetailPage(
+                                                    course: course,
+                                                  ),
+                                            ),
+                                          );
+                                          ref.invalidate(
+                                            courseListProvider(schoolId),
+                                          );
+                                        },
+                                      ),
+                                      DataCell(
+                                        Builder(
+                                          builder: (context) {
+                                            if (rules.isEmpty) {
+                                              return const Text('-');
+                                            }
+                                            final teachers = rules
+                                                .map((r) => r.teacherName)
+                                                .where(
+                                                  (n) =>
+                                                      n != null && n.isNotEmpty,
+                                                )
+                                                .toSet()
+                                                .join(', ');
+                                            return Text(
+                                              teachers.isEmpty ? '-' : teachers,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        Builder(
+                                          builder: (context) {
+                                            if (rules.isEmpty) {
+                                              return const Text('-');
+                                            }
+                                            final classNames = rules
+                                                .map((r) => r.className)
+                                                .where(
+                                                  (n) =>
+                                                      n != null && n.isNotEmpty,
+                                                )
+                                                .toSet()
+                                                .join(', ');
+                                            return Text(
+                                              classNames.isEmpty
+                                                  ? '-'
+                                                  : classNames,
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      DataCell(
+                                        rules.isNotEmpty
+                                            ? Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8.0,
                                                     ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                              ],
-                                            ),
-                                            onTap: () async {
-                                              await Navigator.of(context).push(
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      CourseDetailPage(
-                                                        course: course,
-                                                      ),
-                                                ),
-                                              );
-                                              ref.invalidate(
-                                                courseListProvider(schoolId),
-                                              );
-                                            },
-                                          ),
-                                          DataCell(
-                                            Builder(
-                                              builder: (context) {
-                                                if (rules.isEmpty) {
-                                                  return const Text('-');
-                                                }
-                                                final teachers = rules
-                                                    .map((r) => r.teacherName)
-                                                    .where(
-                                                      (n) =>
-                                                          n != null &&
-                                                          n.isNotEmpty,
-                                                    )
-                                                    .toSet()
-                                                    .join(', ');
-                                                return Text(
-                                                  teachers.isEmpty
-                                                      ? '-'
-                                                      : teachers,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          DataCell(
-                                            Builder(
-                                              builder: (context) {
-                                                if (rules.isEmpty) {
-                                                  return const Text('-');
-                                                }
-                                                final classNames = rules
-                                                    .map((r) => r.className)
-                                                    .where(
-                                                      (n) =>
-                                                          n != null &&
-                                                          n.isNotEmpty,
-                                                    )
-                                                    .toSet()
-                                                    .join(', ');
-                                                return Text(
-                                                  classNames.isEmpty
-                                                      ? '-'
-                                                      : classNames,
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          DataCell(
-                                            rules.isNotEmpty
-                                                ? Padding(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          vertical: 8.0,
-                                                        ),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: rules.map((
-                                                        rule,
-                                                      ) {
-                                                        final slot = timeSlotsAsync
-                                                            .valueOrNull
-                                                            ?.where(
-                                                              (s) =>
-                                                                  s.id.trim() ==
-                                                                  rule.slotId
-                                                                      .trim(),
-                                                            )
-                                                            .firstOrNull;
-                                                        final weekDayIndex =
-                                                            rule.dayOfWeek - 1;
-                                                        final weekDay =
-                                                            (weekDayIndex >=
-                                                                    0 &&
-                                                                weekDayIndex <
-                                                                    7)
-                                                            ? [
-                                                                '一',
-                                                                '二',
-                                                                '三',
-                                                                '四',
-                                                                '五',
-                                                                '六',
-                                                                '日',
-                                                              ][weekDayIndex]
-                                                            : '?';
-                                                        final slotText =
-                                                            slot != null
-                                                            ? '星期$weekDay ${slot.name} (${slot.startTime}-${slot.endTime})'
-                                                            : '星期$weekDay ${rule.slotName ?? "未知"} (${rule.slotId})';
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: rules.map((rule) {
+                                                    final slot = timeSlotsAsync
+                                                        .valueOrNull
+                                                        ?.where(
+                                                          (s) =>
+                                                              s.id.trim() ==
+                                                              rule.slotId
+                                                                  .trim(),
+                                                        )
+                                                        .firstOrNull;
+                                                    final weekDayIndex =
+                                                        rule.dayOfWeek - 1;
+                                                    final weekDay =
+                                                        (weekDayIndex >= 0 &&
+                                                            weekDayIndex < 7)
+                                                        ? [
+                                                            '一',
+                                                            '二',
+                                                            '三',
+                                                            '四',
+                                                            '五',
+                                                            '六',
+                                                            '日',
+                                                          ][weekDayIndex]
+                                                        : '?';
+                                                    final slotText =
+                                                        slot != null
+                                                        ? '星期$weekDay ${slot.name} (${slot.startTime}-${slot.endTime})'
+                                                        : '星期$weekDay ${rule.slotName ?? "未知"} (${rule.slotId})';
 
-                                                        return InkWell(
+                                                    return InkWell(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            20,
+                                                          ),
+                                                      onTap: () async {
+                                                        final confirm = await showDialog<bool>(
+                                                          context: context,
+                                                          builder: (context) => AlertDialog(
+                                                            title: const Text(
+                                                              '删除排课规则',
+                                                            ),
+                                                            content: const Text(
+                                                              '确定要删除这个排课规则吗？',
+                                                            ),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                      false,
+                                                                    ),
+                                                                child:
+                                                                    const Text(
+                                                                      '取消',
+                                                                    ),
+                                                              ),
+                                                              TextButton(
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                      true,
+                                                                    ),
+                                                                child: const Text(
+                                                                  '删除',
+                                                                  style: TextStyle(
+                                                                    color: Colors
+                                                                        .red,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+
+                                                        if (confirm == true) {
+                                                          try {
+                                                            await ref
+                                                                .read(
+                                                                  scheduleControllerProvider
+                                                                      .notifier,
+                                                                )
+                                                                .deleteScheduleRule(
+                                                                  schoolId:
+                                                                      schoolId,
+                                                                  ruleId:
+                                                                      rule.id,
+                                                                );
+
+                                                            final state = ref.read(
+                                                              scheduleControllerProvider,
+                                                            );
+                                                            if (state
+                                                                .hasError) {
+                                                              throw state
+                                                                  .error!;
+                                                            }
+                                                          } catch (e) {
+                                                            if (context
+                                                                .mounted) {
+                                                              ScaffoldMessenger.of(
+                                                                context,
+                                                              ).showSnackBar(
+                                                                SnackBar(
+                                                                  content: Text(
+                                                                    '删除失败: $e',
+                                                                  ),
+                                                                ),
+                                                              );
+                                                            }
+                                                          }
+                                                        }
+                                                      },
+                                                      child: Container(
+                                                        margin:
+                                                            const EdgeInsets.only(
+                                                              bottom: 4,
+                                                            ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 10,
+                                                              vertical: 6,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors
+                                                              .orange
+                                                              .shade50,
                                                           borderRadius:
                                                               BorderRadius.circular(
                                                                 20,
                                                               ),
-                                                          onTap: () async {
-                                                            final confirm = await showDialog<bool>(
-                                                              context: context,
-                                                              builder: (context) => AlertDialog(
-                                                                title:
-                                                                    const Text(
-                                                                      '删除排课规则',
-                                                                    ),
-                                                                content: const Text(
-                                                                  '确定要删除这个排课规则吗？',
-                                                                ),
-                                                                actions: [
-                                                                  TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
-                                                                          context,
-                                                                          false,
-                                                                        ),
-                                                                    child:
-                                                                        const Text(
-                                                                          '取消',
-                                                                        ),
-                                                                  ),
-                                                                  TextButton(
-                                                                    onPressed: () =>
-                                                                        Navigator.pop(
-                                                                          context,
-                                                                          true,
-                                                                        ),
-                                                                    child: const Text(
-                                                                      '删除',
-                                                                      style: TextStyle(
-                                                                        color: Colors
-                                                                            .red,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            );
-
-                                                            if (confirm ==
-                                                                true) {
-                                                              try {
-                                                                await ref
-                                                                    .read(
-                                                                      scheduleControllerProvider
-                                                                          .notifier,
-                                                                    )
-                                                                    .deleteScheduleRule(
-                                                                      schoolId:
-                                                                          schoolId,
-                                                                      ruleId:
-                                                                          rule.id,
-                                                                    );
-
-                                                                final state =
-                                                                    ref.read(
-                                                                      scheduleControllerProvider,
-                                                                    );
-                                                                if (state
-                                                                    .hasError) {
-                                                                  throw state
-                                                                      .error!;
-                                                                }
-                                                              } catch (e) {
-                                                                if (context
-                                                                    .mounted) {
-                                                                  ScaffoldMessenger.of(
-                                                                    context,
-                                                                  ).showSnackBar(
-                                                                    SnackBar(
-                                                                      content: Text(
-                                                                        '删除失败: $e',
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                }
-                                                              }
-                                                            }
-                                                          },
-                                                          child: Container(
-                                                            margin:
-                                                                const EdgeInsets.only(
-                                                                  bottom: 4,
-                                                                ),
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal:
-                                                                      10,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .orange
-                                                                  .shade50,
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    20,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .orange
-                                                                    .shade100,
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              mainAxisSize:
-                                                                  MainAxisSize
-                                                                      .min,
+                                                          border: Border.all(
+                                                            color: Colors
+                                                                .orange
+                                                                .shade100,
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            Column(
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .start,
                                                               children: [
-                                                                Column(
-                                                                  crossAxisAlignment:
-                                                                      CrossAxisAlignment
-                                                                          .start,
-                                                                  children: [
-                                                                    Text(
-                                                                      rule.classroomLocation !=
-                                                                              null
-                                                                          ? '$slotText @ ${rule.classroomLocation}'
-                                                                          : slotText,
-                                                                      style: TextStyle(
-                                                                        fontSize:
-                                                                            12,
-                                                                        color: Colors
-                                                                            .orange
-                                                                            .shade700,
-                                                                      ),
-                                                                    ),
-                                                                    Text(
-                                                                      '${rule.startDate.year}/${rule.startDate.month.toString().padLeft(2, '0')}/${rule.startDate.day.toString().padLeft(2, '0')} - ${rule.endDate.year}/${rule.endDate.month.toString().padLeft(2, '0')}/${rule.endDate.day.toString().padLeft(2, '0')}',
-                                                                      style: TextStyle(
-                                                                        fontSize:
-                                                                            11,
-                                                                        color: Colors
-                                                                            .orange
-                                                                            .shade500,
-                                                                      ),
-                                                                    ),
-                                                                  ],
+                                                                Text(
+                                                                  rule.classroomLocation !=
+                                                                          null
+                                                                      ? '$slotText @ ${rule.classroomLocation}'
+                                                                      : slotText,
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                    color: Colors
+                                                                        .orange
+                                                                        .shade700,
+                                                                  ),
                                                                 ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Icon(
-                                                                  Icons.close,
-                                                                  size: 14,
-                                                                  color: Colors
-                                                                      .orange
-                                                                      .shade700,
+                                                                Text(
+                                                                  '${rule.startDate.year}/${rule.startDate.month.toString().padLeft(2, '0')}/${rule.startDate.day.toString().padLeft(2, '0')} - ${rule.endDate.year}/${rule.endDate.month.toString().padLeft(2, '0')}/${rule.endDate.day.toString().padLeft(2, '0')}',
+                                                                  style: TextStyle(
+                                                                    fontSize:
+                                                                        11,
+                                                                    color: Colors
+                                                                        .orange
+                                                                        .shade500,
+                                                                  ),
                                                                 ),
                                                               ],
                                                             ),
-                                                          ),
-                                                        );
-                                                      }).toList(),
-                                                    ),
-                                                  )
-                                                : const Text('-'),
-                                          ),
-                                          DataCell(
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.edit,
-                                                    size: 20,
-                                                  ),
-                                                  tooltip: '修改信息',
-                                                  onPressed: () =>
-                                                      _showModifyInfoDialog(
-                                                        context,
-                                                        ref,
-                                                        schoolId,
-                                                        course,
+                                                            const SizedBox(
+                                                              width: 4,
+                                                            ),
+                                                            Icon(
+                                                              Icons.close,
+                                                              size: 14,
+                                                              color: Colors
+                                                                  .orange
+                                                                  .shade700,
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
+                                                    );
+                                                  }).toList(),
                                                 ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.calendar_today,
-                                                    size: 20,
+                                              )
+                                            : const Text('-'),
+                                      ),
+                                      DataCell(
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.edit,
+                                                size: 20,
+                                              ),
+                                              tooltip: '修改信息',
+                                              onPressed: () =>
+                                                  _showModifyInfoDialog(
+                                                    context,
+                                                    ref,
+                                                    schoolId,
+                                                    course,
                                                   ),
-                                                  tooltip: '排课',
-                                                  onPressed: () =>
-                                                      _showAddCourseTimeDialog(
-                                                        context,
-                                                        ref,
-                                                        schoolId,
-                                                        course,
-                                                      ),
-                                                ),
-                                                IconButton(
-                                                  icon: const Icon(
-                                                    Icons.delete,
-                                                    size: 20,
-                                                    color: Colors.red,
-                                                  ),
-                                                  tooltip: '删除',
-                                                  onPressed: () =>
-                                                      _deleteCourse(
-                                                        context,
-                                                        ref,
-                                                        schoolId,
-                                                        course.courseId,
-                                                      ),
-                                                ),
-                                              ],
                                             ),
-                                          ),
-                                        ],
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.calendar_today,
+                                                size: 20,
+                                              ),
+                                              tooltip: '排课',
+                                              onPressed: () =>
+                                                  _showAddCourseTimeDialog(
+                                                    context,
+                                                    ref,
+                                                    schoolId,
+                                                    course,
+                                                  ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                size: 20,
+                                                color: Colors.red,
+                                              ),
+                                              tooltip: '删除',
+                                              onPressed: () => _deleteCourse(
+                                                context,
+                                                ref,
+                                                schoolId,
+                                                course.courseId,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('Error: $err')),
-            ),
+                  ),
+                ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (err, stack) => Center(child: Text('Error: $err')),
           ),
         ],
       ),
@@ -982,6 +956,11 @@ class _TimeSlotsTab extends ConsumerWidget {
                 width: double.infinity,
                 child: DataTable(
                   headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
+                  border: TableBorder.all(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  clipBehavior: Clip.antiAlias,
                   columns: const [
                     DataColumn(label: Text('名称')),
                     DataColumn(label: Text('开始时间')),
@@ -1639,7 +1618,7 @@ class _ScheduleStatsCard extends StatelessWidget {
         : 0.0;
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1653,57 +1632,41 @@ class _ScheduleStatsCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '排课概览',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      (scheduledPercent * 100).toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    (scheduledPercent * 100).toStringAsFixed(1),
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
                     ),
-                    Text(
-                      '%',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  '排课覆盖率',
-                  style: TextStyle(
-                    color: Colors.blue.shade900.withValues(alpha: 0.6),
-                    fontSize: 12,
                   ),
+                  Text(
+                    '%',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '排课覆盖率',
+                style: TextStyle(
+                  color: Colors.blue.shade900.withValues(alpha: 0.6),
+                  fontSize: 12,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(width: 32),
+          SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1732,7 +1695,7 @@ class _ScheduleStatsCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Stack(
                   children: [
                     Container(

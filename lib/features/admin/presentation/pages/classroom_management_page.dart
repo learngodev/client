@@ -25,93 +25,87 @@ class ClassroomManagementPage extends HookConsumerWidget {
       return () => searchController.removeListener(listener);
     }, [searchController]);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('教室管理'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showEditDialog(context, ref),
+    return ListView(
+      padding: EdgeInsets.all(16),
+      children: [
+        TextField(
+          controller: searchController,
+          decoration: const InputDecoration(
+            labelText: '搜索教室',
+            prefixIcon: Icon(Icons.search),
+            border: OutlineInputBorder(),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: searchController,
-              decoration: const InputDecoration(
-                labelText: '搜索教室',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+        ),
+        SizedBox(height: 16),
+        classroomsAsync.when(
+          data: (classrooms) {
+            final filteredClassrooms = classrooms.where((c) {
+              return c.location.toLowerCase().contains(
+                    searchText.value.toLowerCase(),
+                  ) ||
+                  c.id.toLowerCase().contains(searchText.value.toLowerCase());
+            }).toList();
+
+            if (filteredClassrooms.isEmpty) {
+              return const Center(child: Text('暂无教室数据'));
+            }
+
+            return Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade200),
               ),
-            ),
-          ),
-          Expanded(
-            child: classroomsAsync.when(
-              data: (classrooms) {
-                final filteredClassrooms = classrooms.where((c) {
-                  return c.location.toLowerCase().contains(
-                        searchText.value.toLowerCase(),
-                      ) ||
-                      c.id.toLowerCase().contains(
-                        searchText.value.toLowerCase(),
-                      );
-                }).toList();
-
-                if (filteredClassrooms.isEmpty) {
-                  return const Center(child: Text('暂无教室数据'));
-                }
-
-                return SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: DataTable(
-                      columns: const [
-                        DataColumn(label: Text('ID')),
-                        DataColumn(label: Text('地点')),
-                        DataColumn(label: Text('操作')),
-                      ],
-                      rows: filteredClassrooms.map((classroom) {
-                        return DataRow(
-                          cells: [
-                            DataCell(Text(classroom.id)),
-                            DataCell(Text(classroom.location)),
-                            DataCell(
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit),
-                                    onPressed: () => _showEditDialog(
-                                      context,
-                                      ref,
-                                      classroom: classroom,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () =>
-                                        _confirmDelete(context, ref, classroom),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-                    ),
+              child: SizedBox(
+                width: double.infinity,
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
+                  border: TableBorder.all(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Center(child: Text('加载失败: $err')),
-            ),
-          ),
-        ],
-      ),
+                  clipBehavior: Clip.antiAlias,
+                  columns: const [
+                    DataColumn(label: Text('ID')),
+                    DataColumn(label: Text('地点')),
+                    DataColumn(label: Text('操作')),
+                  ],
+                  rows: filteredClassrooms.map((classroom) {
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(classroom.id)),
+                        DataCell(Text(classroom.location)),
+                        DataCell(
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () => _showEditDialog(
+                                  context,
+                                  ref,
+                                  classroom: classroom,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () =>
+                                    _confirmDelete(context, ref, classroom),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('加载失败: $err')),
+        ),
+      ],
     );
   }
 
