@@ -1,5 +1,6 @@
 allprojects {
     repositories {
+        maven { url = uri("https://mirrors.cernet.edu.cn/flutter/download.flutter.io") }
         google()
         mavenCentral()
     }

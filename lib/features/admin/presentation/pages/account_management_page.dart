@@ -731,7 +731,7 @@ class AccountManagementPage extends HookConsumerWidget {
           subtitle: Text(
             structureLabel.isEmpty
                 ? '${account.identifier} · ${account.role == AdminAccountRole.teacher ? '教师' : '学生'}'
-                : '${account.identifier} · ${account.role == AdminAccountRole.teacher ? '教师' : '学生'}\n$structureLabel',
+                : '${account.identifier} · ${account.role == AdminAccountRole.teacher ? '教师' : '学生'}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

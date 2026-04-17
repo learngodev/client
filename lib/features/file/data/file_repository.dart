@@ -47,14 +47,27 @@ class FileRepository {
   ) async {
     // Use a separate Dio instance for direct upload to avoid default interceptors
     final dio = Dio();
-    await dio.put(
-      uploadUrl,
-      data: file.openRead(),
-      options: Options(
-        contentType: contentType,
-        headers: {Headers.contentLengthHeader: await file.length()},
-      ),
-    );
+    print('[FileRepository] Uploading to OSS: $uploadUrl');
+    print('[FileRepository] File size: ${await file.length()}');
+
+    try {
+      final response = await dio.put(
+        uploadUrl,
+        data: file.openRead(),
+        options: Options(
+          headers: {Headers.contentLengthHeader: await file.length()},
+          // Must match the Content-Type used in backend signature
+          contentType: 'application/octet-stream',
+        ),
+      );
+      print('[FileRepository] OSS upload response: ${response.statusCode}');
+    } on DioException catch (e) {
+      print('[FileRepository] OSS upload failed: ${e.response}');
+      rethrow;
+    } catch (e) {
+      print('[FileRepository] OSS upload failed: $e');
+      rethrow;
+    }
   }
 
   Future<FileModel> relayUploadFile({

@@ -33,6 +33,8 @@ class FileService {
     final fileType = lookupMimeType(file.path) ?? 'application/octet-stream';
     final size = await file.length();
 
+    print('[FileService] Starting upload: $fileName, size: $size, type: $fileType');
+
     // 1. Get Upload URL
     final fileModel = await repo.getUploadUrl(
       fileName: fileName,
@@ -41,9 +43,12 @@ class FileService {
       role: role,
     );
 
+    print('[FileService] Got upload info: method=${fileModel.uploadMethod}, fileId=${fileModel.fileId}');
+
     final method = (fileModel.uploadMethod ?? '').toLowerCase();
     if (method == 'relay') {
       // Server-side relay upload (bucket/credential config driven)
+      print('[FileService] Using relay upload');
       return repo.relayUploadFile(
         file: file,
         fileId: fileModel.fileId,
@@ -56,8 +61,12 @@ class FileService {
       throw Exception('Failed to get upload URL');
     }
 
+    print('[FileService] Using direct upload to: ${fileModel.uploadUrl}');
+
     // 2. Upload to OSS
     await repo.uploadFileToOss(fileModel.uploadUrl!, file, fileType);
+
+    print('[FileService] Upload completed successfully');
 
     return fileModel;
   }

@@ -9,7 +9,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
 import '../application/teacher_assignment_provider.dart';
 
-enum TeacherSection { overview, schedule, courses, assignments, conversations }
+enum TeacherSection { overview, schedule, courses, assignments, resources, conversations }
 
 extension TeacherSectionX on TeacherSection {
   String get label {
@@ -18,6 +18,7 @@ extension TeacherSectionX on TeacherSection {
       TeacherSection.schedule => '课表',
       TeacherSection.courses => '课程',
       TeacherSection.assignments => '作业',
+      TeacherSection.resources => '资源',
       TeacherSection.conversations => '消息',
     };
   }
@@ -28,6 +29,7 @@ extension TeacherSectionX on TeacherSection {
       TeacherSection.schedule => Icons.event_note_outlined,
       TeacherSection.courses => Icons.class_outlined,
       TeacherSection.assignments => Icons.assignment_outlined,
+      TeacherSection.resources => Icons.folder_outlined,
       TeacherSection.conversations => Icons.chat_bubble_outline,
     };
   }
@@ -38,6 +40,7 @@ extension TeacherSectionX on TeacherSection {
       TeacherSection.schedule => '/teacher/schedule',
       TeacherSection.courses => '/teacher/courses',
       TeacherSection.assignments => '/teacher/assignments',
+      TeacherSection.resources => '/teacher/resources',
       TeacherSection.conversations => '/teacher/conversations',
     };
   }
@@ -88,6 +91,7 @@ class TeacherShell extends HookConsumerWidget {
 
     final compactPaths = <String>[
       TeacherSection.overview.path,
+      TeacherSection.resources.path,
       TeacherSection.conversations.path,
       TeacherSection.courses.path,
       '/teacher/profile',
@@ -98,6 +102,11 @@ class TeacherShell extends HookConsumerWidget {
         label: '首页',
         icon: Icons.home_outlined,
         selectedIcon: Icons.home,
+      ),
+      const AdaptiveDestination(
+        label: '资源',
+        icon: Icons.folder_outlined,
+        selectedIcon: Icons.folder,
       ),
       AdaptiveDestination(
         label: '消息',

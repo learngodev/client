@@ -36,6 +36,10 @@ import '../../features/teacher/presentation/teacher_shell.dart';
 import '../../features/im/presentation/pages/chat_screen.dart';
 import '../../features/profile/presentation/profile_page.dart';
 import '../../features/profile/presentation/settings_page.dart';
+import '../../features/resource/presentation/pages/resources_browse_page.dart';
+import '../../features/resource/presentation/pages/teacher_resources_page.dart';
+import '../../features/resource/presentation/pages/create_resource_page.dart';
+import '../../features/resource/presentation/pages/resource_detail_page.dart';
 import '../widgets/status_pages.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -482,6 +486,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               child: const TeacherConversationsPage(),
             ),
           ),
+          GoRoute(
+            path: '/teacher/resources',
+            name: 'teacherResources',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const TeacherResourcesPage(),
+            ),
+          ),
+          GoRoute(
+            path: '/teacher/resources/create',
+            name: 'teacherCreateResource',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const CreateResourcePage(),
+            ),
+          ),
+          GoRoute(
+            path: '/teacher/resources/:id',
+            name: 'teacherResourceDetail',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: ResourceDetailPage(resourceId: id),
+              );
+            },
+          ),
 
           GoRoute(
             path: '/teacher/profile',
@@ -536,6 +570,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               state: state,
               child: const StudentAssignmentsPage(),
             ),
+          ),
+          GoRoute(
+            path: '/student/resources',
+            name: 'studentResources',
+            pageBuilder: (context, state) => _sharedAxisTransitionPage(
+              context: context,
+              state: state,
+              child: const ResourcesBrowsePage(),
+            ),
+          ),
+          GoRoute(
+            path: '/student/resources/:id',
+            name: 'studentResourceDetail',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return _sharedAxisTransitionPage(
+                context: context,
+                state: state,
+                child: ResourceDetailPage(resourceId: id),
+              );
+            },
           ),
           GoRoute(
             path: '/student/exams',

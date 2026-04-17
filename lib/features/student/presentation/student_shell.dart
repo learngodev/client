@@ -8,7 +8,7 @@ import '../../auth/domain/account.dart';
 import '../../im/application/im_providers.dart';
 import '../application/student_dashboard_controller.dart';
 
-enum StudentSection { overview, courses, schedule, assignments, messages }
+enum StudentSection { overview, courses, schedule, assignments, resources, messages }
 
 extension StudentSectionX on StudentSection {
   String get label {
@@ -17,6 +17,7 @@ extension StudentSectionX on StudentSection {
       StudentSection.courses => '课程',
       StudentSection.schedule => '课表',
       StudentSection.assignments => '作业',
+      StudentSection.resources => '资源',
       StudentSection.messages => '消息',
     };
   }
@@ -27,6 +28,7 @@ extension StudentSectionX on StudentSection {
       StudentSection.courses => Icons.book_outlined,
       StudentSection.schedule => Icons.calendar_month_outlined,
       StudentSection.assignments => Icons.assignment_outlined,
+      StudentSection.resources => Icons.folder_outlined,
       StudentSection.messages => Icons.chat_outlined,
     };
   }
@@ -37,6 +39,7 @@ extension StudentSectionX on StudentSection {
       StudentSection.courses => '/student/courses',
       StudentSection.schedule => '/student/schedule',
       StudentSection.assignments => '/student/assignments',
+      StudentSection.resources => '/student/resources',
       StudentSection.messages => '/student/messages',
     };
   }
@@ -86,6 +89,7 @@ class StudentShell extends HookConsumerWidget {
 
     final compactPaths = <String>[
       StudentSection.overview.path,
+      StudentSection.resources.path,
       StudentSection.messages.path,
       '/student/profile',
     ];
@@ -95,6 +99,11 @@ class StudentShell extends HookConsumerWidget {
         label: '首页',
         icon: Icons.home_outlined,
         selectedIcon: Icons.home,
+      ),
+      const AdaptiveDestination(
+        label: '资源',
+        icon: Icons.folder_outlined,
+        selectedIcon: Icons.folder,
       ),
       AdaptiveDestination(
         label: '消息',
