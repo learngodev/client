@@ -157,45 +157,6 @@ class _CoursesTab extends ConsumerWidget {
                             height: 40,
                             child: DropdownButtonFormField<String>(
                               decoration: inputDecoration.copyWith(
-                                labelText: '院系',
-                              ),
-                              style: Theme.of(context).textTheme.bodyMedium,
-                              initialValue: filter.departmentId,
-                              isExpanded: true,
-                              items: [
-                                const DropdownMenuItem(
-                                  value: null,
-                                  child: Text('全部院系'),
-                                ),
-                                ...departments.map(
-                                  (d) => DropdownMenuItem(
-                                    value: d.id,
-                                    child: Text(
-                                      d.name,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                ref
-                                    .read(courseFilterProvider.notifier)
-                                    .state = CourseFilter(
-                                  departmentId: val,
-                                  classId: null,
-                                  keyword: filter.keyword,
-                                  slotId: filter.slotId,
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SizedBox(
-                            height: 40,
-                            child: DropdownButtonFormField<String>(
-                              decoration: inputDecoration.copyWith(
                                 labelText: '班级',
                               ),
                               style: Theme.of(context).textTheme.bodyMedium,
@@ -220,7 +181,7 @@ class _CoursesTab extends ConsumerWidget {
                                 ref
                                     .read(courseFilterProvider.notifier)
                                     .state = CourseFilter(
-                                  departmentId: filter.departmentId,
+                                  departmentId: null,
                                   classId: val,
                                   keyword: filter.keyword,
                                   slotId: filter.slotId,
@@ -247,7 +208,7 @@ class _CoursesTab extends ConsumerWidget {
                                 ref
                                     .read(courseFilterProvider.notifier)
                                     .state = CourseFilter(
-                                  departmentId: filter.departmentId,
+                                  departmentId: null,
                                   classId: filter.classId,
                                   keyword: val,
                                   slotId: filter.slotId,
@@ -286,7 +247,7 @@ class _CoursesTab extends ConsumerWidget {
                                 ref
                                     .read(courseFilterProvider.notifier)
                                     .state = CourseFilter(
-                                  departmentId: filter.departmentId,
+                                  departmentId: null,
                                   classId: filter.classId,
                                   keyword: filter.keyword,
                                   slotId: val,
@@ -1632,41 +1593,41 @@ class _ScheduleStatsCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    (scheduledPercent * 100).toStringAsFixed(1),
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                  Text(
-                    '%',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade700,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '排课覆盖率',
-                style: TextStyle(
-                  color: Colors.blue.shade900.withValues(alpha: 0.6),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(width: 16),
+          // Column(
+          //   crossAxisAlignment: CrossAxisAlignment.start,
+          //   children: [
+          //     Row(
+          //       crossAxisAlignment: CrossAxisAlignment.baseline,
+          //       textBaseline: TextBaseline.alphabetic,
+          //       children: [
+          //         Text(
+          //           (scheduledPercent * 100).toStringAsFixed(1),
+          //           style: TextStyle(
+          //             fontSize: 32,
+          //             fontWeight: FontWeight.bold,
+          //             color: Colors.blue.shade700,
+          //           ),
+          //         ),
+          //         Text(
+          //           '%',
+          //           style: TextStyle(
+          //             fontSize: 16,
+          //             fontWeight: FontWeight.bold,
+          //             color: Colors.blue.shade700,
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //     Text(
+          //       '排课覆盖率',
+          //       style: TextStyle(
+          //         color: Colors.blue.shade900.withValues(alpha: 0.6),
+          //         fontSize: 12,
+          //       ),
+          //     ),
+          //   ],
+          // ),
+          // SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

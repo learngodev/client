@@ -8,18 +8,24 @@ import '../../auth/application/auth_controller.dart';
 import '../../auth/domain/account.dart';
 import '../../auth/domain/school.dart';
 
-enum AdminSection { overview, accounts, structures, schedule, oss, system, ai }
+enum AdminSection {
+  overview,
+  accounts,
+  structures,
+  schedule,
+  // oss, system, ai
+}
 
 extension AdminSectionX on AdminSection {
   String get label {
     return switch (this) {
       AdminSection.overview => '总览',
       AdminSection.accounts => '账号管理',
-      AdminSection.structures => '院系班级',
+      AdminSection.structures => '班级',
       AdminSection.schedule => '教务管理',
-      AdminSection.oss => 'OSS 配置',
-      AdminSection.system => '系统设置',
-      AdminSection.ai => 'AI 配置',
+      // AdminSection.oss => 'OSS 配置',
+      // AdminSection.system => '系统设置',
+      // AdminSection.ai => 'AI 配置',
     };
   }
 
@@ -29,9 +35,9 @@ extension AdminSectionX on AdminSection {
       AdminSection.accounts => Icons.people_alt_outlined,
       AdminSection.structures => Icons.account_tree_outlined,
       AdminSection.schedule => Icons.school_outlined,
-      AdminSection.oss => Icons.cloud_upload_outlined,
-      AdminSection.system => Icons.settings_outlined,
-      AdminSection.ai => Icons.psychology_outlined,
+      // AdminSection.oss => Icons.cloud_upload_outlined,
+      // AdminSection.system => Icons.settings_outlined,
+      // AdminSection.ai => Icons.psychology_outlined,
     };
   }
 
@@ -41,9 +47,9 @@ extension AdminSectionX on AdminSection {
       AdminSection.accounts => '/admin/accounts',
       AdminSection.structures => '/admin/structures',
       AdminSection.schedule => '/admin/schedule',
-      AdminSection.oss => '/admin/oss',
-      AdminSection.system => '/admin/system',
-      AdminSection.ai => '/admin/ai',
+      // AdminSection.oss => '/admin/oss',
+      // AdminSection.system => '/admin/system',
+      // AdminSection.ai => '/admin/ai',
     };
   }
 }

@@ -59,24 +59,10 @@ class AdminDashboardPage extends HookConsumerWidget {
                 runSpacing: 12,
                 children: [
                   _DashboardStatCard(
-                    icon: Icons.apartment,
-                    title: '院系总数',
-                    value: stats.departmentCount.toString(),
-                    accent: theme.colorScheme.primary,
-                    onTap: () => context.go(AdminSection.structures.path),
-                  ),
-                  _DashboardStatCard(
                     icon: Icons.class_outlined,
                     title: '班级总数',
                     value: stats.classCount.toString(),
                     accent: theme.colorScheme.secondary,
-                    onTap: () => context.go(AdminSection.structures.path),
-                  ),
-                  _DashboardStatCard(
-                    icon: Icons.pending_actions_outlined,
-                    title: '待补充院系',
-                    value: stats.emptyDepartmentCount.toString(),
-                    accent: theme.colorScheme.error,
                     onTap: () => context.go(AdminSection.structures.path),
                   ),
                 ],
@@ -604,7 +590,7 @@ class _DashboardErrorCard extends StatelessWidget {
 const List<_QuickAction> _adminQuickActions = [
   _QuickAction(
     icon: Icons.account_tree_outlined,
-    title: '管理院系与班级',
+    title: '管理班级',
     subtitle: '建立学校组织架构，支撑课程分配',
     route: '/admin/structures',
   ),
@@ -614,16 +600,16 @@ const List<_QuickAction> _adminQuickActions = [
     subtitle: '创建教师与学生账号，分配权限',
     route: '/admin/accounts',
   ),
-  _QuickAction(
-    icon: Icons.cloud_upload_outlined,
-    title: 'OSS 上传配置',
-    subtitle: '配置文件上传凭证，保障资料安全',
-    route: '/admin/oss',
-  ),
-  _QuickAction(
-    icon: Icons.settings_outlined,
-    title: '系统参数',
-    subtitle: '统一维护公告、平台参数与日志',
-    route: '/admin/system',
-  ),
+  // _QuickAction(
+  //   icon: Icons.cloud_upload_outlined,
+  //   title: 'OSS 上传配置',
+  //   subtitle: '配置文件上传凭证，保障资料安全',
+  //   route: '/admin/oss',
+  // ),
+  // _QuickAction(
+  //   icon: Icons.settings_outlined,
+  //   title: '系统参数',
+  //   subtitle: '统一维护公告、平台参数与日志',
+  //   route: '/admin/system',
+  // ),
 ];

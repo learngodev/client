@@ -184,7 +184,7 @@ class AccountManagementPage extends HookConsumerWidget {
       exportingAccounts.value = true;
       try {
         final buffer = StringBuffer();
-        buffer.writeln('姓名,角色,状态,院系,班级,学号/工号,邮箱,手机号,最近活跃,创建时间');
+        buffer.writeln('姓名,角色,状态,班级,学号/工号,邮箱,手机号,最近活跃,创建时间');
         final dateFormat = DateFormat('yyyy-MM-dd HH:mm');
         for (final account in accounts) {
           final lastActive = account.lastActiveAt ?? account.createdAt;
@@ -192,7 +192,6 @@ class AccountManagementPage extends HookConsumerWidget {
             account.name,
             account.role.label,
             account.status.label,
-            account.departmentLabel,
             account.classLabel,
             account.identifier,
             account.email,
@@ -510,7 +509,6 @@ class AccountManagementPage extends HookConsumerWidget {
                 DataColumn(label: Text('姓名')),
                 DataColumn(label: Text('学号/工号')),
                 DataColumn(label: Text('身份')),
-                DataColumn(label: Text('院系')),
                 DataColumn(label: Text('班级')),
                 DataColumn(label: Text('状态')),
                 DataColumn(label: Text('操作')),
@@ -540,18 +538,6 @@ class AccountManagementPage extends HookConsumerWidget {
                     DataCell(
                       Text(
                         account.role == AdminAccountRole.teacher ? '教师' : '学生',
-                      ),
-                    ),
-                    DataCell(
-                      SizedBox(
-                        width: 200,
-                        child: Text(
-                          account.departmentLabel.isEmpty
-                              ? '-'
-                              : account.departmentLabel,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
                       ),
                     ),
                     DataCell(

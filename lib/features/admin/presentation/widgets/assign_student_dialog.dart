@@ -113,13 +113,6 @@ class AssignStudentDialog extends HookConsumerWidget {
                 '分配学生到 ${classInfo.name}',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 8),
-              Text(
-                '所属院系: ${department.name}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
               const SizedBox(height: 16),
               TextField(
                 controller: searchController,

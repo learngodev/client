@@ -59,44 +59,6 @@ class CourseManagementPage extends ConsumerWidget {
                         height: 40,
                         child: DropdownButtonFormField<String>(
                           decoration: const InputDecoration(
-                            labelText: '院系',
-                            border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 0,
-                            ),
-                          ),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          initialValue: filter.departmentId,
-                          isExpanded: true,
-                          items: [
-                            const DropdownMenuItem(
-                              value: null,
-                              child: Text('全部院系'),
-                            ),
-                            ...departments.map(
-                              (d) => DropdownMenuItem(
-                                value: d.id,
-                                child: Text(
-                                  d.name,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ],
-                          onChanged: (val) {
-                            ref.read(courseFilterProvider.notifier).state =
-                                CourseFilter(departmentId: val, classId: null);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
                             labelText: '班级',
                             border: OutlineInputBorder(),
                             contentPadding: EdgeInsets.symmetric(

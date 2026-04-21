@@ -213,11 +213,6 @@ class _ResourceCard extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 4,
                 children: [
-                  if (resource.departmentName.isNotEmpty)
-                    Chip(
-                      label: Text(resource.departmentName),
-                      visualDensity: VisualDensity.compact,
-                    ),
                   if (resource.gradeLevel.isNotEmpty)
                     Chip(
                       label: Text(resource.gradeLevel),

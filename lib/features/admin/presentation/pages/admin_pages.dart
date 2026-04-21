@@ -90,25 +90,12 @@ class AdminOverviewPage extends ConsumerWidget {
               if (node.classes.isEmpty) node.department.name,
           ];
           final quickChecks = <_QuickCheckItem>[];
-          if (metrics.departmentCount == 0) {
+          if (metrics.classCount == 0) {
             quickChecks.add(
-              _QuickCheckItem(
-                icon: Icons.corporate_fare_outlined,
-                title: '尚未创建院系',
-                description: '创建院系后即可录入班级与账号信息。',
-                severity: _QuickCheckSeverity.warning,
-              ),
-            );
-          } else if (metrics.emptyDepartmentCount > 0) {
-            final previewNames = emptyDepartments.take(3).join('、');
-            final detail = emptyDepartments.length > 3
-                ? '$previewNames 等 ${metrics.emptyDepartmentCount} 个院系待补充班级。'
-                : '$previewNames 缺少班级配置，建议尽快补充。';
-            quickChecks.add(
-              _QuickCheckItem(
-                icon: Icons.warning_amber_outlined,
-                title: '${metrics.emptyDepartmentCount} 个院系未配置班级',
-                description: detail.isEmpty ? '存在未配置班级的院系，建议补充班级信息。' : detail,
+              const _QuickCheckItem(
+                icon: Icons.class_outlined,
+                title: '尚未创建班级',
+                description: '创建班级后即可录入账号信息。',
                 severity: _QuickCheckSeverity.warning,
               ),
             );
@@ -116,20 +103,9 @@ class AdminOverviewPage extends ConsumerWidget {
             quickChecks.add(
               _QuickCheckItem(
                 icon: Icons.task_alt_outlined,
-                title: '所有院系均已配置班级',
+                title: '班级已创建',
                 description: '班级结构完整，可进行账号分配。',
                 severity: _QuickCheckSeverity.success,
-              ),
-            );
-          }
-
-          if (metrics.classCount == 0 && metrics.departmentCount > 0) {
-            quickChecks.add(
-              const _QuickCheckItem(
-                icon: Icons.class_outlined,
-                title: '院系已创建但尚无班级',
-                description: '为院系添加至少一个班级后，学生账号才能正确分配。',
-                severity: _QuickCheckSeverity.info,
               ),
             );
           }
@@ -143,13 +119,13 @@ class AdminOverviewPage extends ConsumerWidget {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   icon: const Icon(Icons.refresh),
-                  label: const Text('刷新院系数据'),
+                  label: const Text('刷新数据'),
                   onPressed: () async {
                     try {
                       await notifier.refresh();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('院系数据已刷新')),
+                          const SnackBar(content: Text('数据已刷新')),
                         );
                       }
                     } catch (error) {
@@ -174,25 +150,11 @@ class AdminOverviewPage extends ConsumerWidget {
                 runSpacing: 12,
                 children: [
                   _AdminStatsCard(
-                    icon: Icons.apartment,
-                    title: '院系总数',
-                    value: metrics.departmentCount.toString(),
-                    subtitle: '当前已创建的院系数量。',
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  _AdminStatsCard(
                     icon: Icons.class_outlined,
                     title: '班级总数',
                     value: metrics.classCount.toString(),
-                    subtitle: '所有院系下的班级合计。',
+                    subtitle: '当前已创建的班级数量。',
                     color: Theme.of(context).colorScheme.secondary,
-                  ),
-                  _AdminStatsCard(
-                    icon: Icons.pending_actions_outlined,
-                    title: '未配置班级的院系',
-                    value: metrics.emptyDepartmentCount.toString(),
-                    subtitle: '需要补充班级信息的院系数。',
-                    color: Theme.of(context).colorScheme.tertiary,
                   ),
                 ],
               ),
@@ -552,7 +514,7 @@ class AdminStructuresPage extends HookConsumerWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('请先创建院系，再添加班级。')));
+          ).showSnackBar(const SnackBar(content: Text('请先创建班级。')));
         }
         return;
       }
@@ -1199,21 +1161,12 @@ class AdminStructuresPage extends HookConsumerWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               children: [
-                Text('院系与班级', style: Theme.of(context).textTheme.headlineSmall),
+                Text('班级管理', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 12,
                   runSpacing: 8,
                   children: [
-                    FilledButton.icon(
-                      onPressed: canManageStructures
-                          ? () {
-                              showCreateDepartmentDialog();
-                            }
-                          : null,
-                      icon: const Icon(Icons.domain_add_outlined),
-                      label: const Text('新增院系'),
-                    ),
                     FilledButton.icon(
                       onPressed:
                           canManageStructures && allDepartments.isNotEmpty
@@ -1229,7 +1182,7 @@ class AdminStructuresPage extends HookConsumerWidget {
                 if (!canManageStructures) ...[
                   const SizedBox(height: 12),
                   Text(
-                    '需登录且拥有学校信息后才能创建院系与班级。',
+                    '需登录且拥有学校信息后才能创建班级。',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -1242,25 +1195,11 @@ class AdminStructuresPage extends HookConsumerWidget {
                     runSpacing: 12,
                     children: [
                       _AdminStatsCard(
-                        icon: Icons.apartment_outlined,
-                        title: '筛选院系',
-                        value: metricsValue.departmentCount.toString(),
-                        subtitle: '符合条件的院系数量。',
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      _AdminStatsCard(
                         icon: Icons.class_outlined,
                         title: '筛选班级',
                         value: metricsValue.classCount.toString(),
-                        subtitle: '这些院系下的班级合计。',
+                        subtitle: '符合条件的班级数量。',
                         color: Theme.of(context).colorScheme.secondary,
-                      ),
-                      _AdminStatsCard(
-                        icon: Icons.hourglass_empty_outlined,
-                        title: '暂无班级',
-                        value: metricsValue.emptyDepartmentCount.toString(),
-                        subtitle: '仍未配置班级的院系数。',
-                        color: Theme.of(context).colorScheme.tertiary,
                       ),
                     ],
                   ),
@@ -1269,7 +1208,7 @@ class AdminStructuresPage extends HookConsumerWidget {
                   controller: filterController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    labelText: '搜索院系或班级',
+                    labelText: '搜索班级',
                     suffixIcon: filterController.text.isEmpty
                         ? null
                         : IconButton(
@@ -1295,18 +1234,6 @@ class AdminStructuresPage extends HookConsumerWidget {
                   runSpacing: 8,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    FilterChip(
-                      label: const Text('仅显示未配置班级'),
-                      selected: onlyEmpty,
-                      onSelected: (selected) => ref
-                          .read(adminDepartmentViewPreferencesProvider.notifier)
-                          .setOnlyEmpty(selected),
-                      side: BorderSide.none,
-                      visualDensity: VisualDensity.compact,
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerLow,
-                    ),
                     if (canToggleBulkExpansion && nodes.isNotEmpty) ...[
                       TextButton.icon(
                         icon: const Icon(Icons.unfold_more),
@@ -3236,67 +3163,16 @@ class _DepartmentExpansion extends StatelessWidget {
           tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
           childrenPadding: const EdgeInsets.only(bottom: 8),
           leading: Icon(
-            Icons.apartment_outlined,
+            Icons.class_outlined,
             color: theme.colorScheme.primary,
           ),
           title: Row(
             children: [
               Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    children: _buildHighlightedSpans(
-                      node.department.name,
-                      normalized,
-                      departmentTitleStyle,
-                      departmentHighlightStyle,
-                    ),
-                  ),
+                child: Text(
+                  '${node.classes.length} 个班级',
                   style: departmentTitleStyle,
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${node.classes.length} 班 · ${node.department.teacherCount} 师 · ${node.department.studentCount} 生',
-                  style: theme.textTheme.labelSmall,
-                ),
-              ),
-              const SizedBox(width: 8),
-              PopupMenuButton<String>(
-                tooltip: '管理院系',
-                enabled: canManage,
-                onSelected: (value) {
-                  switch (value) {
-                    case 'rename':
-                      unawaited(onRenameDepartment(node));
-                      break;
-                    case 'delete':
-                      unawaited(onDeleteDepartment(node));
-                      break;
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem<String>(
-                    value: 'rename',
-                    child: Text('重命名院系'),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'delete',
-                    enabled: node.classes.isEmpty,
-                    child: Text(
-                      node.classes.isEmpty ? '删除院系' : '删除院系（需先清空班级）',
-                      style: TextStyle(
-                        color: node.classes.isEmpty
-                            ? theme.colorScheme.error
-                            : null,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
