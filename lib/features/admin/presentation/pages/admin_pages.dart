@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 // ignore_for_file: use_build_context_synchronously
@@ -9,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:learn_go/core/utils/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../application/admin_providers.dart';
 import '../../../auth/application/auth_controller.dart';
@@ -19,7 +17,6 @@ import '../../domain/accounts.dart';
 import '../../domain/models.dart';
 import '../../domain/oss.dart' as oss;
 import '../../domain/system_settings.dart' as system;
-import '../../domain/ai_ops.dart';
 import '../widgets/assign_student_dialog.dart';
 import 'class_detail_page.dart';
 import 'account_management_page.dart';

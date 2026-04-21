@@ -177,7 +177,7 @@ class AssignStudentDialog extends HookConsumerWidget {
                           },
                           title: Text(account.name),
                           subtitle: Text(
-                            '${account.identifier} ${account.className != null ? '(${account.className})' : ''}',
+                            '${account.identifier} ${'(${account.className})'}',
                           ),
                           secondary: CircleAvatar(
                             child: Text(account.name.substring(0, 1)),

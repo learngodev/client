@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../application/resource_providers.dart';
-import '../../domain/resource_models.dart';
 import '../../../file/application/file_service.dart';
 import '../../../auth/application/auth_controller.dart';
 
